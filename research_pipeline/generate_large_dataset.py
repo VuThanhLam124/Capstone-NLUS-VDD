@@ -2,16 +2,19 @@ import json
 import random
 import os
 
-OUTPUT_FILE = "/kaggle/working/data/test_queries_vi_200.json"
+OUTPUT_FILE = "/kaggle/working/data/test_queries_vi_1000.json"
 # Local path for testing
-LOCAL_OUTPUT_FILE = "/home/ubuntu/DataScience/Capstone-NLUS-VDD/research_pipeline/data/test_queries_vi_200.json"
+LOCAL_OUTPUT_FILE = "/home/ubuntu/DataScience/Capstone-NLUS-VDD/research_pipeline/data/test_queries_vi_1000.json"
 
 # Data Lists for Randomization
 YEARS = [2019, 2020, 2021, 2022, 2023]
 MONTHS = range(1, 13)
 CATEGORIES = ["Electronics", "Books", "Home", "Clothing", "Sports", "Music", "Toys", "Jewelry"]
 STATES = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY"]
-MANAGERS = ["Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller"]
+
+# Filler Words / Disfluencies for Natural Speech Augmentation
+FILLERS = ["ờ", "à", "ừm", "hmmm", "để xem", "kiểu như là", "thì", "ờ thì"]
+EMOTIONAL_PREFIXES = ["Cho mình hỏi", "Bạn ơi cho hỏi", "Tính giúp mình", "Tra cứu giúp tôi", "Ê", "Này"]
 
 # Templates: (Question Template, SQL Template)
 TEMPLATES = [
@@ -57,7 +60,26 @@ TEMPLATES = [
     )
 ]
 
-def generate_dataset(num_samples=200):
+def inject_disfluencies(text):
+    """
+    Injects fillers and emotional prefixes to make text sound more natural/conversational.
+    Strategy:
+    1. 30% chance to add a prefix.
+    2. 40% chance to inject a filler word at a comma or random space.
+    """
+    if random.random() < 0.3:
+        text = f"{random.choice(EMOTIONAL_PREFIXES)} {text.lower()}"
+    
+    words = text.split()
+    if len(words) > 4 and random.random() < 0.4:
+        # Insert filler at random position (not start/end)
+        idx = random.randint(1, len(words) - 2)
+        words.insert(idx, f"... {random.choice(FILLERS)} ...")
+        text = " ".join(words)
+        
+    return text.replace("... ...", "...") # Cleanup
+
+def generate_dataset(num_samples=1000):
     data = []
     
     for i in range(1, num_samples + 1):
@@ -78,16 +100,20 @@ def generate_dataset(num_samples=200):
         question = tmpl_q.format(**ctx)
         sql = tmpl_s.format(**ctx)
         
+        # Inject Natural Speech Augmentations
+        question_natural = inject_disfluencies(question)
+        
         data.append({
             "id": f"q{i}_vi",
-            "text": question,
+            "text": question_natural,
+            "original_text": question, # Keep original for reference
             "sql": sql
         })
         
     return data
 
 if __name__ == "__main__":
-    dataset = generate_dataset(200)
+    dataset = generate_dataset(1000)
     
     # Determine output path (Kaggle vs Local)
     out_path = OUTPUT_FILE if os.path.exists("/kaggle/working") else LOCAL_OUTPUT_FILE
@@ -96,4 +122,4 @@ if __name__ == "__main__":
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(dataset, f, ensure_ascii=False, indent=2)
         
-    print(f"✅ Generated {len(dataset)} queries to {out_path}")
+    print(f"✅ Generated {len(dataset)} conversational queries to {out_path}")

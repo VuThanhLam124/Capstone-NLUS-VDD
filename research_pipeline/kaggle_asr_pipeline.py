@@ -44,18 +44,52 @@ def install_dependencies():
     print("Dependencies installed.")
 
 # ==========================================
-# 2. DATA GENERATION (VIETNAMESE + AUGMENTATION)
+# 2. DATA WAREHOUSE SETUP (DuckDB + TPC-DS)
+# ==========================================
+def setup_dw(scale_factor=1):
+    print(f"Setting up Data Warehouse (SF={scale_factor})...")
+    os.makedirs(DATA_DIR, exist_ok=True)
+    
+    con = duckdb.connect(DB_PATH)
+    try:
+        con.sql("INSTALL tpcds;")
+        con.sql("LOAD tpcds;")
+        
+        # Check tables
+        tables = con.sql("SHOW TABLES").fetchall()
+        if not tables:
+            print("   -> Generating TPC-DS data...")
+            con.sql(f"CALL dsdgen(sf={scale_factor});")
+            print("   -> Data generated.")
+        else:
+            print("   -> Data already exists.")
+            
+        # Verify
+        count = con.sql("SELECT count(*) FROM item").fetchone()[0]
+        print(f"   -> 'item' table has {count} rows.")
+        
+    except Exception as e:
+        print(f"Error setting up DW: {e}")
+    finally:
+        con.close()
+
+# ==========================================
+# 3. DATA GENERATION (VIETNAMESE + AUGMENTATION)
 # ==========================================
 def generate_audio_dataset():
     print("Generating Audio Dataset from User JSON...")
     os.makedirs(AUDIO_DIR, exist_ok=True)
     
-    json_path = os.path.join(DATA_DIR, "test_queries_vi_200.json") # Normalize name
+    json_path = os.path.join(DATA_DIR, "test_queries_vi_1000.json") 
     
+    # Check both potential locations (local vs kaggle)
     if not os.path.exists(json_path):
-        print(f"Error: Please upload your queries to {json_path}")
-        print("Format: [{'id': 'q1', 'text': 'Câu hỏi...', 'sql': 'SELECT...'}]")
-        return []
+        local_path = "research_pipeline/data/test_queries_vi_1000.json"
+        if os.path.exists(local_path):
+            json_path = local_path
+        else:
+            print(f"❌ Error: Please ensure {json_path} exists.")
+            return []
     
     with open(json_path, 'r', encoding='utf-8') as f:
         queries = json.load(f)
@@ -82,7 +116,7 @@ def generate_audio_dataset():
         rows = []
         print(f"Synthesizing audio for {len(queries)} items with {len(VOICES)} voices and {len(AUGMENTATIONS)} variations...")
         
-        for q in queries:
+        for i, q in enumerate(queries):
             for voice in VOICES:
                 voice_gender = "male" if "NamMinh" in voice else "female"
                 
@@ -109,7 +143,8 @@ def generate_audio_dataset():
                         "voice": voice_gender,
                         "augmentation": aug_suffix if aug_suffix else "original"
                     })
-                    
+            if i % 10 == 0:
+                 print(f"  -> Processed {i}/{len(queries)}")      
         return rows
 
     loop = asyncio.get_event_loop()
@@ -123,14 +158,8 @@ def generate_audio_dataset():
     print(f"Dataset Ready: {len(test_suite)} audio samples generated.")
     return test_suite
 
-def run_benchmark():
-    # 1. Setup Data
-    setup_dw(scale_factor=1) # Ensure DB exists
-    test_suite = generate_audio_dataset()
-    if not test_suite: return
-
 # ==========================================
-# 3. ASR ENGINE WRAPPERS
+# 4. ASR ENGINE WRAPPERS
 # ==========================================
 class ASRWrapper:
     def transcribe(self, audio_path):
@@ -145,8 +174,6 @@ class PhoWhisperWrapper(ASRWrapper):
             device=0 if DEVICE == "cuda" else -1
         )
     def transcribe(self, audio_path):
-        # PhoWhisper expects sampling rate 16000 usually, pipeline handles resampling mostly
-        # but safe to provide raw bytes or path
         return self.pipe(audio_path)["text"]
 
 class Wav2Vec2Wrapper(ASRWrapper):
@@ -156,13 +183,10 @@ class Wav2Vec2Wrapper(ASRWrapper):
         self.model = Wav2Vec2ForCTC.from_pretrained(model_id).to(DEVICE)
 
     def transcribe(self, audio_path):
-        # Load and resample to 16k
         speech, rate = librosa.load(audio_path, sr=16000)
         input_values = self.processor(speech, sampling_rate=16000, return_tensors="pt").input_values.to(DEVICE)
-        
         with torch.no_grad():
             logits = self.model(input_values).logits
-            
         pred_ids = torch.argmax(logits, dim=-1)
         transcription = self.processor.batch_decode(pred_ids)[0]
         return transcription
@@ -171,13 +195,10 @@ class ChunkformerWrapper(ASRWrapper):
     def __init__(self):
         print("Loading Chunkformer...")
         model_id = "khanhld/chunkformer-ctc-large-vie"
-        # Assuming AutoClasses work. If not, fallback to specific loading logic
         try:
             self.processor = AutoProcessor.from_pretrained(model_id)
             self.model = AutoModelForCTC.from_pretrained(model_id).to(DEVICE)
         except:
-            # Fallback if AutoModel fails (Chunkformer might custom)
-            # Treating as Wav2Vec2 compatible for demo validaty
             print("Fallback: treating Chunkformer as Wav2Vec2 compatible...")
             self.processor = Wav2Vec2Processor.from_pretrained(model_id)
             self.model = Wav2Vec2ForCTC.from_pretrained(model_id).to(DEVICE)
@@ -192,7 +213,7 @@ class ChunkformerWrapper(ASRWrapper):
         return transcription
 
 # ==========================================
-# 4. BENCHMARK RUNNER
+# 5. BENCHMARK RUNNER
 # ==========================================
 def cleanup_gpu():
     gc.collect()
@@ -200,12 +221,13 @@ def cleanup_gpu():
 
 def run_benchmark():
     # 1. Setup Data
-    test_suite = generate_test_data_vi()
+    setup_dw(scale_factor=1) 
+    test_suite = generate_audio_dataset()
+    if not test_suite: return
     
     results = []
     
-    # List of models to benchmark
-    # Format: (Name, Class)
+    # Models to benchmark
     models_to_test = [
         ("PhoWhisper-Large", PhoWhisperWrapper),
         ("Wav2Vec2-Base-Vi", Wav2Vec2Wrapper),
@@ -225,7 +247,7 @@ def run_benchmark():
             load_time = time.time() - start_load
             print(f"Model loaded in {load_time:.2f}s")
             
-            # Run Inference on all files
+            # Run Inference
             for row in test_suite:
                 start_infer = time.time()
                 try:
@@ -235,7 +257,7 @@ def run_benchmark():
                     hyp_text = ""
                 infer_time = time.time() - start_infer
                 
-                # Cleanup Text a bit (lower case for WER)
+                # Cleanup
                 ref_norm = row['text'].lower()
                 hyp_norm = hyp_text.lower()
                 wer = jiwer.wer(ref_norm, hyp_norm)
@@ -247,11 +269,13 @@ def run_benchmark():
                     "Transcript": hyp_text,
                     "WER": wer,
                     "InferenceTime": infer_time,
-                    "AudioFile": row['audio_path']
+                    "AudioFile": row['audio_path'],
+                    "Voice": row['voice'],           # Save Voice Meta
+                    "Augmentation": row['augmentation'] # Save Aug Meta
                 })
-                print(f"  [{row['id']}] WER: {wer:.2f} | Time: {infer_time:.4f}s")
+                # print(f"  [{row['id']}] WER: {wer:.2f} | Time: {infer_time:.4f}s") # Reduce spam
                 
-            del asr_engine # Unload
+            del asr_engine 
             
         except Exception as e:
             print(f"Failed to benchmark {model_name}: {e}")
@@ -262,8 +286,9 @@ def run_benchmark():
     
     print("\nBENCHMARK RESULTS SUMMARY")
     print("-" * 60)
-    summary = df.groupby("Model")[["WER", "InferenceTime"]].mean().reset_index()
-    print(summary.to_markdown(index=False, floatfmt=".4f"))
+    if not df.empty:
+        summary = df.groupby("Model")[["WER", "InferenceTime"]].mean().reset_index()
+        print(summary.to_markdown(index=False, floatfmt=".4f"))
     print("-" * 60)
     print(f"Detailed results saved to {RESULTS_PATH}")
 
