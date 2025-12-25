@@ -2,10 +2,19 @@ import duckdb
 import os
 import time
 
-DB_PATH = "/home/ubuntu/DataScience/Capstone-NLUS-VDD/research_pipeline/data/ecommerce_dw.duckdb"
+# Dynamic Path Resolution: ./setup_dw.py -> ../data/ecommerce_dw.duckdb
+# This ensures it works regardless of where the script is run from,
+# as long as the project structure remains consistent.
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+DB_PATH = os.path.join(DATA_DIR, "ecommerce_dw.duckdb")
+
 SCALE_FACTOR = 1  # 1GB for testing. Will scale to 50 later.
 
 def setup_tpcds():
+    print(f"Ensuring data directory exists at: {DATA_DIR}")
+    os.makedirs(DATA_DIR, exist_ok=True)
+    
     print(f"Initializing DuckDB at {DB_PATH}...")
     
     # Connect to DuckDB (creates file if not exists)
@@ -19,10 +28,9 @@ def setup_tpcds():
         
         # Check if data already exists to avoid re-generating
         # We check one table, e.g., 'call_center'
-        tables = con.sql("SHOW TABLES").fetchall()
-        table_names = [t[0] for t in tables]
+        tables = [t[0] for t in con.sql("SHOW TABLES").fetchall()]
         
-        if 'call_center' in table_names:
+        if 'call_center' in tables:
             print("Data already appears to exist. Skipping generation.")
             count = con.sql("SELECT COUNT(*) FROM call_center").fetchone()[0]
             print(f"Call Center row count: {count}")
