@@ -1,0 +1,2953 @@
+{
+  "scale_factor": 1,
+  "compression": "ZSTD",
+  "generated_at": "2025-12-26 20:47:47",
+  "fact_tables": [
+    {
+      "table_name": "store_sales",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/fact/store_sales.parquet",
+      "row_count": 2880404,
+      "column_count": 23,
+      "file_size_bytes": 107147469,
+      "file_size_mb": 102.18,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "ss_sold_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_sold_time_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_item_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_store_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_promo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_ticket_number",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_quantity",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_wholesale_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_list_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_sales_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_ext_discount_amt",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_ext_sales_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_ext_wholesale_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_ext_list_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_ext_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_coupon_amt",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_net_paid",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_net_paid_inc_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ss_net_profit",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Bán hàng tại cửa hàng - Fact table chính",
+      "grain": "Mỗi dòng = 1 line item trong 1 transaction",
+      "fk_dims": [
+        "date_dim",
+        "time_dim",
+        "item",
+        "customer",
+        "store",
+        "promotion"
+      ]
+    },
+    {
+      "table_name": "store_returns",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/fact/store_returns.parquet",
+      "row_count": 287867,
+      "column_count": 20,
+      "file_size_bytes": 12122751,
+      "file_size_mb": 11.56,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "sr_returned_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_return_time_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_item_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_store_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_reason_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_ticket_number",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_return_quantity",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_return_amt",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_return_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_return_amt_inc_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_fee",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_return_ship_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_refunded_cash",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_reversed_charge",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_store_credit",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sr_net_loss",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Trả hàng tại cửa hàng",
+      "grain": "Mỗi dòng = 1 line item bị trả lại",
+      "fk_dims": [
+        "date_dim",
+        "time_dim",
+        "item",
+        "customer",
+        "store",
+        "reason"
+      ]
+    },
+    {
+      "table_name": "catalog_sales",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/fact/catalog_sales.parquet",
+      "row_count": 1441548,
+      "column_count": 34,
+      "file_size_bytes": 78918761,
+      "file_size_mb": 75.26,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "cs_sold_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_sold_time_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ship_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_bill_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_bill_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_bill_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_bill_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ship_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ship_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ship_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ship_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_call_center_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_catalog_page_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ship_mode_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_warehouse_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_item_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_promo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_order_number",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_quantity",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_wholesale_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_list_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_sales_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ext_discount_amt",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ext_sales_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ext_wholesale_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ext_list_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ext_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_coupon_amt",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_ext_ship_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_net_paid",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_net_paid_inc_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_net_paid_inc_ship",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_net_paid_inc_ship_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cs_net_profit",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Bán hàng qua catalog (mail order)",
+      "grain": "Mỗi dòng = 1 line item trong đơn catalog",
+      "fk_dims": [
+        "date_dim",
+        "time_dim",
+        "item",
+        "customer",
+        "catalog_page",
+        "ship_mode",
+        "warehouse",
+        "promotion"
+      ]
+    },
+    {
+      "table_name": "catalog_returns",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/fact/catalog_returns.parquet",
+      "row_count": 144067,
+      "column_count": 27,
+      "file_size_bytes": 7882614,
+      "file_size_mb": 7.52,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "cr_returned_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_returned_time_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_item_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_refunded_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_refunded_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_refunded_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_refunded_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_returning_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_returning_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_returning_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_returning_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_call_center_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_catalog_page_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_ship_mode_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_warehouse_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_reason_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_order_number",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_return_quantity",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_return_amount",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_return_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_return_amt_inc_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_fee",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_return_ship_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_refunded_cash",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_reversed_charge",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_store_credit",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cr_net_loss",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Trả hàng từ đơn catalog",
+      "grain": "Mỗi dòng = 1 line item trả lại từ catalog",
+      "fk_dims": [
+        "date_dim",
+        "time_dim",
+        "item",
+        "customer",
+        "catalog_page",
+        "reason"
+      ]
+    },
+    {
+      "table_name": "web_sales",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/fact/web_sales.parquet",
+      "row_count": 719384,
+      "column_count": 34,
+      "file_size_bytes": 38804591,
+      "file_size_mb": 37.01,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "ws_sold_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_sold_time_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ship_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_item_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_bill_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_bill_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_bill_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_bill_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ship_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ship_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ship_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ship_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_web_page_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_web_site_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ship_mode_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_warehouse_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_promo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_order_number",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_quantity",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_wholesale_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_list_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_sales_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ext_discount_amt",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ext_sales_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ext_wholesale_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ext_list_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ext_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_coupon_amt",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_ext_ship_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_net_paid",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_net_paid_inc_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_net_paid_inc_ship",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_net_paid_inc_ship_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ws_net_profit",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Bán hàng online qua website",
+      "grain": "Mỗi dòng = 1 line item trong đơn web",
+      "fk_dims": [
+        "date_dim",
+        "time_dim",
+        "item",
+        "customer",
+        "web_page",
+        "web_site",
+        "ship_mode",
+        "warehouse",
+        "promotion"
+      ]
+    },
+    {
+      "table_name": "web_returns",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/fact/web_returns.parquet",
+      "row_count": 71654,
+      "column_count": 24,
+      "file_size_bytes": 3876889,
+      "file_size_mb": 3.7,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "wr_returned_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_returned_time_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_item_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_refunded_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_refunded_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_refunded_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_refunded_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_returning_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_returning_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_returning_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_returning_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_web_page_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_reason_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_order_number",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_return_quantity",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_return_amt",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_return_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_return_amt_inc_tax",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_fee",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_return_ship_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_refunded_cash",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_reversed_charge",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_account_credit",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wr_net_loss",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Trả hàng từ đơn online",
+      "grain": "Mỗi dòng = 1 line item trả lại từ web",
+      "fk_dims": [
+        "date_dim",
+        "time_dim",
+        "item",
+        "customer",
+        "web_page",
+        "reason"
+      ]
+    },
+    {
+      "table_name": "inventory",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/fact/inventory.parquet",
+      "row_count": 11745000,
+      "column_count": 4,
+      "file_size_bytes": 19700800,
+      "file_size_mb": 18.79,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "inv_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "inv_item_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "inv_warehouse_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "inv_quantity_on_hand",
+          "column_type": "INTEGER",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Periodic snapshot của tồn kho",
+      "grain": "Mỗi dòng = tồn kho của 1 item tại 1 warehouse vào 1 ngày",
+      "fk_dims": [
+        "date_dim",
+        "item",
+        "warehouse"
+      ]
+    }
+  ],
+  "dim_tables": [
+    {
+      "table_name": "date_dim",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/date_dim.parquet",
+      "row_count": 73049,
+      "column_count": 28,
+      "file_size_bytes": 639187,
+      "file_size_mb": 0.61,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "d_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_date_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_month_seq",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_week_seq",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_quarter_seq",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_year",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_dow",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_moy",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_dom",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_qoy",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_fy_year",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_fy_quarter_seq",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_fy_week_seq",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_day_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_quarter_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_holiday",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_weekend",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_following_holiday",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_first_dom",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_last_dom",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_same_day_ly",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_same_day_lq",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_current_day",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_current_week",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_current_month",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_current_quarter",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "d_current_year",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Dimension ngày - Role-playing dimension (sold_date, ship_date, return_date)",
+      "normalized_from": null,
+      "rows_approx": 73049
+    },
+    {
+      "table_name": "time_dim",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/time_dim.parquet",
+      "row_count": 86400,
+      "column_count": 10,
+      "file_size_bytes": 315998,
+      "file_size_mb": 0.3,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "t_time_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "t_time_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "t_time",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "t_hour",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "t_minute",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "t_second",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "t_am_pm",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "t_shift",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "t_sub_shift",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "t_meal_time",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Dimension thời gian trong ngày",
+      "normalized_from": null,
+      "rows_approx": 86400
+    },
+    {
+      "table_name": "item",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/item.parquet",
+      "row_count": 18000,
+      "column_count": 22,
+      "file_size_bytes": 1030831,
+      "file_size_mb": 0.98,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "i_item_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_item_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_rec_start_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_rec_end_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_item_desc",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_current_price",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_wholesale_cost",
+          "column_type": "DECIMAL(7,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_brand_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_brand",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_class_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_class",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_category_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_category",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_manufact_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_manufact",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_size",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_formulation",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_color",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_units",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_container",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_manager_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "i_product_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Sản phẩm - Chứa thông tin product, category, brand",
+      "normalized_from": null,
+      "rows_approx": 18000
+    },
+    {
+      "table_name": "customer",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/customer.parquet",
+      "row_count": 100000,
+      "column_count": 18,
+      "file_size_bytes": 3703719,
+      "file_size_mb": 3.53,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "c_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_customer_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_current_cdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_current_hdemo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_current_addr_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_first_shipto_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_first_sales_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_salutation",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_first_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_last_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_preferred_cust_flag",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_birth_day",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_birth_month",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_birth_year",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_birth_country",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_login",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_email_address",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "c_last_review_date_sk",
+          "column_type": "INTEGER",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Khách hàng - Link đến address và demographics",
+      "normalized_from": null,
+      "rows_approx": 100000
+    },
+    {
+      "table_name": "customer_address",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/customer_address.parquet",
+      "row_count": 50000,
+      "column_count": 13,
+      "file_size_bytes": 706072,
+      "file_size_mb": 0.67,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "ca_address_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_address_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_street_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_street_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_street_type",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_suite_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_city",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_county",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_state",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_zip",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_country",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_gmt_offset",
+          "column_type": "DECIMAL(5,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ca_location_type",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Địa chỉ khách hàng - Normalized từ customer",
+      "normalized_from": "customer",
+      "rows_approx": 50000
+    },
+    {
+      "table_name": "customer_demographics",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/customer_demographics.parquet",
+      "row_count": 1920800,
+      "column_count": 9,
+      "file_size_bytes": 2024710,
+      "file_size_mb": 1.93,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "cd_demo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cd_gender",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cd_marital_status",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cd_education_status",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cd_purchase_estimate",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cd_credit_rating",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cd_dep_count",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cd_dep_employed_count",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cd_dep_college_count",
+          "column_type": "INTEGER",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Demographics khách hàng (gender, education, marital status)",
+      "normalized_from": "customer",
+      "rows_approx": 1920
+    },
+    {
+      "table_name": "household_demographics",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/household_demographics.parquet",
+      "row_count": 7200,
+      "column_count": 5,
+      "file_size_bytes": 14905,
+      "file_size_mb": 0.01,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "hd_demo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "hd_income_band_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "hd_buy_potential",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "hd_dep_count",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "hd_vehicle_count",
+          "column_type": "INTEGER",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Thông tin hộ gia đình",
+      "normalized_from": null,
+      "rows_approx": 7200
+    },
+    {
+      "table_name": "income_band",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/income_band.parquet",
+      "row_count": 20,
+      "column_count": 3,
+      "file_size_bytes": 753,
+      "file_size_mb": 0.0,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "ib_income_band_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ib_lower_bound",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "ib_upper_bound",
+          "column_type": "INTEGER",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Phân khúc thu nhập - Normalized từ household",
+      "normalized_from": "household_demographics",
+      "rows_approx": 20
+    },
+    {
+      "table_name": "store",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/store.parquet",
+      "row_count": 12,
+      "column_count": 29,
+      "file_size_bytes": 6693,
+      "file_size_mb": 0.01,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "s_store_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_store_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_rec_start_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_rec_end_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_closed_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_store_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_number_employees",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_floor_space",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_hours",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_manager",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_market_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_geography_class",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_market_desc",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_market_manager",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_division_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_division_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_company_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_company_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_street_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_street_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_street_type",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_suite_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_city",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_county",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_state",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_zip",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_country",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_gmt_offset",
+          "column_type": "DECIMAL(5,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "s_tax_percentage",
+          "column_type": "DECIMAL(5,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Cửa hàng bán lẻ",
+      "normalized_from": null,
+      "rows_approx": 12
+    },
+    {
+      "table_name": "catalog_page",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/catalog_page.parquet",
+      "row_count": 11718,
+      "column_count": 9,
+      "file_size_bytes": 369883,
+      "file_size_mb": 0.35,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "cp_catalog_page_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cp_catalog_page_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cp_start_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cp_end_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cp_department",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cp_catalog_number",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cp_catalog_page_number",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cp_description",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cp_type",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Trang trong catalog phát hành",
+      "normalized_from": null,
+      "rows_approx": 11718
+    },
+    {
+      "table_name": "web_page",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/web_page.parquet",
+      "row_count": 60,
+      "column_count": 14,
+      "file_size_bytes": 3864,
+      "file_size_mb": 0.0,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "wp_web_page_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_web_page_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_rec_start_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_rec_end_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_creation_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_access_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_autogen_flag",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_customer_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_url",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_type",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_char_count",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_link_count",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_image_count",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "wp_max_ad_count",
+          "column_type": "INTEGER",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Trang web",
+      "normalized_from": null,
+      "rows_approx": 60
+    },
+    {
+      "table_name": "web_site",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/web_site.parquet",
+      "row_count": 30,
+      "column_count": 26,
+      "file_size_bytes": 8456,
+      "file_size_mb": 0.01,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "web_site_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_site_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_rec_start_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_rec_end_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_open_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_close_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_class",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_manager",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_mkt_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_mkt_class",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_mkt_desc",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_market_manager",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_company_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_company_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_street_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_street_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_street_type",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_suite_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_city",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_county",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_state",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_zip",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_country",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_gmt_offset",
+          "column_type": "DECIMAL(5,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "web_tax_percentage",
+          "column_type": "DECIMAL(5,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Website",
+      "normalized_from": null,
+      "rows_approx": 30
+    },
+    {
+      "table_name": "warehouse",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/warehouse.parquet",
+      "row_count": 5,
+      "column_count": 14,
+      "file_size_bytes": 2935,
+      "file_size_mb": 0.0,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "w_warehouse_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_warehouse_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_warehouse_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_warehouse_sq_ft",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_street_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_street_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_street_type",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_suite_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_city",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_county",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_state",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_zip",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_country",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "w_gmt_offset",
+          "column_type": "DECIMAL(5,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Kho hàng",
+      "normalized_from": null,
+      "rows_approx": 5
+    },
+    {
+      "table_name": "ship_mode",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/ship_mode.parquet",
+      "row_count": 20,
+      "column_count": 6,
+      "file_size_bytes": 1720,
+      "file_size_mb": 0.0,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "sm_ship_mode_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sm_ship_mode_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sm_type",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sm_code",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sm_carrier",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "sm_contract",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Phương thức vận chuyển",
+      "normalized_from": null,
+      "rows_approx": 20
+    },
+    {
+      "table_name": "call_center",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/call_center.parquet",
+      "row_count": 6,
+      "column_count": 31,
+      "file_size_bytes": 6179,
+      "file_size_mb": 0.01,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "cc_call_center_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_call_center_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_rec_start_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_rec_end_date",
+          "column_type": "DATE",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_closed_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_open_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_class",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_employees",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_sq_ft",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_hours",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_manager",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_mkt_id",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_mkt_class",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_mkt_desc",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_market_manager",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_division",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_division_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_company",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_company_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_street_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_street_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_street_type",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_suite_number",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_city",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_county",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_state",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_zip",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_country",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_gmt_offset",
+          "column_type": "DECIMAL(5,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "cc_tax_percentage",
+          "column_type": "DECIMAL(5,2)",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Trung tâm chăm sóc khách hàng",
+      "normalized_from": null,
+      "rows_approx": 6
+    },
+    {
+      "table_name": "promotion",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/promotion.parquet",
+      "row_count": 300,
+      "column_count": 19,
+      "file_size_bytes": 13500,
+      "file_size_mb": 0.01,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "p_promo_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_promo_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_start_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_end_date_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_item_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_cost",
+          "column_type": "DECIMAL(15,2)",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_response_target",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_promo_name",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_channel_dmail",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_channel_email",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_channel_catalog",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_channel_tv",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_channel_radio",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_channel_press",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_channel_event",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_channel_demo",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_channel_details",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_purpose",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "p_discount_active",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Chương trình khuyến mãi",
+      "normalized_from": null,
+      "rows_approx": 300
+    },
+    {
+      "table_name": "reason",
+      "output_path": "/home/domt111/Capstone-NLUS-VDD/tpcds_warehouse/tpcds_sf1/dim/reason.parquet",
+      "row_count": 35,
+      "column_count": 3,
+      "file_size_bytes": 1111,
+      "file_size_mb": 0.0,
+      "compression": "ZSTD",
+      "schema": [
+        {
+          "column_name": "r_reason_sk",
+          "column_type": "BIGINT",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "r_reason_id",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        },
+        {
+          "column_name": "r_reason_desc",
+          "column_type": "VARCHAR",
+          "null": "YES",
+          "key": null
+        }
+      ],
+      "description": "Lý do trả hàng",
+      "normalized_from": null,
+      "rows_approx": 35
+    }
+  ],
+  "totals": {
+    "fact_tables_count": 7,
+    "dim_tables_count": 17,
+    "total_fact_rows": 17289924,
+    "total_dim_rows": 2267655,
+    "total_size_mb": 264.44
+  }
+}

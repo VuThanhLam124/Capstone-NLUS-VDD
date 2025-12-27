@@ -1,0 +1,9 @@
+query_id,query_name,category,iterations,success_count,avg_latency_ms,min_latency_ms,max_latency_ms,timestamp
+Q1,Simple Count,aggregation,3,3,11178.95,11059.31,11312.67,2025-12-26T21:41:07.372494
+Q2,Date Filter Count,filter,3,3,11720.36,11613.76,11867.9,2025-12-26T21:41:42.533714
+Q3,Top Items by Revenue,aggregation,3,3,13366.36,13204.48,13526.13,2025-12-26T21:42:22.632951
+Q4,Sales by Store and Year,aggregation,3,3,13159.93,13066.35,13309.35,2025-12-26T21:43:02.112876
+Q5,Customer Spending Analysis,aggregation,3,3,13532.52,13503.23,13548.21,2025-12-26T21:43:42.710568
+Q6,Inventory Analysis,aggregation,3,3,1613.82,1322.21,1793.4,2025-12-26T21:43:47.552159
+Q7,Multi-Channel Sales,union,3,3,11486.54,11424.08,11576.72,2025-12-26T21:44:22.011906
+Q8,Complex Join,complex,3,3,13169.66,13102.41,13279.62,2025-12-26T21:45:01.521047
