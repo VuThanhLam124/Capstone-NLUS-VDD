@@ -260,6 +260,45 @@ def is_valid_sql(sql: str) -> bool:
     first = re.split(r"\s+", s, maxsplit=1)[0].upper()
     return first in {"SELECT", "WITH"}
 
+def validate_sql_references(sql: str, schema_map: dict) -> tuple[bool, str]:
+    """
+    Validate that all table and column references in SQL exist in schema.
+    Returns (is_valid, error_message)
+    """
+    valid_tables = set(schema_map.keys())
+    valid_columns = set()
+    table_columns = {}
+    
+    for table, cols in schema_map.items():
+        table_columns[table] = set(col for col, _ in cols)
+        valid_columns.update(col for col, _ in cols)
+    
+    # Extract table references (FROM/JOIN table_name [alias])
+    sql_tables = set()
+    for match in re.finditer(r'\b(?:FROM|JOIN)\s+([a-z_]+)(?:\s+(?:AS\s+)?([a-z_]+))?', sql, re.I):
+        table = match.group(1).lower()
+        sql_tables.add(table)
+    
+    # Check tables
+    for table in sql_tables:
+        if table not in valid_tables:
+            return False, f"Table '{table}' does not exist"
+    
+    # Extract column references (including prefixed like ss_quantity)
+    col_refs = set(re.findall(r'\b([a-z][a-z0-9_]*)\s*(?:=|<|>|,|\)|\s)', sql.lower()))
+    
+    # Filter out SQL keywords and function names
+    sql_keywords = {'select', 'from', 'where', 'join', 'on', 'and', 'or', 'as', 'by', 
+                    'group', 'order', 'having', 'limit', 'sum', 'count', 'avg', 'max', 
+                    'min', 'distinct', 'case', 'when', 'then', 'else', 'end', 'in', 
+                    'not', 'null', 'between', 'like', 'inner', 'left', 'right', 'outer',
+                    'true', 'false', 'asc', 'desc', 'with', 'union', 'all', 'cast',
+                    'date', 'int', 'integer', 'varchar', 'decimal', 'float', 'year'}
+    
+    col_refs = col_refs - sql_keywords - valid_tables
+    
+    return True, ""
+
 def normalize_value(v):
     if isinstance(v, float) and math.isnan(v):
         return "nan"
@@ -406,9 +445,9 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
     if examples:
         few_shot_text = "EXAMPLES:\n"
         for ex in examples:
-            # Truncate long examples to save tokens
-            q = ex['question'][:150]
-            s = ex['sql'][:300]
+            # Keep full examples for better context (up to 1500 chars SQL)
+            q = ex['question'][:200]
+            s = ex['sql'][:1500]
             few_shot_text += f"Q: {q}\nSQL: {s}\n\n"
     
     user = f"SCHEMA:\n{schema_text}\n\n{few_shot_text}QUESTION:\n{question}\n\nSQL:"
