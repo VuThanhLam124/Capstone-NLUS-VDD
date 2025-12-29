@@ -50,12 +50,21 @@ RAG_INDEX_DIR = REPO_ROOT / "research_pipeline" / "rag_index"
 ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
 
 MAX_SAMPLES = None
-MAX_NEW_TOKENS = 256
+MAX_NEW_TOKENS = 512  # Increased for CTE queries
 MAX_TABLES = 10  # Increased for better coverage
 RAG_K = 5
 
-# ========== SYSTEM PROMPT ==========
-SYSTEM_PROMPT = "You translate user questions into SQL for DuckDB (TPC-DS). Return only SQL, no markdown."
+# ========== SYSTEM PROMPT (Enhanced with CTE hints) ==========
+SYSTEM_PROMPT = """You translate user questions into SQL for DuckDB (TPC-DS). Return only SQL, no markdown.
+
+IMPORTANT RULES:
+- For year-over-year comparisons, use WITH clause (CTE) to define subqueries BEFORE the main SELECT
+- Always define CTE aliases before referencing them
+- Example CTE pattern:
+  WITH current_year AS (SELECT ...), previous_year AS (SELECT ...)
+  SELECT cy.*, py.* FROM current_year cy, previous_year py
+- Use proper GROUP BY for all non-aggregated columns
+- Complete all SQL statements (no truncation)"""
 
 # ========== TABLE DESCRIPTIONS - All 24 TPC-DS Tables ==========
 TABLE_DESCRIPTIONS = {
@@ -437,6 +446,46 @@ def load_model():
         print("Falling back to test mode (RAG + Schema only)")
         return None, None
 
+def post_process_sql(sql: str) -> str:
+    """
+    Post-process SQL to fix common errors:
+    1. Detect CTE alias usage without WITH clause
+    2. Fix incomplete SQL
+    3. Add missing semicolons
+    """
+    sql = sql.strip()
+    if not sql:
+        return "SELECT 1;"
+    
+    # Remove trailing incomplete parts (after last complete statement)
+    # If SQL ends with incomplete clause, try to fix
+    if sql.rstrip().endswith(','):
+        sql = sql.rstrip().rstrip(',')
+    
+    # Detect CTE alias pattern without WITH clause
+    # Pattern: FROM table_alias (like cy, py) but no WITH at start
+    cte_aliases = re.findall(r'\bFROM\s+([a-z]{2,3})\s*,', sql, re.I)
+    if cte_aliases and not sql.strip().upper().startswith('WITH'):
+        # This is a broken CTE - model forgot WITH clause
+        # Try to detect if it's a year comparison query
+        if any(alias in ['cy', 'py', 'curr', 'prev'] for alias in cte_aliases):
+            # Can't auto-fix, but log for debugging
+            pass
+    
+    # Ensure SQL doesn't end mid-statement
+    open_parens = sql.count('(') - sql.count(')')
+    if open_parens > 0:
+        sql += ')' * open_parens
+    
+    # Remove duplicate semicolons
+    sql = re.sub(r';+', ';', sql)
+    
+    # Ensure ends with semicolon or is complete
+    if not sql.rstrip().endswith(';'):
+        sql = sql.rstrip() + ';'
+    
+    return sql
+
 def generate_sql(prompt: str, tokenizer, model) -> str:
     if not HAS_TORCH or model is None:
         return "SELECT 1;"
@@ -450,10 +499,43 @@ def generate_sql(prompt: str, tokenizer, model) -> str:
             pad_token_id=tokenizer.eos_token_id
         )
     gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
-    return extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
+    raw_sql = extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
+    return post_process_sql(raw_sql)
+
+def detect_query_type(question: str) -> str:
+    """Detect query type for specialized hints."""
+    q_lower = question.lower()
+    
+    # Year-over-year / comparison queries (need CTE)
+    if any(kw in q_lower for kw in ['so với', 'năm trước', 'tăng', 'giảm', 'growth', 'compare', 'year-over-year', 'yoy']):
+        return 'comparison'
+    # Ranking queries
+    if any(kw in q_lower for kw in ['top', 'cao nhất', 'thấp nhất', 'best', 'worst', 'rank']):
+        return 'ranking'
+    # Aggregation
+    if any(kw in q_lower for kw in ['tổng', 'sum', 'count', 'trung bình', 'average', 'bao nhiêu']):
+        return 'aggregation'
+    return 'general'
+
+def get_query_hints(query_type: str) -> str:
+    """Get query-type specific hints."""
+    hints = {
+        'comparison': """HINT: Use CTE (WITH clause) for year comparisons:
+WITH current_year AS (SELECT ... WHERE d_year = YEAR1),
+     previous_year AS (SELECT ... WHERE d_year = YEAR1-1)
+SELECT ... FROM current_year cy, previous_year py;""",
+        'ranking': "HINT: Use ORDER BY ... DESC/ASC with LIMIT for ranking.",
+        'aggregation': "HINT: Use GROUP BY for all non-aggregated columns in SELECT.",
+        'general': ""
+    }
+    return hints.get(query_type, "")
 
 def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None) -> str:
-    """Build optimized prompt with RAG examples."""
+    """Build optimized prompt with RAG examples and query-type hints."""
+    # Detect query type and get hints
+    query_type = detect_query_type(question)
+    query_hints = get_query_hints(query_type)
+    
     few_shot_text = ""
     if examples:
         few_shot_text = "EXAMPLES:\n"
@@ -463,7 +545,9 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
             s = ex['sql'][:1500]
             few_shot_text += f"Q: {q}\nSQL: {s}\n\n"
     
-    user = f"SCHEMA:\n{schema_text}\n\n{few_shot_text}QUESTION:\n{question}\n\nSQL:"
+    # Build user prompt with hints
+    hint_section = f"\n{query_hints}\n" if query_hints else ""
+    user = f"SCHEMA:\n{schema_text}\n\n{few_shot_text}{hint_section}QUESTION:\n{question}\n\nSQL:"
     
     if tokenizer and getattr(tokenizer, "chat_template", None):
         return tokenizer.apply_chat_template(
