@@ -17,7 +17,18 @@ from transformers import (
     TrainingArguments,
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType
-from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
+from trl import SFTTrainer, SFTConfig
+
+# Try importing DataCollatorForCompletionOnlyLM from different locations
+try:
+    from trl import DataCollatorForCompletionOnlyLM
+except ImportError:
+    try:
+        from trl.data_utils import DataCollatorForCompletionOnlyLM
+    except ImportError:
+        # If not available, we'll use None and skip completion-only training
+        DataCollatorForCompletionOnlyLM = None
+        print("WARNING: DataCollatorForCompletionOnlyLM not available, using full sequence training")
 
 # ========== CONFIG (can be overridden via command line) ==========
 import argparse
@@ -215,11 +226,13 @@ def main():
     )
     
     # Data collator for completion-only training
-    response_template = "<|im_start|>assistant\n"
-    collator = DataCollatorForCompletionOnlyLM(
-        response_template=response_template,
-        tokenizer=tokenizer,
-    )
+    collator = None
+    if DataCollatorForCompletionOnlyLM is not None:
+        response_template = "<|im_start|>assistant\n"
+        collator = DataCollatorForCompletionOnlyLM(
+            response_template=response_template,
+            tokenizer=tokenizer,
+        )
     
     # Trainer
     trainer = SFTTrainer(
@@ -229,7 +242,7 @@ def main():
         eval_dataset=val_dataset,
         processing_class=tokenizer,
         data_collator=collator,
-        max_seq_length=MAX_SEQ_LENGTH,
+        max_seq_length=args.max_seq_length,
         dataset_text_field="text",
     )
     
