@@ -386,43 +386,56 @@ def retrieve_multi_dimensional(retriever, question: str, needed_tables: list[str
     return [c for _, c in scored[:k]]
 
 # ========== MODEL ==========
+# Flag to skip model loading (set True to test RAG + Schema only)
+SKIP_MODEL_LOAD = True  # Set to False when finetune is ready
+
 def load_model():
     if not HAS_TORCH:
         return None, None
     
-    print(f"Loading adapter: {ADAPTER_ID}...")
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    use_4bit = torch.cuda.is_available()
+    if SKIP_MODEL_LOAD:
+        print("Model loading skipped (SKIP_MODEL_LOAD=True)")
+        return None, None
     
-    tokenizer = AutoTokenizer.from_pretrained(ADAPTER_ID, trust_remote_code=True)
-    
-    from peft import PeftConfig
-    peft_config = PeftConfig.from_pretrained(ADAPTER_ID)
-    base_model_id = peft_config.base_model_name_or_path
-    print(f"Base model: {base_model_id}")
-    
-    quant_config = BitsAndBytesConfig(load_in_4bit=True) if use_4bit else None
-    model_kwargs = dict(
-        device_map="auto" if device == "cuda" else None,
-        trust_remote_code=True,
-    )
-    if quant_config:
-        model_kwargs["quantization_config"] = quant_config
-    
-    model = AutoModelForCausalLM.from_pretrained(base_model_id, **model_kwargs)
-    
-    if len(tokenizer) != model.get_input_embeddings().weight.shape[0]:
-        print(f"Resizing embeddings: {model.get_input_embeddings().weight.shape[0]} -> {len(tokenizer)}")
-        model.resize_token_embeddings(len(tokenizer))
-    
-    model = PeftModel.from_pretrained(model, ADAPTER_ID)
-    
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    
-    model.eval()
-    print(f"Model loaded on {device}")
-    return tokenizer, model
+    try:
+        print(f"Loading adapter: {ADAPTER_ID}...")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        use_4bit = torch.cuda.is_available()
+        
+        tokenizer = AutoTokenizer.from_pretrained(ADAPTER_ID, trust_remote_code=True)
+        
+        from peft import PeftConfig
+        peft_config = PeftConfig.from_pretrained(ADAPTER_ID)
+        base_model_id = peft_config.base_model_name_or_path
+        print(f"Base model: {base_model_id}")
+        
+        quant_config = BitsAndBytesConfig(load_in_4bit=True) if use_4bit else None
+        model_kwargs = dict(
+            device_map="auto" if device == "cuda" else None,
+            trust_remote_code=True,
+        )
+        if quant_config:
+            model_kwargs["quantization_config"] = quant_config
+        
+        model = AutoModelForCausalLM.from_pretrained(base_model_id, **model_kwargs)
+        
+        if len(tokenizer) != model.get_input_embeddings().weight.shape[0]:
+            print(f"Resizing embeddings: {model.get_input_embeddings().weight.shape[0]} -> {len(tokenizer)}")
+            model.resize_token_embeddings(len(tokenizer))
+        
+        model = PeftModel.from_pretrained(model, ADAPTER_ID)
+        
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        
+        model.eval()
+        print(f"Model loaded on {device}")
+        return tokenizer, model
+        
+    except Exception as e:
+        print(f"ERROR loading model: {e}")
+        print("Falling back to test mode (RAG + Schema only)")
+        return None, None
 
 def generate_sql(prompt: str, tokenizer, model) -> str:
     if not HAS_TORCH or model is None:
@@ -493,13 +506,13 @@ def main():
     print(f"Test samples: {len(test_df)}")
     
     # Check if we should load model (skip if not available or not needed)
-    load_model_flag = HAS_TORCH and torch.cuda.is_available()
+    load_model_flag = HAS_TORCH and torch.cuda.is_available() and not SKIP_MODEL_LOAD
     
     if load_model_flag:
         print("\nLoading Text-to-SQL model...")
         tokenizer, model = load_model()
     else:
-        print("\nSkipping model load (no GPU or torch not available)")
+        print("\nSkipping model load (SKIP_MODEL_LOAD=True or no GPU)")
         print("Running in RAG + Schema Selection test mode only")
         tokenizer, model = None, None
     
