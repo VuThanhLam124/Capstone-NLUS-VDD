@@ -27,7 +27,7 @@ import duckdb
 from pathlib import Path
 
 db_path = Path('research_pipeline/cache/ecommerce_dw.duckdb')
-db_path.parent.mkdir(parents=True, exist_ok=True)
+db_path.parent.mkdir(parents=True, exist_ok=True)  # Create cache directory
 
 con = duckdb.connect(str(db_path))
 con.execute('INSTALL tpcds; LOAD tpcds;')
@@ -41,6 +41,9 @@ con.close()
 
 ### Cell 3: Build RAG Index (BGE-M3 + BM25 Hybrid)
 ```python
+# Create rag_index directory first
+!mkdir -p research_pipeline/rag_index
+
 # Build RAG index with BGE-M3 multilingual embedding
 !python research_pipeline/rag_retriever.py \
     --data research_pipeline/datasets/train_clean.csv \
