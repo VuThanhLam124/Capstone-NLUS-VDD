@@ -136,7 +136,7 @@ class TextToSQLRetriever:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", default="research_pipeline/datasets/train_merged.csv")
+    parser.add_argument("--data", default="research_pipeline/datasets/train_clean.csv")
     parser.add_argument("--output", default="research_pipeline/rag_index")
     args = parser.parse_args()
     

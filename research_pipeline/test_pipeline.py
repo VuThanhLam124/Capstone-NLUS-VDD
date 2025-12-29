@@ -43,7 +43,7 @@ except ImportError:
 REPO_ROOT = Path(__file__).parent.parent
 DB_PATH = REPO_ROOT / "research_pipeline" / "cache" / "ecommerce_dw.duckdb"
 TEST_DATA_PATH = REPO_ROOT / "research_pipeline" / "datasets" / "test.csv"
-TRAIN_DATA_PATH = REPO_ROOT / "research_pipeline" / "datasets" / "train_merged.csv"
+TRAIN_DATA_PATH = REPO_ROOT / "research_pipeline" / "datasets" / "train_clean.csv"
 DB_CONTENT_PATH = REPO_ROOT / "research_pipeline" / "datasets" / "db_content_samples.json"
 RAG_INDEX_DIR = REPO_ROOT / "research_pipeline" / "rag_index"
 
