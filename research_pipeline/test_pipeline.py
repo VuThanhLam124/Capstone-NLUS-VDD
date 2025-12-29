@@ -462,7 +462,8 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
 # ========== MAIN ==========
 def main():
     print("="*50)
-    print("Advanced Pipeline: TF-IDF Schema + Multi-RAG")
+    print("Text-to-SQL Pipeline: Schema Selection + RAG")
+    print("Using BGE-M3 Multilingual + BM25 Hybrid")
     print("="*50)
     
     # Setup
@@ -476,23 +477,36 @@ def main():
     # Load RAG
     retriever = load_rag_retriever()
     if retriever:
-        print("RAG Retriever loaded")
+        print(f"RAG Retriever loaded (hybrid={getattr(retriever, 'use_hybrid', False)})")
+    else:
+        print("WARNING: RAG Retriever not loaded, running without few-shot examples")
     
     # Load test data
-    if not TEST_DATA_PATH.exists():
-        test_df = pd.read_csv(TRAIN_DATA_PATH)
-    else:
+    if TEST_DATA_PATH.exists():
         test_df = pd.read_csv(TEST_DATA_PATH)
+    else:
+        test_df = pd.read_csv(TRAIN_DATA_PATH)
     
-    test_df = test_df.dropna(subset=["Transcription", "SQL Ground Truth"]).head(MAX_SAMPLES)
+    test_df = test_df.dropna(subset=["Transcription", "SQL Ground Truth"])
+    if MAX_SAMPLES:
+        test_df = test_df.head(MAX_SAMPLES)
     print(f"Test samples: {len(test_df)}")
     
-    # Load model
-    tokenizer, model = load_model()
+    # Check if we should load model (skip if not available or not needed)
+    load_model_flag = HAS_TORCH and torch.cuda.is_available()
+    
+    if load_model_flag:
+        print("\nLoading Text-to-SQL model...")
+        tokenizer, model = load_model()
+    else:
+        print("\nSkipping model load (no GPU or torch not available)")
+        print("Running in RAG + Schema Selection test mode only")
+        tokenizer, model = None, None
     
     # Run tests
     correct = 0
     valid_count = 0
+    results = []
     
     for idx, row in test_df.iterrows():
         question = row["Transcription"]
@@ -505,36 +519,64 @@ def main():
         # Multi-dimensional RAG
         examples = retrieve_multi_dimensional(retriever, question, tables, k=RAG_K)
         
-        # Generate
-        prompt = build_prompt(question, schema_text, tokenizer, examples)
-        start = time.time()
-        gen_sql = generate_sql(prompt, tokenizer, model)
-        gen_time = (time.time() - start) * 1000
-        
-        # Validate
-        valid = is_valid_sql(gen_sql)
-        if valid:
-            valid_count += 1
-        
-        # Execute and compare
-        gt_res, gt_err = run_sql(con, gt_sql)
-        gen_res, gen_err = run_sql(con, gen_sql) if valid else (None, "INVALID")
-        
-        exec_match = False
-        if not gt_err and not gen_err:
-            keep = has_order_by(gt_sql) or has_order_by(gen_sql)
-            gt_norm = normalize_rows(gt_res, keep)
-            gen_norm = normalize_rows(gen_res, keep)
-            exec_match = gt_norm == gen_norm
-            if exec_match:
-                correct += 1
-        
-        print(f"  [{idx}] Valid={valid}, ExecMatch={exec_match}, Time={gen_time:.0f}ms")
-        if gen_err:
-            print(f"      Error: {gen_err[:100]}")
+        if model is not None:
+            # Generate SQL with model
+            prompt = build_prompt(question, schema_text, tokenizer, examples)
+            start = time.time()
+            gen_sql = generate_sql(prompt, tokenizer, model)
+            gen_time = (time.time() - start) * 1000
+            
+            # Validate
+            valid = is_valid_sql(gen_sql)
+            if valid:
+                valid_count += 1
+            
+            # Execute and compare
+            gt_res, gt_err = run_sql(con, gt_sql)
+            gen_res, gen_err = run_sql(con, gen_sql) if valid else (None, "INVALID")
+            
+            exec_match = False
+            if not gt_err and not gen_err:
+                keep = has_order_by(gt_sql) or has_order_by(gen_sql)
+                gt_norm = normalize_rows(gt_res, keep)
+                gen_norm = normalize_rows(gen_res, keep)
+                exec_match = gt_norm == gen_norm
+                if exec_match:
+                    correct += 1
+            
+            print(f"  [{idx}] Valid={valid}, ExecMatch={exec_match}, Time={gen_time:.0f}ms")
+            if gen_err:
+                print(f"      Error: {gen_err[:100]}")
+                
+            results.append({
+                "id": idx,
+                "question": question[:50],
+                "valid": valid,
+                "exec_match": exec_match,
+                "gen_time_ms": gen_time
+            })
+        else:
+            # Test mode: just show schema selection and RAG results
+            print(f"\n[{idx}] Question: {question[:60]}...")
+            print(f"    Selected tables: {tables[:5]}...")
+            if examples:
+                print(f"    RAG examples: {len(examples)} (top score={examples[0]['score']:.3f})")
+            
+            results.append({
+                "id": idx,
+                "question": question[:50],
+                "tables": tables,
+                "rag_score": examples[0]['score'] if examples else 0
+            })
     
-    print(f"\n{'='*40}")
-    print(f"Summary: Valid={valid_count}/{len(test_df)}, ExecMatch={correct}/{len(test_df)} ({100*correct/len(test_df):.1f}%)")
+    # Summary
+    print(f"\n{'='*50}")
+    if model is not None:
+        print(f"Summary: Valid={valid_count}/{len(test_df)}, ExecMatch={correct}/{len(test_df)} ({100*correct/len(test_df):.1f}%)")
+    else:
+        print(f"Test Mode Summary: Processed {len(test_df)} samples")
+        print("Schema Selection + RAG retrieval tested successfully")
+        print("To run full inference, ensure GPU is available and model is loaded")
     
     con.close()
     print("\nDone!")

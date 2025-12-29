@@ -16,3 +16,7 @@ edge-tts
 huggingface-hub
 nest_asyncio
 pyarrow
+sentence-transformers
+rank-bm25
+scikit-learn
+sqlglot

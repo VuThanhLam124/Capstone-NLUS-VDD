@@ -207,3 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 data/
+# Generated data (runtime)
+research_pipeline/cache/
+research_pipeline/rag_index/*.pkl
+*.duckdb
