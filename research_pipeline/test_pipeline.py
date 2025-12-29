@@ -396,7 +396,7 @@ def retrieve_multi_dimensional(retriever, question: str, needed_tables: list[str
 
 # ========== MODEL ==========
 # Flag to skip model loading (set True to test RAG + Schema only)
-SKIP_MODEL_LOAD = True  # Set to False when finetune is ready
+SKIP_MODEL_LOAD = False  # Set to True to skip model and test RAG only
 
 def load_model():
     if not HAS_TORCH:
