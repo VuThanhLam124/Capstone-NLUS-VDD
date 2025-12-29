@@ -60,9 +60,9 @@ SYSTEM_PROMPT = """You are an expert SQL writer for DuckDB (TPC-DS schema). Gene
 RULES:
 1. Output ONLY SQL code, no explanation
 2. Always end with semicolon (;)
-3. For CTEs, use same alias in SELECT as defined in WITH (e.g., WITH current_year AS (...) SELECT ... FROM current_year)
-4. Column prefixes: ca_=customer_address, cd_=customer_demographics, c_=customer, s_=store, i_=item, d_=date_dim
-5. State column is ca_state (in customer_address), NOT cd_state"""
+3. For CTEs, use EXACTLY the same name in FROM as defined in WITH
+4. Column names: i_product_name (NOT i_item_name), s_manager (NOT s_store_manager_name), ca_state (NOT cd_state)
+5. web_page columns use ws_ prefix in web_sales, NOT cs_ (catalog_sales)"""
 
 # ========== TABLE DESCRIPTIONS - All 24 TPC-DS Tables ==========
 TABLE_DESCRIPTIONS = {
@@ -80,15 +80,15 @@ TABLE_DESCRIPTIONS = {
     "customer_address": "-- Customer address: ca_address_sk, ca_address_id, ca_city, ca_county, ca_state, ca_zip, ca_country, ca_gmt_offset",
     "customer_demographics": "-- Customer demographics (NO state/city): cd_demo_sk, cd_gender (M/F), cd_marital_status (S/M/D/W/U), cd_education_status, cd_purchase_estimate, cd_credit_rating, cd_dep_count, cd_dep_employed_count",
     
-    # Product Dimension (1)
-    "item": "-- Item/Product: i_item_sk, i_item_id, i_item_desc, i_category, i_class, i_brand, i_current_price, i_manager_id",
+    # Product Dimension (1) - NOTE: product name is i_product_name, NOT i_item_name
+    "item": "-- Item: i_item_sk, i_item_id, i_product_name, i_item_desc, i_category, i_class, i_brand, i_current_price, i_color, i_size, i_manufact",
     
     # Time Dimensions (2)
     "date_dim": "-- Date: d_date_sk, d_date, d_year, d_moy (month 1-12), d_qoy (quarter 1-4), d_day_name, d_week_seq",
     "time_dim": "-- Time: t_time_sk, t_time, t_hour, t_minute, t_second, t_am_pm, t_shift",
     
-    # Location/Channel Dimensions (6)
-    "store": "-- Store: s_store_sk, s_store_id, s_store_name, s_city, s_state, s_zip, s_manager",
+    # Location/Channel Dimensions (6) - NOTE: manager is s_manager, NOT s_store_manager_name
+    "store": "-- Store: s_store_sk, s_store_id, s_store_name, s_manager, s_city, s_state, s_zip, s_number_employees, s_market_manager",
     "warehouse": "-- Warehouse: w_warehouse_sk, w_warehouse_id, w_warehouse_name, w_city, w_state, w_zip",
     "web_site": "-- Web site: web_site_sk, web_site_id, web_name, web_class, web_manager",
     "web_page": "-- Web page: wp_web_page_sk, wp_web_page_id, wp_type, wp_url",
@@ -471,8 +471,8 @@ def load_model():
 def post_process_sql(sql: str) -> str:
     """
     Post-process SQL to fix common errors:
-    1. Fix CTE alias mismatches (cy -> current_year)
-    2. Fix incomplete SQL
+    1. Fix CTE alias mismatches (bidirectional)
+    2. Fix common column name mistakes
     3. Add missing semicolons
     """
     sql = sql.strip()
@@ -483,9 +483,20 @@ def post_process_sql(sql: str) -> str:
     if sql.rstrip().endswith(','):
         sql = sql.rstrip().rstrip(',')
     
-    # Fix CTE alias mismatches - extract CTE names and fix references
+    # Fix common column name hallucinations
+    column_fixes = {
+        'i_item_name': 'i_product_name',
+        's_store_manager_name': 's_manager',
+        's_store_manager': 's_manager', 
+        'cd_state': 'ca_state',  # Wrong table prefix
+        'cs_web_page_sk': 'ws_web_page_sk',  # catalog_sales doesn't have web_page
+    }
+    for wrong, correct in column_fixes.items():
+        sql = re.sub(rf'\b{wrong}\b', correct, sql, flags=re.I)
+    
+    # Fix CTE alias mismatches - BIDIRECTIONAL
     if sql.strip().upper().startswith('WITH'):
-        # Extract defined CTE names: WITH name AS (...), name2 AS (...)
+        # Extract defined CTE names
         cte_defs = re.findall(r'\bWITH\s+([a-z_][a-z0-9_]*)\s+AS|,\s*([a-z_][a-z0-9_]*)\s+AS', sql, re.I)
         defined_ctes = set()
         for match in cte_defs:
@@ -493,19 +504,24 @@ def post_process_sql(sql: str) -> str:
             if name:
                 defined_ctes.add(name.lower())
         
-        # Common alias -> full name mappings
-        alias_map = {
-            'cy': 'current_year', 'py': 'previous_year', 'prev': 'previous_year',
-            'curr': 'current_year', 'y1': 'year1', 'y2': 'year2',
-        }
+        # Bidirectional alias mappings
+        alias_pairs = [
+            ('cy', 'current_year'), ('py', 'previous_year'),
+            ('curr', 'current_year'), ('prev', 'previous_year'),
+            ('y1', 'year1'), ('y2', 'year2'),
+        ]
         
-        # Fix: if model uses short alias but defined full name
-        for short, full in alias_map.items():
+        for short, full in alias_pairs:
+            # Case 1: defined full, used short -> replace short with full
             if full in defined_ctes and short not in defined_ctes:
-                # Replace short alias with full name in FROM/JOIN clauses
                 sql = re.sub(rf'\bFROM\s+{short}\b', f'FROM {full}', sql, flags=re.I)
                 sql = re.sub(rf'\bJOIN\s+{short}\b', f'JOIN {full}', sql, flags=re.I)
-                sql = re.sub(rf'\b{short}\.', f'{full}.', sql)  # Fix column refs like cy.col
+                sql = re.sub(rf'\b{short}\.', f'{full}.', sql)
+            # Case 2: defined short, used full -> replace full with short
+            elif short in defined_ctes and full not in defined_ctes:
+                sql = re.sub(rf'\bFROM\s+{full}\b', f'FROM {short}', sql, flags=re.I)
+                sql = re.sub(rf'\bJOIN\s+{full}\b', f'JOIN {short}', sql, flags=re.I)
+                sql = re.sub(rf'\b{full}\.', f'{short}.', sql)
     
     # Ensure SQL doesn't end mid-statement
     open_parens = sql.count('(') - sql.count(')')
