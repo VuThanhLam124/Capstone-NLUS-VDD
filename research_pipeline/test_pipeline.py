@@ -50,9 +50,9 @@ RAG_INDEX_DIR = REPO_ROOT / "research_pipeline" / "rag_index"
 ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
 
 MAX_SAMPLES = None
-MAX_NEW_TOKENS = 512  # Balanced: enough for most queries, fast generation
+MAX_NEW_TOKENS = 768  # Increased to prevent SQL truncation
 MAX_TABLES = 5  # Reduced for faster schema processing
-RAG_K = 5  # Fewer examples = shorter prompt = faster
+RAG_K = 3  # Fewer examples = shorter prompt = faster generation
 
 # ========== DYNAMIC PROMPT BUILDER ==========
 BASE_SYSTEM_PROMPT = """You are an expert SQL writer for DuckDB (TPC-DS schema). 
@@ -538,7 +538,8 @@ def post_process_sql(sql: str) -> str:
     Post-process SQL to fix common errors:
     1. Fix CTE alias mismatches (bidirectional)
     2. Fix common column name mistakes
-    3. Add missing semicolons
+    3. Expand table aliases
+    4. Fix incomplete SQL
     """
     sql = sql.strip()
     if not sql:
@@ -551,6 +552,37 @@ def post_process_sql(sql: str) -> str:
     # Fix common column name hallucinations (using global COLUMN_CORRECTIONS)
     for wrong, correct in COLUMN_CORRECTIONS.items():
         sql = re.sub(rf'\b{wrong}\b', correct, sql, flags=re.I)
+    
+    # Expand common table aliases to full names if not defined
+    # Check if alias is used but table not JOINed
+    table_alias_map = {
+        'ss': 'store_sales', 'sr': 'store_returns',
+        'ws': 'web_sales', 'wr': 'web_returns', 
+        'cs': 'catalog_sales', 'cr': 'catalog_returns',
+        'c': 'customer', 'ca': 'customer_address', 'cd': 'customer_demographics',
+        'i': 'item', 'd': 'date_dim', 's': 'store', 'w': 'warehouse',
+        'cc': 'call_center', 'p': 'promotion',
+    }
+    
+    # Find tables actually JOINed (FROM table [alias] or JOIN table [alias])
+    joined_tables = set()
+    defined_aliases = set()
+    for match in re.finditer(r'\b(?:FROM|JOIN)\s+([a-z_]+)(?:\s+(?:AS\s+)?([a-z_]+))?', sql, re.I):
+        table = match.group(1).lower()
+        alias = match.group(2).lower() if match.group(2) else None
+        joined_tables.add(table)
+        if alias:
+            defined_aliases.add(alias)
+    
+    # Replace undefined aliases with full table names
+    for alias, full_table in table_alias_map.items():
+        if alias not in defined_aliases and full_table not in joined_tables:
+            # Check if this alias is used (e.g., ws.column)
+            if re.search(rf'\b{alias}\.', sql, re.I):
+                # Replace alias.column with full_table.column
+                sql = re.sub(rf'\b{alias}\.', f'{full_table}.', sql, flags=re.I)
+                # Also need to add the table to FROM if not present
+                # This is complex, so we just fix the alias reference
     
     # Fix CTE alias mismatches - BIDIRECTIONAL
     if sql.strip().upper().startswith('WITH'):
@@ -585,6 +617,16 @@ def post_process_sql(sql: str) -> str:
     open_parens = sql.count('(') - sql.count(')')
     if open_parens > 0:
         sql += ')' * open_parens
+    
+    # Fix incomplete SQL that ends with keywords (truncation issue)
+    # Pattern: SQL ends with incomplete clause like "WHERE", "AND", "OR", "GROUP BY", etc.
+    incomplete_patterns = [
+        (r'\\s+(WHERE|AND|OR|ON|SET|VALUES|BY|ORDER|GROUP|HAVING|LIMIT|FROM|JOIN|SELECT)\\s*;?\\s*$', ''),  # Remove trailing incomplete clause
+        (r',\\s*;', ';'),  # Fix ", ;" 
+        (r'\\(\\s*;', ';'),  # Fix "( ;"
+    ]
+    for pattern, replacement in incomplete_patterns:
+        sql = re.sub(pattern, replacement, sql, flags=re.I)
     
     # Remove duplicate semicolons
     sql = re.sub(r';+', ';', sql)
