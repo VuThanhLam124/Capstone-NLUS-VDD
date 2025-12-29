@@ -202,28 +202,55 @@ def main():
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Training arguments
-    training_args = TrainingArguments(
-        output_dir=str(output_dir),
-        num_train_epochs=args.epochs,
-        per_device_train_batch_size=args.batch_size,
-        per_device_eval_batch_size=args.batch_size,
-        gradient_accumulation_steps=8,
-        learning_rate=args.lr,
-        weight_decay=0.01,
-        warmup_ratio=0.1,
-        logging_steps=10,
-        eval_strategy="steps",
-        eval_steps=100,
-        save_strategy="steps",
-        save_steps=100,
-        save_total_limit=3,
-        fp16=True,
-        optim="paged_adamw_8bit",
-        report_to="none",
-        gradient_checkpointing=True,
-        max_grad_norm=0.3,
-    )
+    # Training arguments - use SFTConfig for newer TRL versions
+    try:
+        # TRL >= 0.8.0
+        training_args = SFTConfig(
+            output_dir=str(output_dir),
+            num_train_epochs=args.epochs,
+            per_device_train_batch_size=args.batch_size,
+            per_device_eval_batch_size=args.batch_size,
+            gradient_accumulation_steps=8,
+            learning_rate=args.lr,
+            weight_decay=0.01,
+            warmup_ratio=0.1,
+            logging_steps=10,
+            eval_strategy="steps",
+            eval_steps=100,
+            save_strategy="steps",
+            save_steps=100,
+            save_total_limit=3,
+            fp16=True,
+            optim="paged_adamw_8bit",
+            report_to="none",
+            gradient_checkpointing=True,
+            max_grad_norm=0.3,
+            max_seq_length=args.max_seq_length,
+            dataset_text_field="text",
+        )
+    except:
+        # Fallback for older TRL
+        training_args = TrainingArguments(
+            output_dir=str(output_dir),
+            num_train_epochs=args.epochs,
+            per_device_train_batch_size=args.batch_size,
+            per_device_eval_batch_size=args.batch_size,
+            gradient_accumulation_steps=8,
+            learning_rate=args.lr,
+            weight_decay=0.01,
+            warmup_ratio=0.1,
+            logging_steps=10,
+            eval_strategy="steps",
+            eval_steps=100,
+            save_strategy="steps",
+            save_steps=100,
+            save_total_limit=3,
+            fp16=True,
+            optim="paged_adamw_8bit",
+            report_to="none",
+            gradient_checkpointing=True,
+            max_grad_norm=0.3,
+        )
     
     # Data collator for completion-only training
     collator = None
@@ -242,8 +269,6 @@ def main():
         eval_dataset=val_dataset,
         processing_class=tokenizer,
         data_collator=collator,
-        max_seq_length=args.max_seq_length,
-        dataset_text_field="text",
     )
     
     # Train
