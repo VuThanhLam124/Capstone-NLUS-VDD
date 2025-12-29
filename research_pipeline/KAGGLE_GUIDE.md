@@ -38,6 +38,17 @@ Chạy 4 conditions (B0, B1, B4, B5) - không cần finetune:
 !python research_pipeline/test_pipeline.py 2>&1 | tee benchmark_results.log
 ```
 
+## Step 4: Run Advanced Benchmark (Recommended)
+```python
+# Advanced pipeline with Self-Correction + B5+B6 + Multi-RAG
+!python research_pipeline/test_pipeline_advanced.py
+```
+
+## [Alternative] Step 4: Run Basic Benchmark
+```python
+!python research_pipeline/test_pipeline.py 2>&1 | tee benchmark_results.log
+```
+
 ## [Optional] Step 4: Run Full Benchmark Notebook
 Mở notebook Jupyter và chạy từng cell:
 ```
