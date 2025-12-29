@@ -50,9 +50,9 @@ RAG_INDEX_DIR = REPO_ROOT / "research_pipeline" / "rag_index"
 ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
 
 MAX_SAMPLES = None
-MAX_NEW_TOKENS = 256  # Balanced: enough for most queries, fast generation
-MAX_TABLES = 6  # Reduced for faster schema processing
-RAG_K = 3  # Fewer examples = shorter prompt = faster
+MAX_NEW_TOKENS = 512  # Balanced: enough for most queries, fast generation
+MAX_TABLES = 5  # Reduced for faster schema processing
+RAG_K = 5  # Fewer examples = shorter prompt = faster
 
 # ========== SYSTEM PROMPT (Simplified for better output) ==========
 SYSTEM_PROMPT = """You are an expert SQL writer for DuckDB (TPC-DS schema). Generate ONLY valid SQL.
