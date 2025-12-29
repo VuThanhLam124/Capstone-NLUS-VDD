@@ -18,12 +18,11 @@ import pandas as pd
 
 # Try imports
 try:
-    import torch
-    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-    HAS_TORCH = True
+    from llama_cpp import Llama
+    HAS_LLAMA = True
 except ImportError:
-    HAS_TORCH = False
-    print("WARNING: torch/transformers not available. Using mock generation.")
+    HAS_LLAMA = False
+    print("WARNING: llama-cpp-python not available. Using mock generation.")
 
 # ========== CONFIG ==========
 REPO_ROOT = Path(__file__).parent.parent
@@ -33,15 +32,15 @@ TRAIN_DATA_PATH = REPO_ROOT / "research_pipeline" / "datasets" / "train_merged.c
 DB_CONTENT_PATH = REPO_ROOT / "research_pipeline" / "datasets" / "db_content_samples.json"
 RAG_INDEX_DIR = REPO_ROOT / "research_pipeline" / "rag_index"
 
-BASE_MODEL_ID = "Qwen/Qwen3-4B-Instruct-2507"  # Production model
-# Use pre-trained adapter from HuggingFace (no local finetuning needed)
-ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
+# GGUF Model (already fine-tuned for Text-to-SQL)
+GGUF_REPO_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL-GGUF"
+GGUF_FILENAME = "Qwen-3-4b-Text_to_SQL-q4_k_m.gguf"
 
 MAX_SAMPLES = None  # Full dataset for Kaggle
 MAX_NEW_TOKENS = 256
 MAX_TABLES = 8
 
-# Conditions to test (excluding B2, B3 which need finetuned model)
+# Conditions to test (excluding B2, B3 which need additional finetuning)
 TEST_CONDITIONS = ["B0", "B1", "B4", "B5"]
 
 # ========== SETUP DB ==========
@@ -198,63 +197,47 @@ def load_rag_retriever():
     return None
 
 # ========== MODEL ==========
-def load_model():
-    if not HAS_TORCH:
-        return None, None
-    
-    print(f"Loading model: {BASE_MODEL_ID}...")
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    use_4bit = torch.cuda.is_available()
-    
-    quant_config = BitsAndBytesConfig(load_in_4bit=True) if use_4bit else None
-    
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID, trust_remote_code=True)
-    
-    model_kwargs = dict(
-        device_map="auto" if device == "cuda" else None,
-        trust_remote_code=True,
-    )
-    if quant_config:
-        model_kwargs["quantization_config"] = quant_config
-    
-    model = AutoModelForCausalLM.from_pretrained(BASE_MODEL_ID, **model_kwargs)
-    
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    
-    model.eval()
-    print(f"Model loaded on {device}")
-    return tokenizer, model
+llm = None  # Global model instance
 
-def generate_sql(prompt: str, tokenizer, model) -> str:
-    if not HAS_TORCH or model is None:
-        # Mock generation for testing without GPU
+def load_model():
+    global llm
+    if not HAS_LLAMA:
+        return None
+    
+    print(f"Loading GGUF model: {GGUF_REPO_ID}/{GGUF_FILENAME}...")
+    llm = Llama.from_pretrained(
+        repo_id=GGUF_REPO_ID,
+        filename=GGUF_FILENAME,
+        n_ctx=4096,
+        n_gpu_layers=-1,  # Use all GPU layers
+        verbose=False
+    )
+    print("Model loaded!")
+    return llm
+
+def generate_sql(prompt: str, model) -> str:
+    if not HAS_LLAMA or model is None:
         return "SELECT 1;"
     
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True).to(model.device)
-    with torch.no_grad():
-        output_ids = model.generate(
-            **inputs, max_new_tokens=MAX_NEW_TOKENS, do_sample=False,
-            pad_token_id=tokenizer.eos_token_id
-        )
-    gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
-    return extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
+    response = model.create_chat_completion(
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=MAX_NEW_TOKENS,
+        temperature=0.0,
+    )
+    text = response["choices"][0]["message"]["content"]
+    return extract_sql(text)
 
-def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None) -> str:
+def build_prompt(question: str, schema_text: str, examples: list = None) -> str:
     few_shot_text = ""
     if examples:
         few_shot_text = "EXAMPLES:\n"
         for ex in examples:
             few_shot_text += f"Q: {ex['question']}\nSQL: {ex['sql']}\n\n"
     
-    user = f"SCHEMA:\n{schema_text}\n\n{few_shot_text}QUESTION:\n{question}\n\nSQL:"
-    
-    if tokenizer and getattr(tokenizer, "chat_template", None):
-        return tokenizer.apply_chat_template(
-            [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}],
-            tokenize=False, add_generation_prompt=True
-        )
-    return f"{SYSTEM_PROMPT}\n\n{user}"
+    return f"SCHEMA:\n{schema_text}\n\n{few_shot_text}QUESTION:\n{question}\n\nSQL:"
 
 # ========== MAIN ==========
 def main():
@@ -291,7 +274,7 @@ def main():
     print(f"Test samples: {len(test_df)}")
     
     # Load model
-    tokenizer, model = load_model()
+    model = load_model()
     
     # Run tests
     for cond in TEST_CONDITIONS:
@@ -321,9 +304,9 @@ def main():
                 examples = retriever.retrieve(question, k=3)
             
             # Generate
-            prompt = build_prompt(question, schema_text, tokenizer, examples)
+            prompt = build_prompt(question, schema_text, examples)
             start = time.time()
-            gen_sql = generate_sql(prompt, tokenizer, model)
+            gen_sql = generate_sql(prompt, model)
             gen_time = (time.time() - start) * 1000
             
             # Validate
