@@ -42,8 +42,13 @@ MAX_SAMPLES = None  # Full dataset for Kaggle
 MAX_NEW_TOKENS = 256
 MAX_TABLES = 8
 
-# Conditions to test (excluding B2, B3 which need additional finetuning)
-TEST_CONDITIONS = ["B0", "B1", "B4", "B5"]
+# Conditions to test
+# B0: Baseline (full schema)
+# B1: Dynamic Schema Selection
+# B4: Schema Enrichment (sample values)
+# B5: RAG Few-shot (BGE embedding)
+# B6: Enhanced TPC-DS Prompts (descriptions + relationships)
+TEST_CONDITIONS = ["B0", "B5"]  # Only test baseline vs RAG
 
 # ========== SETUP DB ==========
 def setup_db():
@@ -134,6 +139,17 @@ def build_schema_text(tables: list[str], schema_map: dict, db_content: dict = No
         lines.append(")")
         lines.append("")
     return "\n".join(lines).strip()
+
+# Import TPC-DS prompts
+try:
+    from research_pipeline.tpcds_prompts import (
+        SYSTEM_PROMPT_TPCDS, TABLE_DESCRIPTIONS, 
+        COLUMN_DESCRIPTIONS, TABLE_RELATIONSHIPS, 
+        build_enhanced_schema_text
+    )
+    HAS_TPCDS_PROMPTS = True
+except ImportError:
+    HAS_TPCDS_PROMPTS = False
 
 # ========== SQL UTILS ==========
 SYSTEM_PROMPT = "You translate user questions into SQL for DuckDB (TPC-DS). Return only SQL, no markdown."
@@ -256,7 +272,10 @@ def generate_sql(prompt: str, tokenizer, model) -> str:
     gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
     return extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
 
-def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None) -> str:
+def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None, system_prompt: str = None) -> str:
+    if system_prompt is None:
+        system_prompt = SYSTEM_PROMPT
+        
     few_shot_text = ""
     if examples:
         few_shot_text = "EXAMPLES:\n"
@@ -267,10 +286,10 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
     
     if tokenizer and getattr(tokenizer, "chat_template", None):
         return tokenizer.apply_chat_template(
-            [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}],
+            [{"role": "system", "content": system_prompt}, {"role": "user", "content": user}],
             tokenize=False, add_generation_prompt=True
         )
-    return f"{SYSTEM_PROMPT}\n\n{user}"
+    return f"{system_prompt}\n\n{user}"
 
 # ========== MAIN ==========
 def main():
@@ -313,9 +332,10 @@ def main():
     for cond in TEST_CONDITIONS:
         print(f"\n{'='*40}\nCondition: {cond}\n{'='*40}")
         
-        use_dynamic = cond in ["B1", "B4", "B5"]
+        use_dynamic = cond in ["B1", "B4", "B5", "B6"]
         use_content = cond == "B4"
         use_rag = cond == "B5"
+        use_enhanced = cond == "B6"  # Enhanced TPC-DS prompts
         
         correct = 0
         valid_count = 0
@@ -329,15 +349,23 @@ def main():
                 tables = select_tables(question, table_tokens, schema_map, MAX_TABLES)
             else:
                 tables = list(schema_map.keys())
-            schema_text = build_schema_text(tables, schema_map, db_content, with_content=use_content)
+            
+            # Use enhanced schema for B6
+            if use_enhanced and HAS_TPCDS_PROMPTS:
+                schema_text = build_enhanced_schema_text(tables, schema_map, include_descriptions=True)
+            else:
+                schema_text = build_schema_text(tables, schema_map, db_content, with_content=use_content)
             
             # Get examples (RAG)
             examples = None
             if use_rag and retriever:
-                examples = retriever.retrieve(question, k=3)
+                examples = retriever.retrieve(question, k=10)
+            
+            # Use enhanced system prompt for B6
+            sys_prompt = SYSTEM_PROMPT_TPCDS if (use_enhanced and HAS_TPCDS_PROMPTS) else SYSTEM_PROMPT
             
             # Generate
-            prompt = build_prompt(question, schema_text, tokenizer, examples)
+            prompt = build_prompt(question, schema_text, tokenizer, examples, system_prompt=sys_prompt)
             start = time.time()
             gen_sql = generate_sql(prompt, tokenizer, model)
             gen_time = (time.time() - start) * 1000

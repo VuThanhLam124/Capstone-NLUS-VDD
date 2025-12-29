@@ -7,7 +7,7 @@ Hướng dẫn chạy Text-to-SQL Research Pipeline trên Kaggle.
 # Clone repo & install dependencies
 !git clone https://github.com/VuThanhLam124/Capstone-NLUS-VDD.git
 %cd Capstone-NLUS-VDD
-!pip install -q duckdb pandas scikit-learn sqlglot transformers peft accelerate bitsandbytes
+!pip install -q duckdb pandas scikit-learn sqlglot transformers peft accelerate bitsandbytes sentence-transformers
 ```
 
 ## Step 1: Build TPC-DS Database (Cell 2)
