@@ -1,9 +1,8 @@
 """
-Advanced Text-to-SQL Pipeline with Self-Correction and Multi-dimensional RAG
-Implements:
-1. Self-Correction Loop - Model fixes its own SQL errors
-2. B5+B6 Combination - RAG + Enhanced schema prompts
-3. Multi-dimensional RAG - Retrieves by question AND table similarity
+Test Pipeline with B5+B6 Combination + Multi-dimensional RAG
+- B5: RAG Few-shot
+- B6: Enhanced TPC-DS schema descriptions
+- Multi-RAG: Re-rank by table overlap
 """
 import os
 import sys
@@ -42,42 +41,25 @@ ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
 MAX_SAMPLES = None
 MAX_NEW_TOKENS = 256
 MAX_TABLES = 8
-MAX_CORRECTION_ATTEMPTS = 2  # Self-correction loop attempts
 RAG_K = 5
 
-# ========== SYSTEM PROMPTS ==========
-SYSTEM_PROMPT_ENHANCED = """You are a SQL expert for TPC-DS Data Warehouse on DuckDB.
+# ========== SYSTEM PROMPT (same as training) ==========
+SYSTEM_PROMPT = "You translate user questions into SQL for DuckDB (TPC-DS). Return only SQL, no markdown."
 
-TPC-DS SCHEMA OVERVIEW:
-- 3 Sales Channels: store_sales (ss_*), web_sales (ws_*), catalog_sales (cs_*)
-- 3 Return Tables: store_returns (sr_*), web_returns (wr_*), catalog_returns (cr_*)
-- Key Dimensions: customer (c_*), item (i_*), date_dim (d_*), store (s_*), warehouse (w_*)
-
-COLUMN NAMING CONVENTION:
-- *_sk = Surrogate Key (INTEGER, use for JOINs)
-- *_id = Business ID (VARCHAR)
-- ss_/ws_/cs_ = Store/Web/Catalog Sales prefixes
-- d_year, d_moy, d_qoy = Year, Month of Year, Quarter of Year
-- Gender info is in customer_demographics (cd_gender), NOT in customer table
-
-COMMON JOINS:
-- Sales -> Date: ON ss_sold_date_sk = d_date_sk
-- Sales -> Item: ON ss_item_sk = i_item_sk
-- Sales -> Customer: ON ss_customer_sk = c_customer_sk
-- Customer -> Demographics: ON c_current_cdemo_sk = cd_demo_sk
-- Customer -> Address: ON c_current_addr_sk = ca_address_sk
-
-DUCKDB SPECIFIC:
-- Use date_add() not dateadd()
-- Use LIMIT not TOP
-- String comparison is case-sensitive
-
-Output ONLY valid SQL. No explanations."""
-
-CORRECTION_PROMPT = """The SQL you generated has an error:
-{error}
-
-Please fix the SQL query. Output ONLY the corrected SQL, no explanations."""
+# ========== TABLE DESCRIPTIONS (B6) ==========
+TABLE_DESCRIPTIONS = {
+    "store_sales": "-- Store sales transactions: ss_sold_date_sk, ss_item_sk, ss_customer_sk, ss_quantity, ss_net_paid",
+    "web_sales": "-- Web sales: ws_sold_date_sk, ws_item_sk, ws_bill_customer_sk, ws_quantity, ws_net_paid",
+    "catalog_sales": "-- Catalog sales: cs_sold_date_sk, cs_item_sk, cs_bill_customer_sk, cs_quantity, cs_net_paid",
+    "customer": "-- Customer info: c_customer_sk, c_first_name, c_last_name. Use c_current_cdemo_sk to join demographics",
+    "customer_demographics": "-- Demographics: cd_demo_sk, cd_gender (M/F), cd_marital_status, cd_education_status",
+    "customer_address": "-- Address: ca_address_sk, ca_state, ca_city, ca_country",
+    "item": "-- Products: i_item_sk, i_item_id, i_item_desc, i_category, i_brand, i_current_price",
+    "date_dim": "-- Date dimension: d_date_sk, d_date, d_year, d_moy (month 1-12), d_qoy (quarter 1-4)",
+    "store": "-- Store info: s_store_sk, s_store_name, s_state, s_city",
+    "store_returns": "-- Store returns: sr_returned_date_sk, sr_item_sk, sr_customer_sk, sr_return_amt",
+    "inventory": "-- Inventory: inv_item_sk, inv_warehouse_sk, inv_date_sk, inv_quantity_on_hand",
+}
 
 # ========== SETUP DB ==========
 def setup_db():
@@ -150,29 +132,21 @@ def select_tables(question: str, table_tokens: dict, schema_map: dict, max_table
         ensure("store_sales"); ensure("store")
     if any(t in q_tokens for t in {"sales", "revenue"}):
         ensure("store_sales")
-    # NEW: Add customer_demographics for gender/age queries
+    # B6: Add customer_demographics for gender/age queries
     if any(t in q_tokens for t in {"gender", "age", "education", "marital"}):
         ensure("customer_demographics"); ensure("customer")
     
     return selected[:max_tables]
 
-# ========== ENHANCED SCHEMA TEXT ==========
-TABLE_DESCRIPTIONS = {
-    "store_sales": "Doanh số cửa hàng. Cột: ss_sold_date_sk, ss_item_sk, ss_customer_sk, ss_quantity, ss_net_paid",
-    "customer": "Khách hàng. Cột: c_customer_sk, c_first_name, c_last_name, c_current_cdemo_sk (FK->demographics)",
-    "customer_demographics": "Thông tin nhân khẩu. Cột: cd_demo_sk, cd_gender (M/F), cd_marital_status, cd_education_status",
-    "item": "Sản phẩm. Cột: i_item_sk, i_item_id, i_item_desc, i_category, i_brand, i_current_price",
-    "date_dim": "Thời gian. Cột: d_date_sk, d_date, d_year, d_moy (tháng), d_qoy (quý)",
-    "store": "Cửa hàng. Cột: s_store_sk, s_store_name, s_state, s_city",
-}
-
-def build_enhanced_schema_text(tables: list[str], schema_map: dict) -> str:
+def build_schema_text_enhanced(tables: list[str], schema_map: dict) -> str:
+    """B6: Enhanced schema with table descriptions."""
     lines = []
     for table in tables:
         cols = schema_map.get(table, [])
+        # Add table description if available
         desc = TABLE_DESCRIPTIONS.get(table, "")
         if desc:
-            lines.append(f"-- {desc}")
+            lines.append(desc)
         lines.append(f"TABLE {table} (")
         for col, typ in cols:
             lines.append(f"  {col} {typ},")
@@ -233,7 +207,6 @@ def run_sql(con, sql: str):
 def extract_tables_from_sql(sql: str) -> set[str]:
     """Extract table names from SQL query."""
     tables = set()
-    # Match FROM/JOIN table names
     for match in re.finditer(r'\b(?:FROM|JOIN)\s+([a-z_]+)', sql, re.I):
         tables.add(match.group(1).lower())
     return tables
@@ -256,8 +229,8 @@ def retrieve_multi_dimensional(retriever, question: str, needed_tables: list[str
     # Get more candidates than needed
     candidates = retriever.retrieve(question, k=k*3)
     
-    if not needed_tables:
-        return candidates[:k]
+    if not candidates or not needed_tables:
+        return candidates[:k] if candidates else []
     
     needed_set = set(needed_tables)
     
@@ -274,11 +247,7 @@ def retrieve_multi_dimensional(retriever, question: str, needed_tables: list[str
     return [c for _, c in scored[:k]]
 
 # ========== MODEL ==========
-tokenizer = None
-model = None
-
 def load_model():
-    global tokenizer, model
     if not HAS_TORCH:
         return None, None
     
@@ -304,6 +273,7 @@ def load_model():
     model = AutoModelForCausalLM.from_pretrained(base_model_id, **model_kwargs)
     
     if len(tokenizer) != model.get_input_embeddings().weight.shape[0]:
+        print(f"Resizing embeddings: {model.get_input_embeddings().weight.shape[0]} -> {len(tokenizer)}")
         model.resize_token_embeddings(len(tokenizer))
     
     model = PeftModel.from_pretrained(model, ADAPTER_ID)
@@ -315,7 +285,7 @@ def load_model():
     print(f"Model loaded on {device}")
     return tokenizer, model
 
-def generate_sql_raw(prompt: str) -> str:
+def generate_sql(prompt: str, tokenizer, model) -> str:
     if not HAS_TORCH or model is None:
         return "SELECT 1;"
     
@@ -330,83 +300,27 @@ def generate_sql_raw(prompt: str) -> str:
     gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
     return extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
 
-def build_prompt(question: str, schema_text: str, examples: list = None, system_prompt: str = None) -> str:
-    if system_prompt is None:
-        system_prompt = SYSTEM_PROMPT_ENHANCED
-        
+def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None) -> str:
+    """Build prompt with RAG examples."""
     few_shot_text = ""
     if examples:
         few_shot_text = "EXAMPLES:\n"
-        for ex in examples[:5]:  # Limit examples to avoid OOM
-            few_shot_text += f"Q: {ex['question'][:100]}\nSQL: {ex['sql'][:200]}\n\n"
+        for ex in examples:
+            few_shot_text += f"Q: {ex['question']}\nSQL: {ex['sql']}\n\n"
     
     user = f"SCHEMA:\n{schema_text}\n\n{few_shot_text}QUESTION:\n{question}\n\nSQL:"
     
     if tokenizer and getattr(tokenizer, "chat_template", None):
         return tokenizer.apply_chat_template(
-            [{"role": "system", "content": system_prompt}, {"role": "user", "content": user}],
+            [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}],
             tokenize=False, add_generation_prompt=True
         )
-    return f"{system_prompt}\n\n{user}"
-
-def build_correction_prompt(question: str, schema_text: str, original_sql: str, error: str) -> str:
-    """Build prompt for self-correction."""
-    user = f"""SCHEMA:
-{schema_text}
-
-QUESTION:
-{question}
-
-YOUR PREVIOUS SQL:
-{original_sql}
-
-ERROR:
-{error[:200]}
-
-Please output ONLY the corrected SQL:"""
-    
-    if tokenizer and getattr(tokenizer, "chat_template", None):
-        return tokenizer.apply_chat_template(
-            [{"role": "system", "content": SYSTEM_PROMPT_ENHANCED}, {"role": "user", "content": user}],
-            tokenize=False, add_generation_prompt=True
-        )
-    return f"{SYSTEM_PROMPT_ENHANCED}\n\n{user}"
-
-# ========== SELF-CORRECTION LOOP ==========
-def generate_sql_with_correction(question: str, schema_text: str, examples: list, con) -> tuple[str, int]:
-    """Generate SQL with self-correction loop. Returns (sql, num_attempts)."""
-    
-    # First attempt
-    prompt = build_prompt(question, schema_text, examples)
-    gen_sql = generate_sql_raw(prompt)
-    
-    if not is_valid_sql(gen_sql):
-        return gen_sql, 1
-    
-    # Try executing
-    _, error = run_sql(con, gen_sql)
-    
-    if error is None:
-        return gen_sql, 1  # Success on first try
-    
-    # Self-correction loop
-    for attempt in range(MAX_CORRECTION_ATTEMPTS):
-        correction_prompt = build_correction_prompt(question, schema_text, gen_sql, error)
-        gen_sql = generate_sql_raw(correction_prompt)
-        
-        if not is_valid_sql(gen_sql):
-            continue
-        
-        _, error = run_sql(con, gen_sql)
-        if error is None:
-            return gen_sql, attempt + 2  # Success after correction
-    
-    return gen_sql, MAX_CORRECTION_ATTEMPTS + 1
+    return f"{SYSTEM_PROMPT}\n\n{user}"
 
 # ========== MAIN ==========
 def main():
     print("="*50)
-    print("Advanced Pipeline: Self-Correction + B5+B6 + Multi-RAG")
+    print("Pipeline: B5+B6 + Multi-dimensional RAG")
     print("="*50)
     
     # Setup
@@ -429,32 +343,30 @@ def main():
     print(f"Test samples: {len(test_df)}")
     
     # Load model
-    load_model()
+    tokenizer, model = load_model()
     
     # Run tests
     correct = 0
     valid_count = 0
-    correction_stats = {1: 0, 2: 0, 3: 0}  # Track correction attempts
     
     for idx, row in test_df.iterrows():
         question = row["Transcription"]
         gt_sql = row["SQL Ground Truth"]
         
-        # Dynamic table selection
+        # Dynamic table selection (with B6 enhancements)
         tables = select_tables(question, table_tokens, schema_map, MAX_TABLES)
         
-        # Enhanced schema (B6)
-        schema_text = build_enhanced_schema_text(tables, schema_map)
+        # B6: Enhanced schema with descriptions
+        schema_text = build_schema_text_enhanced(tables, schema_map)
         
         # Multi-dimensional RAG (B5 enhanced)
         examples = retrieve_multi_dimensional(retriever, question, tables, k=RAG_K)
         
-        # Generate with self-correction
+        # Generate
+        prompt = build_prompt(question, schema_text, tokenizer, examples)
         start = time.time()
-        gen_sql, attempts = generate_sql_with_correction(question, schema_text, examples, con)
+        gen_sql = generate_sql(prompt, tokenizer, model)
         gen_time = (time.time() - start) * 1000
-        
-        correction_stats[min(attempts, 3)] = correction_stats.get(min(attempts, 3), 0) + 1
         
         # Validate
         valid = is_valid_sql(gen_sql)
@@ -474,14 +386,12 @@ def main():
             if exec_match:
                 correct += 1
         
-        status = "OK" if exec_match else ("FIXED" if attempts > 1 and not gen_err else "ERR")
-        print(f"  [{idx}] {status} Valid={valid}, Match={exec_match}, Attempts={attempts}, Time={gen_time:.0f}ms")
-        if gen_err and not exec_match:
-            print(f"      Error: {gen_err[:80]}")
+        print(f"  [{idx}] Valid={valid}, ExecMatch={exec_match}, Time={gen_time:.0f}ms")
+        if gen_err:
+            print(f"      Error: {gen_err[:100]}")
     
     print(f"\n{'='*40}")
     print(f"Summary: Valid={valid_count}/{len(test_df)}, ExecMatch={correct}/{len(test_df)} ({100*correct/len(test_df):.1f}%)")
-    print(f"Correction stats: 1st try={correction_stats.get(1,0)}, 2nd={correction_stats.get(2,0)}, 3rd={correction_stats.get(3,0)}")
     
     con.close()
     print("\nDone!")
