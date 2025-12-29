@@ -50,21 +50,18 @@ RAG_INDEX_DIR = REPO_ROOT / "research_pipeline" / "rag_index"
 ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
 
 MAX_SAMPLES = None
-MAX_NEW_TOKENS = 512  # Increased for CTE queries
-MAX_TABLES = 10  # Increased for better coverage
-RAG_K = 5
+MAX_NEW_TOKENS = 256  # Balanced: enough for most queries, fast generation
+MAX_TABLES = 6  # Reduced for faster schema processing
+RAG_K = 3  # Fewer examples = shorter prompt = faster
 
-# ========== SYSTEM PROMPT (Enhanced with CTE hints) ==========
-SYSTEM_PROMPT = """You translate user questions into SQL for DuckDB (TPC-DS). Return only SQL, no markdown.
+# ========== SYSTEM PROMPT (Simplified for better output) ==========
+SYSTEM_PROMPT = """You are an expert SQL writer for DuckDB (TPC-DS schema). Generate ONLY valid SQL.
 
-IMPORTANT RULES:
-- For year-over-year comparisons, use WITH clause (CTE) to define subqueries BEFORE the main SELECT
-- Always define CTE aliases before referencing them
-- Example CTE pattern:
-  WITH current_year AS (SELECT ...), previous_year AS (SELECT ...)
-  SELECT cy.*, py.* FROM current_year cy, previous_year py
-- Use proper GROUP BY for all non-aggregated columns
-- Complete all SQL statements (no truncation)"""
+RULES:
+1. Output ONLY SQL code, no explanation
+2. Always end with semicolon (;)
+3. For year comparisons, use WITH clause
+4. Use proper GROUP BY for aggregations"""
 
 # ========== TABLE DESCRIPTIONS - All 24 TPC-DS Tables ==========
 TABLE_DESCRIPTIONS = {
@@ -252,13 +249,37 @@ def build_schema_text(tables: list[str], schema_map: dict) -> str:
 
 # ========== SQL UTILS ==========
 def extract_sql(text: str) -> str:
+    """Extract SQL from model output, handling various formats."""
     text = text.strip()
+    
+    # Remove markdown code blocks
     m = re.search(r"```(?:sql)?\s*(.*?)```", text, re.I | re.S)
     if m:
         text = m.group(1).strip()
-    if ";" in text:
-        text = text.split(";", 1)[0].strip()
-    return text
+    
+    # Find SQL starting with SELECT or WITH
+    sql_match = re.search(r'\b((?:WITH|SELECT)\s+.*)', text, re.I | re.S)
+    if sql_match:
+        text = sql_match.group(1)
+    
+    # Keep only until first complete SQL statement (handle multiple statements)
+    # Look for semicolon that's NOT inside a string
+    result = []
+    in_string = False
+    string_char = None
+    for char in text:
+        if char in ("'", '"') and not in_string:
+            in_string = True
+            string_char = char
+        elif char == string_char and in_string:
+            in_string = False
+            string_char = None
+        elif char == ';' and not in_string:
+            result.append(char)
+            break
+        result.append(char)
+    
+    return ''.join(result).strip() or text.split(';')[0].strip()
 
 _FORBIDDEN = re.compile(r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE)\b", re.I)
 
@@ -496,7 +517,8 @@ def generate_sql(prompt: str, tokenizer, model) -> str:
             **inputs, 
             max_new_tokens=MAX_NEW_TOKENS, 
             do_sample=False,
-            pad_token_id=tokenizer.eos_token_id
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
         )
     gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
     raw_sql = extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
@@ -518,14 +540,11 @@ def detect_query_type(question: str) -> str:
     return 'general'
 
 def get_query_hints(query_type: str) -> str:
-    """Get query-type specific hints."""
+    """Get query-type specific hints (shortened for speed)."""
     hints = {
-        'comparison': """HINT: Use CTE (WITH clause) for year comparisons:
-WITH current_year AS (SELECT ... WHERE d_year = YEAR1),
-     previous_year AS (SELECT ... WHERE d_year = YEAR1-1)
-SELECT ... FROM current_year cy, previous_year py;""",
-        'ranking': "HINT: Use ORDER BY ... DESC/ASC with LIMIT for ranking.",
-        'aggregation': "HINT: Use GROUP BY for all non-aggregated columns in SELECT.",
+        'comparison': "Use CTE: WITH cy AS (...), py AS (...) SELECT ... FROM cy, py;",
+        'ranking': "Use ORDER BY DESC/ASC LIMIT.",
+        'aggregation': "Use GROUP BY for non-aggregated columns.",
         'general': ""
     }
     return hints.get(query_type, "")
@@ -539,10 +558,10 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
     few_shot_text = ""
     if examples:
         few_shot_text = "EXAMPLES:\n"
-        for ex in examples:
-            # Keep full examples for better context (up to 1500 chars SQL)
-            q = ex['question'][:200]
-            s = ex['sql'][:1500]
+        for ex in examples[:2]:  # Limit to 2 examples for speed
+            # Keep shorter examples for faster processing
+            q = ex['question'][:150]
+            s = ex['sql'][:800]
             few_shot_text += f"Q: {q}\nSQL: {s}\n\n"
     
     # Build user prompt with hints
@@ -643,7 +662,9 @@ def main():
             
             print(f"  [{idx}] Valid={valid}, ExecMatch={exec_match}, Time={gen_time:.0f}ms")
             if gen_err:
-                print(f"      Error: {gen_err[:100]}")
+                print(f"      Error: {gen_err[:80]}")
+            if not valid:
+                print(f"      SQL ({len(gen_sql)} chars): {gen_sql[:100]}...")
                 
             results.append({
                 "id": idx,
