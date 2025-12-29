@@ -206,7 +206,7 @@ def load_model():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     use_4bit = torch.cuda.is_available()
     
-    # Load tokenizer from adapter
+    # Load tokenizer from adapter (has correct vocab size)
     tokenizer = AutoTokenizer.from_pretrained(ADAPTER_ID, trust_remote_code=True)
     
     # Get base model ID from adapter config
@@ -225,6 +225,11 @@ def load_model():
         model_kwargs["quantization_config"] = quant_config
     
     model = AutoModelForCausalLM.from_pretrained(base_model_id, **model_kwargs)
+    
+    # Resize embeddings to match adapter's vocab size
+    if len(tokenizer) != model.get_input_embeddings().weight.shape[0]:
+        print(f"Resizing embeddings: {model.get_input_embeddings().weight.shape[0]} -> {len(tokenizer)}")
+        model.resize_token_embeddings(len(tokenizer))
     
     # Load LoRA adapter on top
     model = PeftModel.from_pretrained(model, ADAPTER_ID)
