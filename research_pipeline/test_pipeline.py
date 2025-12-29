@@ -60,8 +60,9 @@ SYSTEM_PROMPT = """You are an expert SQL writer for DuckDB (TPC-DS schema). Gene
 RULES:
 1. Output ONLY SQL code, no explanation
 2. Always end with semicolon (;)
-3. For year comparisons, use WITH clause
-4. Use proper GROUP BY for aggregations"""
+3. For CTEs, use same alias in SELECT as defined in WITH (e.g., WITH current_year AS (...) SELECT ... FROM current_year)
+4. Column prefixes: ca_=customer_address, cd_=customer_demographics, c_=customer, s_=store, i_=item, d_=date_dim
+5. State column is ca_state (in customer_address), NOT cd_state"""
 
 # ========== TABLE DESCRIPTIONS - All 24 TPC-DS Tables ==========
 TABLE_DESCRIPTIONS = {
@@ -74,10 +75,10 @@ TABLE_DESCRIPTIONS = {
     "catalog_returns": "-- Catalog returns: cr_returned_date_sk, cr_item_sk, cr_refunded_customer_sk, cr_return_amt, cr_reason_sk",
     "inventory": "-- Inventory levels: inv_date_sk, inv_item_sk, inv_warehouse_sk, inv_quantity_on_hand",
     
-    # Customer Dimensions (3)
-    "customer": "-- Customer: c_customer_sk, c_customer_id, c_first_name, c_last_name, c_current_addr_sk, c_current_cdemo_sk",
-    "customer_address": "-- Customer address: ca_address_sk, ca_street_number, ca_city, ca_state, ca_zip, ca_country",
-    "customer_demographics": "-- Demographics: cd_demo_sk, cd_gender (M/F), cd_marital_status (S/M/D/W), cd_education_status, cd_purchase_estimate, cd_credit_rating",
+    # Customer Dimensions (3) - NOTE: state is in customer_address (ca_state), NOT in customer_demographics
+    "customer": "-- Customer: c_customer_sk, c_customer_id, c_first_name, c_last_name, c_current_addr_sk (FK to customer_address), c_current_cdemo_sk (FK to customer_demographics)",
+    "customer_address": "-- Customer address: ca_address_sk, ca_address_id, ca_city, ca_county, ca_state, ca_zip, ca_country, ca_gmt_offset",
+    "customer_demographics": "-- Customer demographics (NO state/city): cd_demo_sk, cd_gender (M/F), cd_marital_status (S/M/D/W/U), cd_education_status, cd_purchase_estimate, cd_credit_rating, cd_dep_count, cd_dep_employed_count",
     
     # Product Dimension (1)
     "item": "-- Item/Product: i_item_sk, i_item_id, i_item_desc, i_category, i_class, i_brand, i_current_price, i_manager_id",
@@ -470,7 +471,7 @@ def load_model():
 def post_process_sql(sql: str) -> str:
     """
     Post-process SQL to fix common errors:
-    1. Detect CTE alias usage without WITH clause
+    1. Fix CTE alias mismatches (cy -> current_year)
     2. Fix incomplete SQL
     3. Add missing semicolons
     """
@@ -478,20 +479,33 @@ def post_process_sql(sql: str) -> str:
     if not sql:
         return "SELECT 1;"
     
-    # Remove trailing incomplete parts (after last complete statement)
-    # If SQL ends with incomplete clause, try to fix
+    # Remove trailing incomplete parts
     if sql.rstrip().endswith(','):
         sql = sql.rstrip().rstrip(',')
     
-    # Detect CTE alias pattern without WITH clause
-    # Pattern: FROM table_alias (like cy, py) but no WITH at start
-    cte_aliases = re.findall(r'\bFROM\s+([a-z]{2,3})\s*,', sql, re.I)
-    if cte_aliases and not sql.strip().upper().startswith('WITH'):
-        # This is a broken CTE - model forgot WITH clause
-        # Try to detect if it's a year comparison query
-        if any(alias in ['cy', 'py', 'curr', 'prev'] for alias in cte_aliases):
-            # Can't auto-fix, but log for debugging
-            pass
+    # Fix CTE alias mismatches - extract CTE names and fix references
+    if sql.strip().upper().startswith('WITH'):
+        # Extract defined CTE names: WITH name AS (...), name2 AS (...)
+        cte_defs = re.findall(r'\bWITH\s+([a-z_][a-z0-9_]*)\s+AS|,\s*([a-z_][a-z0-9_]*)\s+AS', sql, re.I)
+        defined_ctes = set()
+        for match in cte_defs:
+            name = match[0] or match[1]
+            if name:
+                defined_ctes.add(name.lower())
+        
+        # Common alias -> full name mappings
+        alias_map = {
+            'cy': 'current_year', 'py': 'previous_year', 'prev': 'previous_year',
+            'curr': 'current_year', 'y1': 'year1', 'y2': 'year2',
+        }
+        
+        # Fix: if model uses short alias but defined full name
+        for short, full in alias_map.items():
+            if full in defined_ctes and short not in defined_ctes:
+                # Replace short alias with full name in FROM/JOIN clauses
+                sql = re.sub(rf'\bFROM\s+{short}\b', f'FROM {full}', sql, flags=re.I)
+                sql = re.sub(rf'\bJOIN\s+{short}\b', f'JOIN {full}', sql, flags=re.I)
+                sql = re.sub(rf'\b{short}\.', f'{full}.', sql)  # Fix column refs like cy.col
     
     # Ensure SQL doesn't end mid-statement
     open_parens = sql.count('(') - sql.count(')')
@@ -560,8 +574,8 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
         few_shot_text = "EXAMPLES:\n"
         for ex in examples[:2]:  # Limit to 2 examples for speed
             # Keep shorter examples for faster processing
-            q = ex['question'][:150]
-            s = ex['sql'][:800]
+            q = ex['question'][:300]
+            s = ex['sql'][:1000]
             few_shot_text += f"Q: {q}\nSQL: {s}\n\n"
     
     # Build user prompt with hints
