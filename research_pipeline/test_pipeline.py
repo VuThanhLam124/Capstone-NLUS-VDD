@@ -1,8 +1,10 @@
 """
-Test Pipeline with B5+B6 Combination + Multi-dimensional RAG
-- B5: RAG Few-shot
-- B6: Enhanced TPC-DS schema descriptions
-- Multi-RAG: Re-rank by table overlap
+Advanced Text-to-SQL Pipeline
+Features:
+- TF-IDF based Dynamic Schema Selection
+- Multi-dimensional RAG with table overlap scoring
+- Enhanced schema descriptions for all 24 TPC-DS tables
+- Optimized prompt building
 """
 import os
 import sys
@@ -14,9 +16,11 @@ from pathlib import Path
 from decimal import Decimal
 from datetime import date, datetime
 import math
+from collections import defaultdict
 
 import duckdb
 import pandas as pd
+import numpy as np
 
 # Try imports
 try:
@@ -27,6 +31,13 @@ try:
 except ImportError:
     HAS_TORCH = False
     print("WARNING: torch/transformers not available.")
+
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
 
 # ========== CONFIG ==========
 REPO_ROOT = Path(__file__).parent.parent
@@ -40,25 +51,61 @@ ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
 
 MAX_SAMPLES = None
 MAX_NEW_TOKENS = 256
-MAX_TABLES = 8
+MAX_TABLES = 10  # Increased for better coverage
 RAG_K = 5
 
-# ========== SYSTEM PROMPT (same as training) ==========
+# ========== SYSTEM PROMPT ==========
 SYSTEM_PROMPT = "You translate user questions into SQL for DuckDB (TPC-DS). Return only SQL, no markdown."
 
-# ========== TABLE DESCRIPTIONS (B6) ==========
+# ========== TABLE DESCRIPTIONS - All 24 TPC-DS Tables ==========
 TABLE_DESCRIPTIONS = {
-    "store_sales": "-- Store sales transactions: ss_sold_date_sk, ss_item_sk, ss_customer_sk, ss_quantity, ss_net_paid",
-    "web_sales": "-- Web sales: ws_sold_date_sk, ws_item_sk, ws_bill_customer_sk, ws_quantity, ws_net_paid",
-    "catalog_sales": "-- Catalog sales: cs_sold_date_sk, cs_item_sk, cs_bill_customer_sk, cs_quantity, cs_net_paid",
-    "customer": "-- Customer info: c_customer_sk, c_first_name, c_last_name. Use c_current_cdemo_sk to join demographics",
-    "customer_demographics": "-- Demographics: cd_demo_sk, cd_gender (M/F), cd_marital_status, cd_education_status",
-    "customer_address": "-- Address: ca_address_sk, ca_state, ca_city, ca_country",
-    "item": "-- Products: i_item_sk, i_item_id, i_item_desc, i_category, i_brand, i_current_price",
-    "date_dim": "-- Date dimension: d_date_sk, d_date, d_year, d_moy (month 1-12), d_qoy (quarter 1-4)",
-    "store": "-- Store info: s_store_sk, s_store_name, s_state, s_city",
-    "store_returns": "-- Store returns: sr_returned_date_sk, sr_item_sk, sr_customer_sk, sr_return_amt",
-    "inventory": "-- Inventory: inv_item_sk, inv_warehouse_sk, inv_date_sk, inv_quantity_on_hand",
+    # Fact Tables (7)
+    "store_sales": "-- Store sales: ss_sold_date_sk, ss_item_sk, ss_customer_sk, ss_store_sk, ss_quantity, ss_net_paid, ss_net_profit",
+    "store_returns": "-- Store returns: sr_returned_date_sk, sr_item_sk, sr_customer_sk, sr_return_amt, sr_reason_sk",
+    "web_sales": "-- Web sales: ws_sold_date_sk, ws_item_sk, ws_bill_customer_sk, ws_ship_customer_sk, ws_quantity, ws_net_paid",
+    "web_returns": "-- Web returns: wr_returned_date_sk, wr_item_sk, wr_refunded_customer_sk, wr_return_amt, wr_reason_sk",
+    "catalog_sales": "-- Catalog sales: cs_sold_date_sk, cs_item_sk, cs_bill_customer_sk, cs_ship_customer_sk, cs_quantity, cs_net_paid",
+    "catalog_returns": "-- Catalog returns: cr_returned_date_sk, cr_item_sk, cr_refunded_customer_sk, cr_return_amt, cr_reason_sk",
+    "inventory": "-- Inventory levels: inv_date_sk, inv_item_sk, inv_warehouse_sk, inv_quantity_on_hand",
+    
+    # Customer Dimensions (3)
+    "customer": "-- Customer: c_customer_sk, c_customer_id, c_first_name, c_last_name, c_current_addr_sk, c_current_cdemo_sk",
+    "customer_address": "-- Customer address: ca_address_sk, ca_street_number, ca_city, ca_state, ca_zip, ca_country",
+    "customer_demographics": "-- Demographics: cd_demo_sk, cd_gender (M/F), cd_marital_status (S/M/D/W), cd_education_status, cd_purchase_estimate, cd_credit_rating",
+    
+    # Product Dimension (1)
+    "item": "-- Item/Product: i_item_sk, i_item_id, i_item_desc, i_category, i_class, i_brand, i_current_price, i_manager_id",
+    
+    # Time Dimensions (2)
+    "date_dim": "-- Date: d_date_sk, d_date, d_year, d_moy (month 1-12), d_qoy (quarter 1-4), d_day_name, d_week_seq",
+    "time_dim": "-- Time: t_time_sk, t_time, t_hour, t_minute, t_second, t_am_pm, t_shift",
+    
+    # Location/Channel Dimensions (6)
+    "store": "-- Store: s_store_sk, s_store_id, s_store_name, s_city, s_state, s_zip, s_manager",
+    "warehouse": "-- Warehouse: w_warehouse_sk, w_warehouse_id, w_warehouse_name, w_city, w_state, w_zip",
+    "web_site": "-- Web site: web_site_sk, web_site_id, web_name, web_class, web_manager",
+    "web_page": "-- Web page: wp_web_page_sk, wp_web_page_id, wp_type, wp_url",
+    "call_center": "-- Call center: cc_call_center_sk, cc_call_center_id, cc_name, cc_city, cc_state, cc_manager",
+    "catalog_page": "-- Catalog page: cp_catalog_page_sk, cp_catalog_page_id, cp_department, cp_type",
+    
+    # Other Dimensions (5)
+    "promotion": "-- Promotion: p_promo_sk, p_promo_id, p_promo_name, p_channel_email, p_channel_tv, p_channel_catalog",
+    "reason": "-- Return reason: r_reason_sk, r_reason_id, r_reason_desc",
+    "ship_mode": "-- Shipping: sm_ship_mode_sk, sm_ship_mode_id, sm_type (EXPRESS/OVERNIGHT/REGULAR), sm_carrier",
+    "household_demographics": "-- Household: hd_demo_sk, hd_income_band_sk, hd_buy_potential, hd_dep_count, hd_vehicle_count",
+    "income_band": "-- Income band: ib_income_band_sk, ib_lower_bound, ib_upper_bound",
+}
+
+# ========== TABLE RELATIONSHIPS (for JOIN hints) ==========
+TABLE_RELATIONSHIPS = {
+    "store_sales": ["date_dim", "item", "customer", "store", "promotion"],
+    "web_sales": ["date_dim", "item", "customer", "web_site", "web_page", "promotion"],
+    "catalog_sales": ["date_dim", "item", "customer", "catalog_page", "promotion"],
+    "store_returns": ["date_dim", "item", "customer", "store", "reason"],
+    "web_returns": ["date_dim", "item", "customer", "web_site", "reason"],
+    "catalog_returns": ["date_dim", "item", "customer", "catalog_page", "reason"],
+    "inventory": ["date_dim", "item", "warehouse"],
+    "customer": ["customer_address", "customer_demographics", "household_demographics"],
 }
 
 # ========== SETUP DB ==========
@@ -72,31 +119,105 @@ def setup_db():
         con.close()
     return duckdb.connect(str(DB_PATH), read_only=True)
 
-# ========== SCHEMA UTILS ==========
-def strip_accents(text: str) -> str:
-    return "".join(ch for ch in unicodedata.normalize("NFD", text) if unicodedata.category(ch) != "Mn")
-
-def tokenize(text: str) -> list[str]:
-    text = strip_accents(text.lower())
-    tokens = []
-    for tok in re.findall(r"[a-z0-9_]+", text):
-        tokens.extend(tok.split("_"))
-    return [t for t in tokens if len(t) > 1]
-
-SYNONYMS = {
-    "khach": "customer", "khachhang": "customer", "sanpham": "item",
-    "hang": "item", "danhmuc": "category", "bang": "state", "tinh": "state",
-    "cuahang": "store", "doanhthu": "revenue", "soluong": "quantity",
-    "gia": "price", "thang": "month", "nam": "year", "quy": "quarter",
-    "gioi": "gender", "gioitinh": "gender", "tuoi": "age",
-}
-
-def expand_tokens(tokens: list[str]) -> set[str]:
-    expanded = set(tokens)
-    for tok in tokens:
-        if tok in SYNONYMS:
-            expanded.add(SYNONYMS[tok])
-    return expanded
+# ========== IMPROVED SCHEMA SELECTION ==========
+class SchemaSelector:
+    """TF-IDF based schema selection for better table relevance scoring."""
+    
+    def __init__(self, schema_map: dict):
+        self.schema_map = schema_map
+        self.table_names = list(schema_map.keys())
+        
+        # Build table descriptions for TF-IDF
+        self.table_docs = []
+        for table in self.table_names:
+            cols = schema_map[table]
+            # Combine table name + column names + descriptions
+            col_text = " ".join([col for col, _ in cols])
+            desc = TABLE_DESCRIPTIONS.get(table, "")
+            doc = f"{table} {col_text} {desc}"
+            self.table_docs.append(doc)
+        
+        # Build TF-IDF vectorizer
+        if HAS_SKLEARN:
+            self.vectorizer = TfidfVectorizer(
+                lowercase=True,
+                token_pattern=r'[a-z][a-z0-9_]*',
+                ngram_range=(1, 2)
+            )
+            self.table_vectors = self.vectorizer.fit_transform(self.table_docs)
+        else:
+            self.vectorizer = None
+            self.table_vectors = None
+    
+    def select_tables(self, question: str, max_tables: int = 10) -> list[str]:
+        """Select most relevant tables for the question using TF-IDF + rules."""
+        
+        if not HAS_SKLEARN or self.vectorizer is None:
+            return self._fallback_select(question, max_tables)
+        
+        # TF-IDF similarity
+        q_vector = self.vectorizer.transform([question.lower()])
+        scores = cosine_similarity(q_vector, self.table_vectors).flatten()
+        
+        # Apply rule-based boosting
+        question_lower = question.lower()
+        for i, table in enumerate(self.table_names):
+            # Boost fact tables for sales/revenue queries
+            if any(w in question_lower for w in ["doanh thu", "sales", "revenue", "bán"]):
+                if table in ["store_sales", "web_sales", "catalog_sales"]:
+                    scores[i] *= 1.5
+            # Boost return tables for return queries
+            if any(w in question_lower for w in ["trả hàng", "return", "hoàn"]):
+                if table in ["store_returns", "web_returns", "catalog_returns", "reason"]:
+                    scores[i] *= 1.5
+            # Boost date_dim for time queries
+            if any(w in question_lower for w in ["năm", "tháng", "quý", "year", "month", "quarter"]):
+                if table == "date_dim":
+                    scores[i] *= 2.0
+            # Boost customer tables for customer queries
+            if any(w in question_lower for w in ["khách", "customer", "người mua"]):
+                if table in ["customer", "customer_address", "customer_demographics"]:
+                    scores[i] *= 1.5
+            # Boost item for product queries
+            if any(w in question_lower for w in ["sản phẩm", "item", "hàng", "danh mục", "category"]):
+                if table == "item":
+                    scores[i] *= 1.5
+        
+        # Sort by score and select top tables
+        ranked = sorted(zip(self.table_names, scores), key=lambda x: x[1], reverse=True)
+        selected = [t for t, s in ranked if s > 0.01][:max_tables]
+        
+        # Add related tables (for JOINs)
+        selected = self._add_related_tables(selected, max_tables)
+        
+        return selected
+    
+    def _add_related_tables(self, selected: list[str], max_tables: int) -> list[str]:
+        """Add tables needed for JOINs based on relationships."""
+        result = list(selected)
+        
+        for table in selected:
+            if table in TABLE_RELATIONSHIPS:
+                for related in TABLE_RELATIONSHIPS[table]:
+                    if related not in result and len(result) < max_tables:
+                        result.append(related)
+        
+        return result[:max_tables]
+    
+    def _fallback_select(self, question: str, max_tables: int) -> list[str]:
+        """Fallback to simple token matching if sklearn not available."""
+        question_lower = question.lower()
+        scores = defaultdict(float)
+        
+        for table in self.table_names:
+            if table in question_lower:
+                scores[table] += 1.0
+            for col, _ in self.schema_map[table]:
+                if col in question_lower:
+                    scores[table] += 0.5
+        
+        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        return [t for t, s in ranked if s > 0][:max_tables]
 
 def build_schema_map(con):
     schema_map = {}
@@ -105,45 +226,11 @@ def build_schema_map(con):
         schema_map[table_name] = cols
     return schema_map
 
-def build_table_tokens(schema_map):
-    table_tokens = {}
-    for table, cols in schema_map.items():
-        tokens = set(tokenize(table))
-        for col, _ in cols:
-            tokens.update(tokenize(col))
-        table_tokens[table] = tokens
-    return table_tokens
-
-def select_tables(question: str, table_tokens: dict, schema_map: dict, max_tables: int = 8) -> list[str]:
-    q_tokens = expand_tokens(tokenize(question))
-    scored = [(len(q_tokens & tokens), table) for table, tokens in table_tokens.items()]
-    scored.sort(reverse=True)
-    selected = [t for score, t in scored if score > 0][:max_tables]
-    
-    def ensure(table):
-        if table in schema_map and table not in selected:
-            selected.append(table)
-    
-    if any(t in q_tokens for t in {"year", "month", "quarter", "date"}):
-        ensure("date_dim")
-    if "customer" in q_tokens:
-        ensure("customer"); ensure("customer_address")
-    if "store" in q_tokens:
-        ensure("store_sales"); ensure("store")
-    if any(t in q_tokens for t in {"sales", "revenue"}):
-        ensure("store_sales")
-    # B6: Add customer_demographics for gender/age queries
-    if any(t in q_tokens for t in {"gender", "age", "education", "marital"}):
-        ensure("customer_demographics"); ensure("customer")
-    
-    return selected[:max_tables]
-
-def build_schema_text_enhanced(tables: list[str], schema_map: dict) -> str:
-    """B6: Enhanced schema with table descriptions."""
+def build_schema_text(tables: list[str], schema_map: dict) -> str:
+    """Build schema text with descriptions."""
     lines = []
     for table in tables:
         cols = schema_map.get(table, [])
-        # Add table description if available
         desc = TABLE_DESCRIPTIONS.get(table, "")
         if desc:
             lines.append(desc)
@@ -222,25 +309,38 @@ def load_rag_retriever():
     return None
 
 def retrieve_multi_dimensional(retriever, question: str, needed_tables: list[str], k: int = 5) -> list[dict]:
-    """Multi-dimensional retrieval: by question similarity AND table overlap."""
+    """Multi-dimensional retrieval: semantic + table overlap + SQL complexity matching."""
     if retriever is None:
         return []
     
-    # Get more candidates than needed
+    # Get more candidates
     candidates = retriever.retrieve(question, k=k*3)
     
-    if not candidates or not needed_tables:
-        return candidates[:k] if candidates else []
+    if not candidates:
+        return []
     
     needed_set = set(needed_tables)
     
-    # Re-rank by table overlap
+    # Re-rank with multiple factors
     scored = []
     for c in candidates:
-        sql_tables = extract_tables_from_sql(c.get("sql", ""))
-        table_overlap = len(needed_set & sql_tables)
-        # Combined score: 0.7 * semantic + 0.3 * table_overlap
-        combined_score = 0.7 * c.get("score", 0) + 0.3 * (table_overlap / max(len(needed_set), 1))
+        sql = c.get("sql", "")
+        sql_tables = extract_tables_from_sql(sql)
+        
+        # Factor 1: Semantic similarity (from retriever)
+        semantic_score = c.get("score", 0)
+        
+        # Factor 2: Table overlap
+        table_overlap = len(needed_set & sql_tables) / max(len(needed_set), 1)
+        
+        # Factor 3: SQL complexity matching (prefer similar complexity)
+        has_join = "join" in sql.lower()
+        has_group = "group by" in sql.lower()
+        has_subquery = sql.count("select") > 1
+        complexity = has_join + has_group + has_subquery
+        
+        # Combined score
+        combined_score = 0.5 * semantic_score + 0.3 * table_overlap + 0.2 * (complexity / 3)
         scored.append((combined_score, c))
     
     scored.sort(reverse=True, key=lambda x: x[0])
@@ -289,7 +389,7 @@ def generate_sql(prompt: str, tokenizer, model) -> str:
     if not HAS_TORCH or model is None:
         return "SELECT 1;"
     
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True).to(model.device)
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096).to(model.device)
     with torch.no_grad():
         output_ids = model.generate(
             **inputs, 
@@ -301,12 +401,15 @@ def generate_sql(prompt: str, tokenizer, model) -> str:
     return extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
 
 def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None) -> str:
-    """Build prompt with RAG examples."""
+    """Build optimized prompt with RAG examples."""
     few_shot_text = ""
     if examples:
         few_shot_text = "EXAMPLES:\n"
         for ex in examples:
-            few_shot_text += f"Q: {ex['question']}\nSQL: {ex['sql']}\n\n"
+            # Truncate long examples to save tokens
+            q = ex['question'][:150]
+            s = ex['sql'][:300]
+            few_shot_text += f"Q: {q}\nSQL: {s}\n\n"
     
     user = f"SCHEMA:\n{schema_text}\n\n{few_shot_text}QUESTION:\n{question}\n\nSQL:"
     
@@ -320,13 +423,16 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
 # ========== MAIN ==========
 def main():
     print("="*50)
-    print("Pipeline: B5+B6 + Multi-dimensional RAG")
+    print("Advanced Pipeline: TF-IDF Schema + Multi-RAG")
     print("="*50)
     
     # Setup
     con = setup_db()
     schema_map = build_schema_map(con)
-    table_tokens = build_table_tokens(schema_map)
+    
+    # Initialize improved schema selector
+    selector = SchemaSelector(schema_map)
+    print(f"Schema selector initialized with {len(schema_map)} tables")
     
     # Load RAG
     retriever = load_rag_retriever()
@@ -353,13 +459,11 @@ def main():
         question = row["Transcription"]
         gt_sql = row["SQL Ground Truth"]
         
-        # Dynamic table selection (with B6 enhancements)
-        tables = select_tables(question, table_tokens, schema_map, MAX_TABLES)
+        # TF-IDF based table selection
+        tables = selector.select_tables(question, MAX_TABLES)
+        schema_text = build_schema_text(tables, schema_map)
         
-        # B6: Enhanced schema with descriptions
-        schema_text = build_schema_text_enhanced(tables, schema_map)
-        
-        # Multi-dimensional RAG (B5 enhanced)
+        # Multi-dimensional RAG
         examples = retrieve_multi_dimensional(retriever, question, tables, k=RAG_K)
         
         # Generate
