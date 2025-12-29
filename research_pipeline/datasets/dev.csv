@@ -1,0 +1,1205 @@
+ID,Transcription,SQL Ground Truth
+487,Cửa hàng nào ở VA đứng đầu về doanh số Women vào tháng 1?,"SELECT 
+    s.s_store_name,
+    s.s_city,
+    s.s_state,
+    SUM(ss.ss_net_paid) as total_sales
+FROM store_sales ss
+JOIN store s ON ss.ss_store_sk = s.s_store_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE s.s_state = 'VA'
+  AND i.i_category = 'Women'
+  AND d.d_moy = 1
+GROUP BY s.s_store_name, s.s_city, s.s_state
+ORDER BY total_sales DESC
+LIMIT 1;"
+236,Hãy cho tôi biết tổng doanh thu thực tế thu được từ các đơn hàng Web phát sinh vào khung giờ khuya từ mười giờ đêm đến hai giờ sáng hôm sau,"SELECT SUM(ws.ws_sales_price)
+FROM web_sales ws
+JOIN time_dim t ON ws.ws_sold_time_sk = t.t_time_sk
+WHERE t.t_hour IN (22, 23, 0, 1);"
+345,Tỷ lệ trả hàng của Books ở IA có cao hơn mức trung bình hệ thống không?,"WITH category_state_returns AS (
+    SELECT 
+        COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as return_rate
+    FROM store_sales ss
+    LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+    JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN item i ON ss.ss_item_sk = i.i_item_sk
+    WHERE i.i_category = 'Books' AND ca.ca_state = 'IA'
+),
+system_average AS (
+    SELECT 
+        COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as avg_return_rate
+    FROM store_sales ss
+    LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+)
+SELECT 
+    'Books' as category,
+    'IA' as state,
+    csr.return_rate as category_state_return_rate,
+    sa.avg_return_rate as system_average_return_rate,
+    CASE WHEN csr.return_rate > sa.avg_return_rate THEN 'Cao hơn' ELSE 'Thấp hơn hoặc bằng' END as comparison
+FROM category_state_returns csr, system_average sa;"
+334,"Trong năm 2001, khách hàng ở KS mua nhiều Home không?","SELECT 
+    ca.ca_state,
+    i.i_category,
+    COUNT(*) as total_transactions,
+    SUM(ss.ss_quantity) as total_quantity,
+    SUM(ss.ss_net_paid) as total_revenue
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE ca.ca_state = 'KS'
+  AND i.i_category = 'Home'
+  AND d.d_year = 2001
+GROUP BY ca.ca_state, i.i_category;"
+710,Thống kê tổng số lượng Jewelry được mua bởi những khách hàng có trình độ Secondary.,"SELECT 
+  cd.cd_education_status,
+  i.i_category,
+  SUM(ss.ss_quantity) as total_quantity,
+  COUNT(*) as total_transactions
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Jewelry'
+  AND cd.cd_education_status = 'Secondary'
+ GROUP BY cd.cd_education_status, i.i_category;"
+175,Tìm 3 trang Web page có lượng sản phẩm khác nhau (distinct items) được bán ra nhiều nhất.,"SELECT wp.wp_url, COUNT(DISTINCT ws.ws_item_sk) AS item_variety
+FROM web_sales ws
+JOIN web_page wp ON ws.ws_web_page_sk = wp.wp_web_page_sk
+GROUP BY wp.wp_url
+ORDER BY item_variety DESC LIMIT 3;"
+665,Liệt kê 10 thương hiệu Sports được ưa chuộng nhất bởi khách hàng ở NC.,"SELECT 
+  i.i_brand,
+  i.i_category,
+  COUNT(*) as purchase_count,
+  SUM(ss.ss_quantity) as total_quantity,
+  SUM(ss.ss_net_paid) as total_revenue
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Sports'
+  AND ca.ca_state = 'NC'
+ GROUP BY i.i_brand, i.i_category
+ ORDER BY purchase_count DESC
+ LIMIT 10;"
+821,Ai mua đồ Sports nhiều nhất ở NC vậy?,"SELECT 
+  c.c_customer_id,
+  c.c_first_name || ' ' || c.c_last_name as customer_name,
+  SUM(ss.ss_quantity) as total_quantity,
+  SUM(ss.ss_net_paid) as total_spent
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Sports'
+  AND ca.ca_state = 'NC'
+ GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name
+ ORDER BY total_quantity DESC
+ LIMIT 1;"
+210,Bạn hãy tìm giúp tôi danh sách các mặt hàng đã được mua trực tuyến và sau đó bị khách hàng trả lại ngay trong cùng một tháng bán hàng đó,"SELECT DISTINCT i.i_item_desc
+FROM web_sales ws
+JOIN web_returns wr ON ws.ws_item_sk = wr.wr_item_sk AND ws.ws_order_number = wr.wr_order_number
+JOIN item i ON ws.ws_item_sk = i.i_item_sk
+JOIN date_dim d1 ON ws.ws_sold_date_sk = d1.d_date_sk
+JOIN date_dim d2 ON wr.wr_returned_date_sk = d2.d_date_sk
+WHERE d1.d_moy = d2.d_moy AND d1.d_year = d2.d_year;"
+746,Năm ngoái dân ở IA mua Jewelry nhiều hay ít?,"SELECT 
+  d.d_year,
+  ca.ca_state,
+  i.i_category,
+  COUNT(*) as total_transactions,
+  SUM(ss.ss_quantity) as total_quantity,
+  SUM(ss.ss_net_paid) as total_revenue,
+  AVG(ss.ss_net_paid) as avg_transaction_value
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE ca.ca_state = 'IA'
+  AND i.i_category = 'Jewelry'
+  AND d.d_year = (SELECT MAX(d_year) - 1 FROM date_dim WHERE d_date_sk IN (SELECT ss_sold_date_sk FROM store_sales))
+ GROUP BY d.d_year, ca.ca_state, i.i_category;"
+382,Có bao nhiêu đơn hàng Music bị trả lại tại NC vào năm 2002?,"SELECT 
+    COUNT(*) as total_returns,
+    SUM(sr.sr_return_quantity) as total_returned_quantity,
+    SUM(sr.sr_return_amt) as total_return_amount
+FROM store_returns sr
+JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON sr.sr_item_sk = i.i_item_sk
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+WHERE i.i_category = 'Music'
+  AND ca.ca_state = 'NC'
+  AND d.d_year = 2002;"
+830,Cho tôi biết top 5 khách hàng chi tiêu nhiều nhất cho mặt hàng Children tại KY.,"SELECT 
+  c.c_customer_id,
+  c.c_first_name || ' ' || c.c_last_name as customer_name,
+  c.c_email_address,
+  SUM(ss.ss_net_paid) as total_spent,
+  COUNT(*) as total_transactions
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Children'
+  AND ca.ca_state = 'KY'
+ GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address
+ ORDER BY total_spent DESC
+ LIMIT 5;"
+898,Cửa hàng nào ở GA đứng đầu về doanh số Jewelry vào tháng 1?,"SELECT 
+  s.s_store_name,
+  s.s_city,
+  s.s_state,
+  SUM(ss.ss_net_paid) as total_sales
+ FROM store_sales ss
+ JOIN store s ON ss.ss_store_sk = s.s_store_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE s.s_state = 'GA'
+  AND i.i_category = 'Jewelry'
+  AND d.d_moy = 1
+ GROUP BY s.s_store_name, s.s_city, s.s_state
+ ORDER BY total_sales DESC
+ LIMIT 1;"
+6,Lọc danh sách khách hàng thân thiết,"SELECT c_first_name, c_last_name, c_email_address 
+FROM customer 
+WHERE c_preferred_cust_flag = 'Y';"
+520,Cửa hàng nào ở MO đứng đầu về doanh số Sports vào tháng 1?,"SELECT 
+    s.s_store_name,
+    s.s_city,
+    s.s_state,
+    SUM(ss.ss_net_paid) as total_sales
+FROM store_sales ss
+JOIN store s ON ss.ss_store_sk = s.s_store_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE s.s_state = 'MO'
+  AND i.i_category = 'Sports'
+  AND d.d_moy = 1
+GROUP BY s.s_store_name, s.s_city, s.s_state
+ORDER BY total_sales DESC
+LIMIT 1;"
+779,Liệt kê 3 thương hiệu Jewelry được ưa chuộng nhất bởi khách hàng ở KS.,"SELECT 
+  i.i_brand,
+  i.i_category,
+  COUNT(*) as purchase_count,
+  SUM(ss.ss_quantity) as total_quantity,
+  SUM(ss.ss_net_paid) as total_revenue
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Jewelry'
+  AND ca.ca_state = 'KS'
+ GROUP BY i.i_brand, i.i_category
+ ORDER BY purchase_count DESC
+ LIMIT 3;"
+858,Giá bán trung bình của mặt hàng Electronics trong năm 2001 là bao nhiêu?,"SELECT 
+  i.i_category,
+  AVG(ss.ss_sales_price) as avg_sales_price,
+  MIN(ss.ss_sales_price) as min_sales_price,
+  MAX(ss.ss_sales_price) as max_sales_price
+ FROM store_sales ss
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE i.i_category = 'Electronics'
+  AND d.d_year = 2001
+ GROUP BY i.i_category;"
+735,Check giùm tôi tồn kho của Women ở chi nhánh TX.,"SELECT 
+  w.w_warehouse_name,
+  w.w_state,
+  i.i_category,
+  SUM(inv.inv_quantity_on_hand) as total_inventory
+ FROM inventory inv
+ JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
+ JOIN item i ON inv.inv_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Women'
+  AND w.w_state = 'TX'
+ GROUP BY w.w_warehouse_name, w.w_state, i.i_category
+ ORDER BY total_inventory DESC;"
+391,Cho tôi biết top 3 khách hàng chi tiêu nhiều nhất cho mặt hàng Jewelry tại NC.,"SELECT 
+    c.c_customer_id,
+    c.c_first_name || ' ' || c.c_last_name as customer_name,
+    c.c_email_address,
+    SUM(ss.ss_net_paid) as total_spent,
+    COUNT(*) as total_transactions
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Jewelry'
+  AND ca.ca_state = 'NC'
+GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address
+ORDER BY total_spent DESC
+LIMIT 3;"
+315,Tìm 10 sản phẩm Shoes có lợi nhuận thấp nhất trong năm 2002.,"SELECT 
+    i.i_item_id,
+    i.i_product_name,
+    i.i_category,
+    SUM(ss.ss_net_profit) as total_profit,
+    SUM(ss.ss_net_paid) as total_revenue
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE i.i_category = 'Shoes'
+  AND d.d_year = 2002
+GROUP BY i.i_item_id, i.i_product_name, i.i_category
+ORDER BY total_profit ASC
+LIMIT 10;"
+532,Tỷ lệ trả hàng của Books ở NC có cao hơn mức trung bình hệ thống không?,"WITH category_state_returns AS (
+    SELECT 
+        COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as return_rate
+    FROM store_sales ss
+    LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+    JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN item i ON ss.ss_item_sk = i.i_item_sk
+    WHERE i.i_category = 'Books' AND ca.ca_state = 'NC'
+),
+system_average AS (
+    SELECT 
+        COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as avg_return_rate
+    FROM store_sales ss
+    LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+)
+SELECT 
+    'Books' as category,
+    'NC' as state,
+    csr.return_rate as category_state_return_rate,
+    sa.avg_return_rate as system_average_return_rate,
+    CASE WHEN csr.return_rate > sa.avg_return_rate THEN 'Cao hơn' ELSE 'Thấp hơn hoặc bằng' END as comparison
+FROM category_state_returns csr, system_average sa;"
+745,"Năm 2001, doanh thu từ kênh Catalog cao hơn hay thấp hơn kênh Web?","WITH store_rev AS (
+  SELECT 'Store' as channel, SUM(ss.ss_net_paid) as revenue
+  FROM store_sales ss
+  JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+  WHERE d.d_year = 2001
+ ),
+ web_rev AS (
+  SELECT 'Web' as channel, SUM(ws.ws_net_paid) as revenue
+  FROM web_sales ws
+  JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
+  WHERE d.d_year = 2001
+ ),
+ catalog_rev AS (
+  SELECT 'Catalog' as channel, SUM(cs.cs_net_paid) as revenue
+  FROM catalog_sales cs
+  JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk
+  WHERE d.d_year = 2001
+ )
+ SELECT * FROM store_rev
+ UNION ALL SELECT * FROM web_rev
+ UNION ALL SELECT * FROM catalog_rev
+ ORDER BY revenue DESC;"
+292,Liệt kê danh sách tên những khách hàng có trình độ 'College' đã mua đồ 'Men' tại cửa hàng vào năm 2001 nhưng chưa bao giờ mua hàng qua trang Web,"SELECT DISTINCT c.c_first_name, c.c_last_name
+FROM customer c
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE cd.cd_education_status = 'College' AND d.d_year = 2001
+EXCEPT
+SELECT c.c_first_name, c.c_last_name
+FROM customer c
+JOIN web_sales ws ON c.c_customer_sk = ws.ws_bill_customer_sk;"
+50,Truy vấn danh sách những khách hàng có trình độ học vấn phổ thông đang sống tại Canada và có xếp hạng tín dụng ở mức tốt,SELECT * FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_education_status = 'School' AND c_birth_country = 'CA' AND cd_credit_rating = 'Good';
+740,Tìm email của các khách hàng VIP ở MO đã mua đồ Electronics trên 5000 đô.,"SELECT 
+  c.c_customer_id,
+  c.c_first_name || ' ' || c.c_last_name as customer_name,
+  c.c_email_address,
+  SUM(ss.ss_net_paid) as total_spent
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE ca.ca_state = 'MO'
+  AND i.i_category = 'Electronics'
+ GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address
+ HAVING SUM(ss.ss_net_paid) > 5000
+ ORDER BY total_spent DESC;"
+26,Truy vấn thông tin của những khách hàng có ngày sinh là ngày hai mươi hai ,SELECT * FROM customer WHERE c_birth_day = 22;
+892,Năm 2000 thì kênh Store mang về bao nhiêu tiền?,"SELECT 
+  d.d_year,
+  'Store' as channel,
+  SUM(ss.ss_net_paid) as total_revenue,
+  COUNT(*) as total_transactions
+ FROM store_sales ss
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE d.d_year = 2000
+ GROUP BY d.d_year;"
+211,Xác định xem lý do hàng đầu khiến các khách hàng nữ trả lại hàng hóa đã mua qua kênh Catalog là do lỗi sản phẩm hay không hài lòng,"SELECT r.r_reason_desc, COUNT(*) AS count
+FROM catalog_returns cr
+JOIN reason r ON cr.cr_reason_sk = r.r_reason_sk
+JOIN customer_demographics cd ON cr.cr_refunded_cdemo_sk = cd.cd_demo_sk
+WHERE cd.cd_gender = 'F'
+GROUP BY r.r_reason_desc
+ORDER BY count DESC LIMIT 1;"
+228,Hãy cho tôi biết mặt hàng có mã số sản phẩm là một trăm bốn mươi sáu đã mang lại bao nhiêu doanh thu trên kênh bán hàng trực tuyến Web,"SELECT SUM(ws_sales_price)
+FROM web_sales
+WHERE ws_item_sk = 146;"
+281,Bạn hãy hiển thị tên các nhà sản xuất của sản phẩm 'Books' bị trả lại qua kênh Catalog bởi khách hàng sống tại bang 'Kentucky',"SELECT DISTINCT i.i_manufact
+FROM catalog_returns cr
+JOIN item i ON cr.cr_item_sk = i.i_item_sk
+JOIN customer_address ca ON cr.cr_refunded_addr_sk = ca.ca_address_sk
+WHERE i.i_category = 'Books' AND ca.ca_state = 'KY';"
+732,"Trong năm 2000, khách hàng ở KS mua nhiều Men không?","SELECT 
+  ca.ca_state,
+  i.i_category,
+  COUNT(*) as total_transactions,
+  SUM(ss.ss_quantity) as total_quantity,
+  SUM(ss.ss_net_paid) as total_revenue
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE ca.ca_state = 'KS'
+  AND i.i_category = 'Men'
+  AND d.d_year = 2000
+ GROUP BY ca.ca_state, i.i_category;"
+694,Năm ngoái dân ở KS mua Women nhiều hay ít?,"SELECT 
+  d.d_year,
+  ca.ca_state,
+  i.i_category,
+  COUNT(*) as total_transactions,
+  SUM(ss.ss_quantity) as total_quantity,
+  SUM(ss.ss_net_paid) as total_revenue,
+  AVG(ss.ss_net_paid) as avg_transaction_value
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE ca.ca_state = 'KS'
+  AND i.i_category = 'Women'
+  AND d.d_year = (SELECT MAX(d_year) - 1 FROM date_dim WHERE d_date_sk IN (SELECT ss_sold_date_sk FROM store_sales))
+ GROUP BY d.d_year, ca.ca_state, i.i_category;"
+589,Giá bán trung bình của mặt hàng Books trong năm 2001 là bao nhiêu?,"SELECT 
+    i.i_category,
+    AVG(ss.ss_sales_price) as avg_sales_price,
+    MIN(ss.ss_sales_price) as min_sales_price,
+    MAX(ss.ss_sales_price) as max_sales_price
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE i.i_category = 'Books'
+  AND d.d_year = 2001
+GROUP BY i.i_category;"
+55,Tìm khách hàng nữ có tên bắt đầu bằng chữ 'M' kèm theo trình độ học vấn của họ.,"SELECT c.c_first_name, cd.cd_education_status 
+FROM customer c 
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk 
+WHERE c.c_first_name LIKE 'M%' AND cd.cd_gender = 'F';"
+833,Giá bán trung bình của mặt hàng Sports trong năm 2002 là bao nhiêu?,"SELECT 
+  i.i_category,
+  AVG(ss.ss_sales_price) as avg_sales_price,
+  MIN(ss.ss_sales_price) as min_sales_price,
+  MAX(ss.ss_sales_price) as max_sales_price
+ FROM store_sales ss
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE i.i_category = 'Sports'
+  AND d.d_year = 2002
+ GROUP BY i.i_category;"
+676,Ai mua đồ Children nhiều nhất ở MO vậy?,"SELECT 
+  c.c_customer_id,
+  c.c_first_name || ' ' || c.c_last_name as customer_name,
+  SUM(ss.ss_quantity) as total_quantity,
+  SUM(ss.ss_net_paid) as total_spent
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Children'
+  AND ca.ca_state = 'MO'
+ GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name
+ ORDER BY total_quantity DESC
+ LIMIT 1;"
+526,"Năm 1999, doanh thu từ kênh Web cao hơn hay thấp hơn kênh Catalog?","WITH store_rev AS (
+    SELECT 'Store' as channel, SUM(ss.ss_net_paid) as revenue
+    FROM store_sales ss
+    JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+    WHERE d.d_year = 1999
+),
+web_rev AS (
+    SELECT 'Web' as channel, SUM(ws.ws_net_paid) as revenue
+    FROM web_sales ws
+    JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
+    WHERE d.d_year = 1999
+),
+catalog_rev AS (
+    SELECT 'Catalog' as channel, SUM(cs.cs_net_paid) as revenue
+    FROM catalog_sales cs
+    JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk
+    WHERE d.d_year = 1999
+)
+SELECT * FROM store_rev
+UNION ALL SELECT * FROM web_rev
+UNION ALL SELECT * FROM catalog_rev
+ORDER BY revenue DESC;"
+494,"Năm 2000, doanh thu từ kênh Store cao hơn hay thấp hơn kênh Web?","WITH store_rev AS (
+    SELECT 'Store' as channel, SUM(ss.ss_net_paid) as revenue
+    FROM store_sales ss
+    JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+    WHERE d.d_year = 2000
+),
+web_rev AS (
+    SELECT 'Web' as channel, SUM(ws.ws_net_paid) as revenue
+    FROM web_sales ws
+    JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
+    WHERE d.d_year = 2000
+),
+catalog_rev AS (
+    SELECT 'Catalog' as channel, SUM(cs.cs_net_paid) as revenue
+    FROM catalog_sales cs
+    JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk
+    WHERE d.d_year = 2000
+)
+SELECT * FROM store_rev
+UNION ALL SELECT * FROM web_rev
+UNION ALL SELECT * FROM catalog_rev
+ORDER BY revenue DESC;"
+616,Ai mua đồ Shoes nhiều nhất ở GA vậy?,"SELECT 
+  c.c_customer_id,
+  c.c_first_name || ' ' || c.c_last_name as customer_name,
+  SUM(ss.ss_quantity) as total_quantity,
+  SUM(ss.ss_net_paid) as total_spent
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Shoes'
+  AND ca.ca_state = 'GA'
+ GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name
+ ORDER BY total_quantity DESC
+ LIMIT 1;"
+111,Lấy tên khách hàng đã thực hiện giao dịch có giá trị lớn nhất trên hệ thống Catalog,"SELECT c.c_first_name, c.c_last_name, cs.cs_sales_price
+FROM catalog_sales cs
+JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+ORDER BY cs.cs_sales_price DESC LIMIT 1;"
+875,Tổng doanh thu của Women tại bang NC năm 2000 là bao nhiêu?,"SELECT 
+  SUM(ss.ss_net_paid) as total_revenue
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE i.i_category = 'Women'
+  AND ca.ca_state = 'NC'
+  AND d.d_year = 2000;"
+546,Cho tôi xem danh sách sản phẩm Home bán chạy nhất ở TX.,"SELECT 
+    i.i_item_id,
+    i.i_product_name,
+    i.i_brand,
+    i.i_category,
+    SUM(ss.ss_quantity) as total_quantity_sold,
+    SUM(ss.ss_net_paid) as total_revenue
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Home'
+  AND ca.ca_state = 'TX'
+GROUP BY i.i_item_id, i.i_product_name, i.i_brand, i.i_category
+ORDER BY total_quantity_sold DESC
+LIMIT 10;"
+67,"Tìm những khách hàng ""trung thành"" đã mua hàng ở cả 3 kênh: Cửa hàng, Web và Catalog","SELECT c.c_first_name, c.c_last_name
+FROM customer c
+WHERE EXISTS (SELECT 1 FROM store_sales ss WHERE ss.ss_customer_sk = c.c_customer_sk)
+  AND EXISTS (SELECT 1 FROM web_sales ws WHERE ws.ws_bill_customer_sk = c.c_customer_sk)
+  AND EXISTS (SELECT 1 FROM catalog_sales cs WHERE cs.cs_bill_customer_sk = c.c_customer_sk);"
+313,Có bao nhiêu đơn hàng Electronics bị trả lại tại VA vào năm 2002?,"SELECT 
+    COUNT(*) as total_returns,
+    SUM(sr.sr_return_quantity) as total_returned_quantity,
+    SUM(sr.sr_return_amt) as total_return_amount
+FROM store_returns sr
+JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON sr.sr_item_sk = i.i_item_sk
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+WHERE i.i_category = 'Electronics'
+  AND ca.ca_state = 'VA'
+  AND d.d_year = 2002;"
+361,Thống kê tổng số lượng Books được mua bởi những khách hàng có trình độ 4 yr Degree.,"SELECT 
+    cd.cd_education_status,
+    i.i_category,
+    SUM(ss.ss_quantity) as total_quantity,
+    COUNT(*) as total_transactions
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Books'
+  AND cd.cd_education_status = '4 yr Degree'
+GROUP BY cd.cd_education_status, i.i_category;"
+576,Check giùm tôi tồn kho của Home ở chi nhánh IA.,"SELECT 
+    w.w_warehouse_name,
+    w.w_state,
+    i.i_category,
+    SUM(inv.inv_quantity_on_hand) as total_inventory
+FROM inventory inv
+JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
+JOIN item i ON inv.inv_item_sk = i.i_item_sk
+WHERE i.i_category = 'Home'
+  AND w.w_state = 'IA'
+GROUP BY w.w_warehouse_name, w.w_state, i.i_category
+ORDER BY total_inventory DESC;"
+73,"Trong năm 2001, mấy bà khách nữ đã kết hôn thường hay mua loại hàng (category) gì nhất?","SELECT i.i_category, COUNT(*) AS total_bought
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE cd.cd_gender = 'F' AND cd.cd_marital_status = 'M' AND d.d_year = 2001
+GROUP BY i.i_category
+ORDER BY total_bought DESC LIMIT 1;"
+121,Lấy tên 3 khách hàng trả lại hàng nhiều nhất vì lý do 'đồ quá to' (too big).,"SELECT c.c_first_name, COUNT(*) AS return_count
+FROM store_returns sr
+JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk
+JOIN reason r ON sr.sr_reason_sk = r.r_reason_sk
+WHERE r.r_reason_desc ILIKE '%too big%'
+GROUP BY c.c_customer_sk, c.c_first_name
+ORDER BY return_count DESC
+LIMIT 3;"
+544,Khách hàng có bằng Secondary tại VA thường mua Books qua kênh nào?,"WITH store_channel AS (
+    SELECT 'Store' as channel, SUM(ss.ss_net_paid) as total_sales
+    FROM store_sales ss
+    JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+    JOIN item i ON ss.ss_item_sk = i.i_item_sk
+    WHERE cd.cd_education_status = 'Secondary'
+      AND ca.ca_state = 'VA'
+      AND i.i_category = 'Books'
+),
+web_channel AS (
+    SELECT 'Web' as channel, SUM(ws.ws_net_paid) as total_sales
+    FROM web_sales ws
+    JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+    JOIN item i ON ws.ws_item_sk = i.i_item_sk
+    WHERE cd.cd_education_status = 'Secondary'
+      AND ca.ca_state = 'VA'
+      AND i.i_category = 'Books'
+),
+catalog_channel AS (
+    SELECT 'Catalog' as channel, SUM(cs.cs_net_paid) as total_sales
+    FROM catalog_sales cs
+    JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+    JOIN item i ON cs.cs_item_sk = i.i_item_sk
+    WHERE cd.cd_education_status = 'Secondary'
+      AND ca.ca_state = 'VA'
+      AND i.i_category = 'Books'
+)
+SELECT * FROM store_channel
+UNION ALL SELECT * FROM web_channel
+UNION ALL SELECT * FROM catalog_channel
+ORDER BY total_sales DESC;"
+431,Có bao nhiêu đơn hàng Shoes bị trả lại tại MO vào năm 2002?,"SELECT 
+    COUNT(*) as total_returns,
+    SUM(sr.sr_return_quantity) as total_returned_quantity,
+    SUM(sr.sr_return_amt) as total_return_amount
+FROM store_returns sr
+JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON sr.sr_item_sk = i.i_item_sk
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+WHERE i.i_category = 'Shoes'
+  AND ca.ca_state = 'MO'
+  AND d.d_year = 2002;"
+744,So sánh lợi nhuận của Home giữa kênh Catalog và Catalog tại KY.,"WITH store_profit AS (
+  SELECT 'Store' as channel, SUM(ss.ss_net_profit) as total_profit
+  FROM store_sales ss
+  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+  JOIN item i ON ss.ss_item_sk = i.i_item_sk
+  WHERE i.i_category = 'Home' AND ca.ca_state = 'KY'
+ ),
+ web_profit AS (
+  SELECT 'Web' as channel, SUM(ws.ws_net_profit) as total_profit
+  FROM web_sales ws
+  JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk
+  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+  JOIN item i ON ws.ws_item_sk = i.i_item_sk
+  WHERE i.i_category = 'Home' AND ca.ca_state = 'KY'
+ ),
+ catalog_profit AS (
+  SELECT 'Catalog' as channel, SUM(cs.cs_net_profit) as total_profit
+  FROM catalog_sales cs
+  JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+  JOIN item i ON cs.cs_item_sk = i.i_item_sk
+  WHERE i.i_category = 'Home' AND ca.ca_state = 'KY'
+ )
+ SELECT * FROM store_profit WHERE channel IN ('Catalog', 'Catalog')
+ UNION ALL SELECT * FROM web_profit WHERE channel IN ('Catalog', 'Catalog')
+ UNION ALL SELECT * FROM catalog_profit WHERE channel IN ('Catalog', 'Catalog')
+ ORDER BY channel;"
+423,Giá bán trung bình của mặt hàng Jewelry trong năm 2001 là bao nhiêu?,"SELECT 
+    i.i_category,
+    AVG(ss.ss_sales_price) as avg_sales_price,
+    MIN(ss.ss_sales_price) as min_sales_price,
+    MAX(ss.ss_sales_price) as max_sales_price
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE i.i_category = 'Jewelry'
+  AND d.d_year = 2001
+GROUP BY i.i_category;"
+827,Tỷ lệ trả hàng của Women ở MO có cao hơn mức trung bình hệ thống không?,"WITH category_state_returns AS (
+  SELECT 
+  COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as return_rate
+  FROM store_sales ss
+  LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+  JOIN item i ON ss.ss_item_sk = i.i_item_sk
+  WHERE i.i_category = 'Women' AND ca.ca_state = 'MO'
+ ),
+ system_average AS (
+  SELECT 
+  COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as avg_return_rate
+  FROM store_sales ss
+  LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+ )
+ SELECT 
+  'Women' as category,
+  'MO' as state,
+  csr.return_rate as category_state_return_rate,
+  sa.avg_return_rate as system_average_return_rate,
+  CASE WHEN csr.return_rate > sa.avg_return_rate THEN 'Cao hơn' ELSE 'Thấp hơn hoặc bằng' END as comparison
+ FROM category_state_returns csr, system_average sa;"
+322,Ai mua đồ Music nhiều nhất ở KY vậy?,"SELECT 
+    c.c_customer_id,
+    c.c_first_name || ' ' || c.c_last_name as customer_name,
+    SUM(ss.ss_quantity) as total_quantity,
+    SUM(ss.ss_net_paid) as total_spent
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Music'
+  AND ca.ca_state = 'KY'
+GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name
+ORDER BY total_quantity DESC
+LIMIT 1;"
+790,Cho tôi biết top 10 khách hàng chi tiêu nhiều nhất cho mặt hàng Children tại IA.,"SELECT 
+  c.c_customer_id,
+  c.c_first_name || ' ' || c.c_last_name as customer_name,
+  c.c_email_address,
+  SUM(ss.ss_net_paid) as total_spent,
+  COUNT(*) as total_transactions
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Children'
+  AND ca.ca_state = 'IA'
+ GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address
+ ORDER BY total_spent DESC
+ LIMIT 10;"
+32,Đếm xem có bao nhiêu sản phẩm thuộc danh mục Beauty mà tên thương hiệu của nó có chứa chữ Premium bên trong,SELECT COUNT(*) FROM item WHERE i_category = 'Beauty' AND i_brand LIKE '%Premium%';
+465,Doanh số của Men tại NC năm 2002 so với năm trước đó tăng bao nhiêu?,"WITH current_year AS (
+    SELECT SUM(ss.ss_net_paid) as revenue
+    FROM store_sales ss
+    JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN item i ON ss.ss_item_sk = i.i_item_sk
+    JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+    WHERE i.i_category = 'Men' AND ca.ca_state = 'NC' AND d.d_year = 2002
+),
+previous_year AS (
+    SELECT SUM(ss.ss_net_paid) as revenue
+    FROM store_sales ss
+    JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN item i ON ss.ss_item_sk = i.i_item_sk
+    JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+    WHERE i.i_category = 'Men' AND ca.ca_state = 'NC' AND d.d_year = 2001
+)
+SELECT 
+    2002 as current_year,
+    cy.revenue as current_revenue,
+    2001 as previous_year,
+    py.revenue as previous_revenue,
+    cy.revenue - py.revenue as revenue_change,
+    ROUND((cy.revenue - py.revenue) / py.revenue * 100, 2) as growth_pct
+FROM current_year cy, previous_year py;"
+449,Có bao nhiêu đơn hàng Jewelry bị trả lại tại TX vào năm 2001?,"SELECT 
+    COUNT(*) as total_returns,
+    SUM(sr.sr_return_quantity) as total_returned_quantity,
+    SUM(sr.sr_return_amt) as total_return_amount
+FROM store_returns sr
+JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON sr.sr_item_sk = i.i_item_sk
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+WHERE i.i_category = 'Jewelry'
+  AND ca.ca_state = 'TX'
+  AND d.d_year = 2001;"
+248,Thống kê giúp tôi tổng số lượng sản phẩm Children được bán qua kênh Catalog và vận chuyển bằng đường bộ LIBRARY cho những khách hàng nữ đã lập gia đình.,"SELECT SUM(cs.cs_quantity)
+FROM catalog_sales cs
+JOIN item i ON cs.cs_item_sk = i.i_item_sk
+JOIN ship_mode sm ON cs.cs_ship_mode_sk = sm.sm_ship_mode_sk
+JOIN customer_demographics cd ON cs.cs_bill_cdemo_sk = cd.cd_demo_sk
+WHERE i.i_category = 'Children' 
+  AND sm.sm_type = 'LIBRARY' 
+  AND cd.cd_gender = 'F' 
+  AND cd.cd_marital_status = 'M';"
+205,Bạn hãy tính giúp tôi mức lợi nhuận ròng trung bình cho mỗi mặt hàng được bán tại cửa hàng cho các khách hàng đã lập gia đình và hiện đang cư trú tại bang California,"SELECT AVG(ss.ss_net_profit)
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+WHERE cd.cd_marital_status = 'M' AND ca.ca_state = 'CA';"
+454,"Hàng Books trả lại ở KS có nhiều không, xem số liệu năm 2000 thử.","SELECT 
+    i.i_category,
+    ca.ca_state,
+    d.d_year,
+    COUNT(*) as total_returns,
+    SUM(sr.sr_return_quantity) as total_returned_quantity,
+    SUM(sr.sr_return_amt) as total_return_amount,
+    AVG(sr.sr_return_amt) as avg_return_amount
+FROM store_returns sr
+JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON sr.sr_item_sk = i.i_item_sk
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+WHERE i.i_category = 'Books'
+  AND ca.ca_state = 'KS'
+  AND d.d_year = 2000
+GROUP BY i.i_category, ca.ca_state, d.d_year;"
+780,Cửa hàng nào ở MO đứng đầu về doanh số Books vào tháng 6?,"SELECT 
+  s.s_store_name,
+  s.s_city,
+  s.s_state,
+  SUM(ss.ss_net_paid) as total_sales
+ FROM store_sales ss
+ JOIN store s ON ss.ss_store_sk = s.s_store_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE s.s_state = 'MO'
+  AND i.i_category = 'Books'
+  AND d.d_moy = 6
+ GROUP BY s.s_store_name, s.s_city, s.s_state
+ ORDER BY total_sales DESC
+ LIMIT 1;"
+303,Tổng doanh thu của Women tại bang KY năm 2002 là bao nhiêu?,"SELECT 
+    SUM(ss.ss_net_paid) as total_revenue
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE i.i_category = 'Women'
+  AND ca.ca_state = 'KY'
+  AND d.d_year = 2002;"
+495,Cửa hàng nào ở KS đứng đầu về doanh số Women vào tháng 1?,"SELECT 
+    s.s_store_name,
+    s.s_city,
+    s.s_state,
+    SUM(ss.ss_net_paid) as total_sales
+FROM store_sales ss
+JOIN store s ON ss.ss_store_sk = s.s_store_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE s.s_state = 'KS'
+  AND i.i_category = 'Women'
+  AND d.d_moy = 1
+GROUP BY s.s_store_name, s.s_city, s.s_state
+ORDER BY total_sales DESC
+LIMIT 1;"
+219,Bạn hãy thực hiện phân chia danh sách khách hàng thành bốn nhóm bằng nhau dựa trên giá trị ước tính mức độ mua sắm trong hồ sơ nhân khẩu học của họ,"SELECT c_first_name, c_last_name, cd_purchase_estimate,
+       NTILE(4) OVER (ORDER BY cd_purchase_estimate DESC) AS customer_segment
+FROM customer
+JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk;"
+742,Tìm email của các khách hàng VIP ở IL đã mua đồ Jewelry trên 1000 đô.,"SELECT 
+  c.c_customer_id,
+  c.c_first_name || ' ' || c.c_last_name as customer_name,
+  c.c_email_address,
+  SUM(ss.ss_net_paid) as total_spent
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE ca.ca_state = 'IL'
+  AND i.i_category = 'Jewelry'
+ GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address
+ HAVING SUM(ss.ss_net_paid) > 1000
+ ORDER BY total_spent DESC;"
+397,Cho tôi xem danh sách sản phẩm Home bán chạy nhất ở IA.,"SELECT 
+    i.i_item_id,
+    i.i_product_name,
+    i.i_brand,
+    i.i_category,
+    SUM(ss.ss_quantity) as total_quantity_sold,
+    SUM(ss.ss_net_paid) as total_revenue
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Home'
+  AND ca.ca_state = 'IA'
+GROUP BY i.i_item_id, i.i_product_name, i.i_brand, i.i_category
+ORDER BY total_quantity_sold DESC
+LIMIT 10;"
+577,Tỷ lệ trả hàng của Men ở VA có cao hơn mức trung bình hệ thống không?,"WITH category_state_returns AS (
+    SELECT 
+        COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as return_rate
+    FROM store_sales ss
+    LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+    JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN item i ON ss.ss_item_sk = i.i_item_sk
+    WHERE i.i_category = 'Men' AND ca.ca_state = 'VA'
+),
+system_average AS (
+    SELECT 
+        COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as avg_return_rate
+    FROM store_sales ss
+    LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+)
+SELECT 
+    'Men' as category,
+    'VA' as state,
+    csr.return_rate as category_state_return_rate,
+    sa.avg_return_rate as system_average_return_rate,
+    CASE WHEN csr.return_rate > sa.avg_return_rate THEN 'Cao hơn' ELSE 'Thấp hơn hoặc bằng' END as comparison
+FROM category_state_returns csr, system_average sa;"
+142,Những mặt hàng nào thuộc danh mục 'Music' có lượng tồn kho dưới mức trung bình của cả kho?,"SELECT i.i_item_desc, inv.inv_quantity_on_hand
+FROM inventory inv
+JOIN item i ON inv.inv_item_sk = i.i_item_sk
+WHERE i.i_category = 'Music' 
+  AND inv.inv_quantity_on_hand < (SELECT AVG(inv_quantity_on_hand) FROM inventory);"
+590,Có bao nhiêu đơn hàng Men bị trả lại tại MO vào năm 2001?,"SELECT 
+    COUNT(*) as total_returns,
+    SUM(sr.sr_return_quantity) as total_returned_quantity,
+    SUM(sr.sr_return_amt) as total_return_amount
+FROM store_returns sr
+JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON sr.sr_item_sk = i.i_item_sk
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+WHERE i.i_category = 'Men'
+  AND ca.ca_state = 'MO'
+  AND d.d_year = 2001;"
+413,Thống kê tổng số lượng Sports được mua bởi những khách hàng có trình độ Primary.,"SELECT 
+    cd.cd_education_status,
+    i.i_category,
+    SUM(ss.ss_quantity) as total_quantity,
+    COUNT(*) as total_transactions
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Sports'
+  AND cd.cd_education_status = 'Primary'
+GROUP BY cd.cd_education_status, i.i_category;"
+324,Có bao nhiêu đơn hàng Shoes bị trả lại tại IL vào năm 2001?,"SELECT 
+    COUNT(*) as total_returns,
+    SUM(sr.sr_return_quantity) as total_returned_quantity,
+    SUM(sr.sr_return_amt) as total_return_amount
+FROM store_returns sr
+JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON sr.sr_item_sk = i.i_item_sk
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+WHERE i.i_category = 'Shoes'
+  AND ca.ca_state = 'IL'
+  AND d.d_year = 2001;"
+828,Cho tôi biết top 3 khách hàng chi tiêu nhiều nhất cho mặt hàng Books tại IL.,"SELECT 
+  c.c_customer_id,
+  c.c_first_name || ' ' || c.c_last_name as customer_name,
+  c.c_email_address,
+  SUM(ss.ss_net_paid) as total_spent,
+  COUNT(*) as total_transactions
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Books'
+  AND ca.ca_state = 'IL'
+ GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address
+ ORDER BY total_spent DESC
+ LIMIT 3;"
+550,Tìm 10 sản phẩm Jewelry có lợi nhuận thấp nhất trong năm 2000.,"SELECT 
+    i.i_item_id,
+    i.i_product_name,
+    i.i_category,
+    SUM(ss.ss_net_profit) as total_profit,
+    SUM(ss.ss_net_paid) as total_revenue
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE i.i_category = 'Jewelry'
+  AND d.d_year = 2000
+GROUP BY i.i_item_id, i.i_product_name, i.i_category
+ORDER BY total_profit ASC
+LIMIT 10;"
+34,Liệt kê các khách hàng ưu tiên từ nước Anh đã mua hàng với số lượng sản phẩm trong một đơn lớn hơn năm,"SELECT DISTINCT c_first_name, c_last_name 
+FROM customer 
+JOIN store_sales ON c_customer_sk = ss_customer_sk 
+WHERE c_birth_country = 'UK' AND c_preferred_cust_flag = 'Y' AND ss_quantity > 5;"
+583,Khách hàng có bằng 4 yr Degree tại GA thường mua Sports qua kênh nào?,"WITH store_channel AS (
+    SELECT 'Store' as channel, SUM(ss.ss_net_paid) as total_sales
+    FROM store_sales ss
+    JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+    JOIN item i ON ss.ss_item_sk = i.i_item_sk
+    WHERE cd.cd_education_status = '4 yr Degree'
+      AND ca.ca_state = 'GA'
+      AND i.i_category = 'Sports'
+),
+web_channel AS (
+    SELECT 'Web' as channel, SUM(ws.ws_net_paid) as total_sales
+    FROM web_sales ws
+    JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+    JOIN item i ON ws.ws_item_sk = i.i_item_sk
+    WHERE cd.cd_education_status = '4 yr Degree'
+      AND ca.ca_state = 'GA'
+      AND i.i_category = 'Sports'
+),
+catalog_channel AS (
+    SELECT 'Catalog' as channel, SUM(cs.cs_net_paid) as total_sales
+    FROM catalog_sales cs
+    JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+    JOIN item i ON cs.cs_item_sk = i.i_item_sk
+    WHERE cd.cd_education_status = '4 yr Degree'
+      AND ca.ca_state = 'GA'
+      AND i.i_category = 'Sports'
+)
+SELECT * FROM store_channel
+UNION ALL SELECT * FROM web_channel
+UNION ALL SELECT * FROM catalog_channel
+ORDER BY total_sales DESC;"
+674,Check giùm tôi tồn kho của Women ở chi nhánh NC.,"SELECT 
+  w.w_warehouse_name,
+  w.w_state,
+  i.i_category,
+  SUM(inv.inv_quantity_on_hand) as total_inventory
+ FROM inventory inv
+ JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
+ JOIN item i ON inv.inv_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Women'
+  AND w.w_state = 'NC'
+ GROUP BY w.w_warehouse_name, w.w_state, i.i_category
+ ORDER BY total_inventory DESC;"
+339,Thống kê tổng số lượng Women được mua bởi những khách hàng có trình độ 2 yr Degree.,"SELECT 
+    cd.cd_education_status,
+    i.i_category,
+    SUM(ss.ss_quantity) as total_quantity,
+    COUNT(*) as total_transactions
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Women'
+  AND cd.cd_education_status = '2 yr Degree'
+GROUP BY cd.cd_education_status, i.i_category;"
+752,"Trong năm 1999, khách hàng ở VA mua nhiều Electronics không?","SELECT 
+  ca.ca_state,
+  i.i_category,
+  COUNT(*) as total_transactions,
+  SUM(ss.ss_quantity) as total_quantity,
+  SUM(ss.ss_net_paid) as total_revenue
+ FROM store_sales ss
+ JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+ JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE ca.ca_state = 'VA'
+  AND i.i_category = 'Electronics'
+  AND d.d_year = 1999
+ GROUP BY ca.ca_state, i.i_category;"
+808,Tỷ lệ trả hàng của Men ở VA có cao hơn mức trung bình hệ thống không?,"WITH category_state_returns AS (
+  SELECT 
+  COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as return_rate
+  FROM store_sales ss
+  LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+  JOIN item i ON ss.ss_item_sk = i.i_item_sk
+  WHERE i.i_category = 'Men' AND ca.ca_state = 'VA'
+ ),
+ system_average AS (
+  SELECT 
+  COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as avg_return_rate
+  FROM store_sales ss
+  LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+ )
+ SELECT 
+  'Men' as category,
+  'VA' as state,
+  csr.return_rate as category_state_return_rate,
+  sa.avg_return_rate as system_average_return_rate,
+  CASE WHEN csr.return_rate > sa.avg_return_rate THEN 'Cao hơn' ELSE 'Thấp hơn hoặc bằng' END as comparison
+ FROM category_state_returns csr, system_average sa;"
+486,Khách hàng có bằng Secondary tại KS thường mua Music qua kênh nào?,"WITH store_channel AS (
+    SELECT 'Store' as channel, SUM(ss.ss_net_paid) as total_sales
+    FROM store_sales ss
+    JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+    JOIN item i ON ss.ss_item_sk = i.i_item_sk
+    WHERE cd.cd_education_status = 'Secondary'
+      AND ca.ca_state = 'KS'
+      AND i.i_category = 'Music'
+),
+web_channel AS (
+    SELECT 'Web' as channel, SUM(ws.ws_net_paid) as total_sales
+    FROM web_sales ws
+    JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+    JOIN item i ON ws.ws_item_sk = i.i_item_sk
+    WHERE cd.cd_education_status = 'Secondary'
+      AND ca.ca_state = 'KS'
+      AND i.i_category = 'Music'
+),
+catalog_channel AS (
+    SELECT 'Catalog' as channel, SUM(cs.cs_net_paid) as total_sales
+    FROM catalog_sales cs
+    JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+    JOIN item i ON cs.cs_item_sk = i.i_item_sk
+    WHERE cd.cd_education_status = 'Secondary'
+      AND ca.ca_state = 'KS'
+      AND i.i_category = 'Music'
+)
+SELECT * FROM store_channel
+UNION ALL SELECT * FROM web_channel
+UNION ALL SELECT * FROM catalog_channel
+ORDER BY total_sales DESC;"
+137,Tìm những khách hàng sinh năm 1995 đã trả hàng ở cửa hàng với lý do 'hàng bị hỏng' (damaged).,"SELECT DISTINCT c.c_first_name, c.c_last_name
+FROM store_returns sr
+JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk
+JOIN reason r ON sr.sr_reason_sk = r.r_reason_sk
+WHERE c.c_birth_year = 1995 AND r.r_reason_desc ILIKE '%damaged%';"
+295,Liệt kê danh sách tên các khách hàng 'độc thân' đã mua đồ 'Jewelry' qua kênh Web nhưng chưa bao giờ thực hiện bất kỳ giao dịch nào qua kênh Catalog,"SELECT DISTINCT c.c_first_name, c.c_last_name
+FROM customer c
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN web_sales ws ON c.c_customer_sk = ws.ws_bill_customer_sk
+JOIN item i ON ws.ws_item_sk = i.i_item_sk
+WHERE cd.cd_marital_status = 'S' AND i.i_category = 'Jewelry'
+EXCEPT
+SELECT c.c_first_name, c.c_last_name
+FROM customer c
+JOIN catalog_sales cs ON c.c_customer_sk = cs.cs_bill_customer_sk;"
+85,Lọc ra mấy người mua đồ 'Jewelry' (Trang sức) mà có dùng mã giảm giá (promotion),"SELECT DISTINCT c.c_first_name, c.c_last_name
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+WHERE i.i_category = 'Jewelry' AND ss.ss_promo_sk IS NOT NULL;"
+212,Tìm giúp tôi ba nhà sản xuất có mức giá vốn nhập hàng trung bình thấp nhất cho các mặt hàng đang được kinh doanh trong hệ thống,"SELECT i_manufact, AVG(i_wholesale_cost) AS avg_cost
+FROM item
+GROUP BY i_manufact
+ORDER BY avg_cost ASC LIMIT 3;"
+584,Tỷ lệ trả hàng của Electronics ở IL có cao hơn mức trung bình hệ thống không?,"WITH category_state_returns AS (
+    SELECT 
+        COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as return_rate
+    FROM store_sales ss
+    LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+    JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+    JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+    JOIN item i ON ss.ss_item_sk = i.i_item_sk
+    WHERE i.i_category = 'Electronics' AND ca.ca_state = 'IL'
+),
+system_average AS (
+    SELECT 
+        COUNT(sr.sr_item_sk) * 1.0 / COUNT(ss.ss_item_sk) as avg_return_rate
+    FROM store_sales ss
+    LEFT JOIN store_returns sr ON ss.ss_item_sk = sr.sr_item_sk AND ss.ss_ticket_number = sr.sr_ticket_number
+)
+SELECT 
+    'Electronics' as category,
+    'IL' as state,
+    csr.return_rate as category_state_return_rate,
+    sa.avg_return_rate as system_average_return_rate,
+    CASE WHEN csr.return_rate > sa.avg_return_rate THEN 'Cao hơn' ELSE 'Thấp hơn hoặc bằng' END as comparison
+FROM category_state_returns csr, system_average sa;"
+670,Cửa hàng nào ở IL đứng đầu về doanh số Women vào tháng 1?,"SELECT 
+  s.s_store_name,
+  s.s_city,
+  s.s_state,
+  SUM(ss.ss_net_paid) as total_sales
+ FROM store_sales ss
+ JOIN store s ON ss.ss_store_sk = s.s_store_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE s.s_state = 'IL'
+  AND i.i_category = 'Women'
+  AND d.d_moy = 1
+ GROUP BY s.s_store_name, s.s_city, s.s_state
+ ORDER BY total_sales DESC
+ LIMIT 1;"
+712,Cửa hàng nào ở VA đứng đầu về doanh số Sports vào tháng 1?,"SELECT 
+  s.s_store_name,
+  s.s_city,
+  s.s_state,
+  SUM(ss.ss_net_paid) as total_sales
+ FROM store_sales ss
+ JOIN store s ON ss.ss_store_sk = s.s_store_sk
+ JOIN item i ON ss.ss_item_sk = i.i_item_sk
+ JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+ WHERE s.s_state = 'VA'
+  AND i.i_category = 'Sports'
+  AND d.d_moy = 1
+ GROUP BY s.s_store_name, s.s_city, s.s_state
+ ORDER BY total_sales DESC
+ LIMIT 1;"
+801,So sánh lợi nhuận của Men giữa kênh Web và Web tại IL.,"WITH store_profit AS (
+  SELECT 'Store' as channel, SUM(ss.ss_net_profit) as total_profit
+  FROM store_sales ss
+  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+  JOIN item i ON ss.ss_item_sk = i.i_item_sk
+  WHERE i.i_category = 'Men' AND ca.ca_state = 'IL'
+ ),
+ web_profit AS (
+  SELECT 'Web' as channel, SUM(ws.ws_net_profit) as total_profit
+  FROM web_sales ws
+  JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk
+  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+  JOIN item i ON ws.ws_item_sk = i.i_item_sk
+  WHERE i.i_category = 'Men' AND ca.ca_state = 'IL'
+ ),
+ catalog_profit AS (
+  SELECT 'Catalog' as channel, SUM(cs.cs_net_profit) as total_profit
+  FROM catalog_sales cs
+  JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+  JOIN item i ON cs.cs_item_sk = i.i_item_sk
+  WHERE i.i_category = 'Men' AND ca.ca_state = 'IL'
+ )
+ SELECT * FROM store_profit WHERE channel IN ('Web', 'Web')
+ UNION ALL SELECT * FROM web_profit WHERE channel IN ('Web', 'Web')
+ UNION ALL SELECT * FROM catalog_profit WHERE channel IN ('Web', 'Web')
+ ORDER BY channel;"
+513,Tìm 10 sản phẩm Men có lợi nhuận thấp nhất trong năm 2002.,"SELECT 
+    i.i_item_id,
+    i.i_product_name,
+    i.i_category,
+    SUM(ss.ss_net_profit) as total_profit,
+    SUM(ss.ss_net_paid) as total_revenue
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE i.i_category = 'Men'
+  AND d.d_year = 2002
+GROUP BY i.i_item_id, i.i_product_name, i.i_category
+ORDER BY total_profit ASC
+LIMIT 10;"

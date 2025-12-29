@@ -1,0 +1,821 @@
+{
+  "call_center": {
+    "cc_call_center_id": [
+      "AAAAAAAABAAAAAAA",
+      "AAAAAAAACAAAAAAA",
+      "AAAAAAAAEAAAAAAA"
+    ],
+    "cc_name": [
+      "North Midwest",
+      "NY Metro",
+      "Mid Atlantic"
+    ],
+    "cc_class": [
+      "large",
+      "medium"
+    ],
+    "cc_hours": [
+      "8AM-8AM",
+      "8AM-4PM"
+    ],
+    "cc_manager": [
+      "Mark Hightower",
+      "Bob Belcher",
+      "Felipe Perkins",
+      "Larry Mccray"
+    ],
+    "cc_mkt_class": [
+      "Rational ways will cultivate significant a",
+      "Instead male prospects would make old images. M",
+      "Nights may arrange below somewhat interest",
+      "More than other authori",
+      "Lips know to a units. Open members ought to beat "
+    ],
+    "cc_mkt_desc": [
+      "Studies may not influence multiple coins. Consumers may raise",
+      "Wrong members must get compatibl",
+      "Nowhere certain tourists cannot help only. Retail terms wake at a panels; largely blank years put s",
+      "Shared others could not count fully dollars. New members ca"
+    ],
+    "cc_market_manager": [
+      "Julius Tran",
+      "Julius Durham",
+      "Gary Colburn",
+      "Matthew Clifton"
+    ],
+    "cc_division_name": [
+      "pri",
+      "anti",
+      "ese",
+      "ought"
+    ],
+    "cc_company_name": [
+      "pri",
+      "able",
+      "cally",
+      "ought"
+    ],
+    "cc_street_number": [
+      "306",
+      "121",
+      "730"
+    ],
+    "cc_street_name": [
+      "Franklin ",
+      "Ash Hill",
+      "14th "
+    ],
+    "cc_street_type": [
+      "Wy",
+      "Court",
+      "Boulevard"
+    ],
+    "cc_suite_number": [
+      "Suite 0",
+      "Suite 60",
+      "Suite 150"
+    ],
+    "cc_city": [
+      "Midway",
+      "Fairview"
+    ],
+    "cc_county": [
+      "Williamson County"
+    ],
+    "cc_state": [
+      "TN"
+    ],
+    "cc_zip": [
+      "35709",
+      "31904"
+    ],
+    "cc_country": [
+      "United States"
+    ]
+  },
+  "catalog_page": {
+    "cp_catalog_page_id": [
+      "AAAAAAAAKICCAAAA",
+      "AAAAAAAALDABAAAA",
+      "AAAAAAAAPEABAAAA",
+      "AAAAAAAACNCBAAAA",
+      "AAAAAAAAEKHAAAAA"
+    ],
+    "cp_department": [
+      "DEPARTMENT"
+    ],
+    "cp_description": [
+      "Women may not consider later imperial, disabled effects. Othe",
+      "Already entire copies concentrate grounds. Bishops buy. Much retail hand",
+      "Best existing differences gain limits. Late, absolute bod",
+      "Important, whole roles render today only periods. Questions may ",
+      "Houses might wish always flowers. Either economic courts would commission ahead even expe"
+    ],
+    "cp_type": [
+      "monthly",
+      "quarterly",
+      "bi-annual"
+    ]
+  },
+  "customer": {
+    "c_customer_id": [
+      "AAAAAAAABNFCBAAA",
+      "AAAAAAAANBPNAAAA",
+      "AAAAAAAAJAHOAAAA",
+      "AAAAAAAAOEEEBAAA",
+      "AAAAAAAABLOCBAAA"
+    ],
+    "c_salutation": [
+      "Sir",
+      "Dr.",
+      "Mr.",
+      "Ms.",
+      "Miss"
+    ],
+    "c_first_name": [
+      "Elias",
+      "Corine",
+      "Estela",
+      "Tyrell",
+      "Anibal"
+    ],
+    "c_last_name": [
+      "Fish",
+      "Steel",
+      "Buford",
+      "Hutchinson",
+      "Turnbull"
+    ],
+    "c_preferred_cust_flag": [
+      "N",
+      "Y"
+    ],
+    "c_birth_country": [
+      "SAMOA",
+      "LITHUANIA",
+      "UNITED KINGDOM",
+      "NAMIBIA",
+      "KUWAIT"
+    ],
+    "c_login": [
+      ""
+    ],
+    "c_email_address": [
+      "Donna.Williams@KCvuT.com",
+      "Dawn.Wilson@g8a7zsql.edu",
+      "Rick.Robinson@uH.com",
+      "Robert.Guy@fD01cs.com",
+      "Hattie.Bates@R9.org"
+    ]
+  },
+  "customer_address": {
+    "ca_address_id": [
+      "AAAAAAAAGIJEAAAA",
+      "AAAAAAAAFEHLAAAA",
+      "AAAAAAAAEOHCAAAA",
+      "AAAAAAAAGDIGAAAA",
+      "AAAAAAAAHLOKAAAA"
+    ],
+    "ca_street_number": [
+      "611",
+      "311",
+      "962",
+      "594",
+      "317"
+    ],
+    "ca_street_name": [
+      "First First",
+      "Poplar Walnut",
+      "13th Main",
+      "Laurel View",
+      "Fourteenth Main"
+    ],
+    "ca_street_type": [
+      "Drive",
+      "Court",
+      "Way",
+      "Pkwy",
+      "Parkway"
+    ],
+    "ca_suite_number": [
+      "Suite 380",
+      "Suite 160",
+      "Suite X",
+      "Suite 30",
+      "Suite D"
+    ],
+    "ca_city": [
+      "Turner",
+      "Salem",
+      "Payne",
+      "Sunset Beach",
+      "Red Hill"
+    ],
+    "ca_county": [
+      "Hamblen County",
+      "Aiken County",
+      "Chatham County",
+      "Ellsworth County",
+      "Henderson County"
+    ],
+    "ca_state": [
+      "NJ",
+      "ND",
+      "TX",
+      "OH",
+      "MI"
+    ],
+    "ca_zip": [
+      "48930",
+      "49303",
+      "57021",
+      "66343",
+      "48811"
+    ],
+    "ca_country": [
+      "United States"
+    ],
+    "ca_location_type": [
+      "apartment",
+      "single family",
+      "condo"
+    ]
+  },
+  "customer_demographics": {
+    "cd_gender": [
+      "F",
+      "M"
+    ],
+    "cd_marital_status": [
+      "M",
+      "W",
+      "D",
+      "U",
+      "S"
+    ],
+    "cd_education_status": [
+      "Advanced Degree",
+      "Unknown",
+      "2 yr Degree",
+      "Primary",
+      "Secondary"
+    ],
+    "cd_credit_rating": [
+      "High Risk",
+      "Good",
+      "Low Risk",
+      "Unknown"
+    ]
+  },
+  "date_dim": {
+    "d_date_id": [
+      "AAAAAAAABHPGFCAA",
+      "AAAAAAAAKNCEFCAA",
+      "AAAAAAAACFNAFCAA",
+      "AAAAAAAAPIIOECAA",
+      "AAAAAAAAMLFAFCAA"
+    ],
+    "d_day_name": [
+      "Monday",
+      "Saturday",
+      "Wednesday",
+      "Thursday",
+      "Sunday"
+    ],
+    "d_quarter_name": [
+      "1924Q3",
+      "1989Q3",
+      "1900Q4",
+      "1996Q2",
+      "1936Q3"
+    ],
+    "d_holiday": [
+      "N",
+      "Y"
+    ],
+    "d_weekend": [
+      "N",
+      "Y"
+    ],
+    "d_following_holiday": [
+      "N",
+      "Y"
+    ],
+    "d_current_day": [
+      "N"
+    ],
+    "d_current_week": [
+      "N"
+    ],
+    "d_current_month": [
+      "Y",
+      "N"
+    ],
+    "d_current_quarter": [
+      "N",
+      "Y"
+    ],
+    "d_current_year": [
+      "N",
+      "Y"
+    ]
+  },
+  "household_demographics": {
+    "hd_buy_potential": [
+      "Unknown",
+      ">10000",
+      "1001-5000",
+      "5001-10000",
+      "501-1000"
+    ]
+  },
+  "item": {
+    "i_item_id": [
+      "AAAAAAAAJPEDAAAA",
+      "AAAAAAAAIKKBAAAA",
+      "AAAAAAAAGFLDAAAA",
+      "AAAAAAAAIFKDAAAA",
+      "AAAAAAAADFPCAAAA"
+    ],
+    "i_item_desc": [
+      "Also keen heads help. Public teams assess perhaps rational ways. Homes wave full, direct papers. Relationships could answer especially probably short eyes. Happy, possible studies",
+      "Rapid groups happen just rights. Available weeks might sleep only services. Weeks may not sum particular stations. Particul",
+      "Good, rural animals worry partly already major friends. Expected, possible examples hand simply. Wide, white questions yield only in a kids. C",
+      "Literary generations picture simultaneo",
+      "Stories may put instead big answe"
+    ],
+    "i_brand": [
+      "maxinameless #4",
+      "brandunivamalg #14",
+      "maxiunivamalg #14",
+      "edu packamalgamalg #11",
+      "univunivamalg #5"
+    ],
+    "i_class": [
+      "birdal",
+      "shirts",
+      "pop",
+      "reference",
+      "furniture"
+    ],
+    "i_category": [
+      "Men",
+      "Shoes",
+      "Sports",
+      "Women",
+      "Books"
+    ],
+    "i_manufact": [
+      "ationoughtation",
+      "oughtoughtable",
+      "oughtn steing",
+      "n stableeing",
+      "eingationcally"
+    ],
+    "i_size": [
+      "economy",
+      "small",
+      "N/A",
+      "extra large",
+      "medium"
+    ],
+    "i_formulation": [
+      "7402424644085tomato0",
+      "780904044smoke250810",
+      "567323tan73949222076",
+      "529114143salmon08085",
+      "6sandy58165670247346"
+    ],
+    "i_color": [
+      "frosted",
+      "coral",
+      "snow",
+      "light",
+      "indian"
+    ],
+    "i_units": [
+      "Pallet",
+      "Box",
+      "Carton",
+      "Bunch",
+      "N/A"
+    ],
+    "i_container": [
+      "Unknown"
+    ],
+    "i_product_name": [
+      "callyn stpriation",
+      "prioughtableought",
+      "prieingcallyoughtought",
+      "antieingpriableought",
+      "antibarbaranti"
+    ]
+  },
+  "promotion": {
+    "p_promo_id": [
+      "AAAAAAAABDAAAAAA",
+      "AAAAAAAAICAAAAAA",
+      "AAAAAAAAHLAAAAAA",
+      "AAAAAAAALOAAAAAA",
+      "AAAAAAAAIOAAAAAA"
+    ],
+    "p_promo_name": [
+      "cally",
+      "pri",
+      "eing",
+      "ought",
+      "n st"
+    ],
+    "p_channel_dmail": [
+      "N",
+      "Y"
+    ],
+    "p_channel_email": [
+      "N"
+    ],
+    "p_channel_catalog": [
+      "N"
+    ],
+    "p_channel_tv": [
+      "N"
+    ],
+    "p_channel_radio": [
+      "N"
+    ],
+    "p_channel_press": [
+      "N"
+    ],
+    "p_channel_event": [
+      "N"
+    ],
+    "p_channel_demo": [
+      "N"
+    ],
+    "p_channel_details": [
+      "Delightful, internationa",
+      "Environmental, reluctant developments continue t",
+      "Sons pursue for example right boats. Public, em",
+      "Worthwhile police must not see british, inte",
+      "Experienced, main demands may confide abiliti"
+    ],
+    "p_purpose": [
+      "Unknown"
+    ],
+    "p_discount_active": [
+      "N"
+    ]
+  },
+  "reason": {
+    "r_reason_id": [
+      "AAAAAAAANAAAAAAA",
+      "AAAAAAAAPBAAAAAA",
+      "AAAAAAAAPAAAAAAA",
+      "AAAAAAAABCAAAAAA",
+      "AAAAAAAAHAAAAAAA"
+    ],
+    "r_reason_desc": [
+      "it is a girl",
+      "Did not get it on time",
+      "reason 28",
+      "reason 32",
+      "Package was damaged"
+    ]
+  },
+  "ship_mode": {
+    "sm_ship_mode_id": [
+      "AAAAAAAAGAAAAAAA",
+      "AAAAAAAABAAAAAAA",
+      "AAAAAAAAOAAAAAAA",
+      "AAAAAAAAIAAAAAAA",
+      "AAAAAAAALAAAAAAA"
+    ],
+    "sm_type": [
+      "OVERNIGHT",
+      "TWO DAY",
+      "NEXT DAY",
+      "EXPRESS",
+      "REGULAR"
+    ],
+    "sm_code": [
+      "SEA",
+      "AIR",
+      "BIKE",
+      "SURFACE"
+    ],
+    "sm_carrier": [
+      "DIAMOND",
+      "ORIENTAL",
+      "BOXBUNDLES",
+      "PRIVATECARRIER",
+      "UPS"
+    ],
+    "sm_contract": [
+      "ldhM8IvpzHgdbBgDfI",
+      "A5BYO1qH8HGTTN",
+      "I3uCelXtjP",
+      "Xjy3ZPuiDjzHlRx14Z3",
+      "hGoF18SLDDPBj"
+    ]
+  },
+  "store": {
+    "s_store_id": [
+      "AAAAAAAAIAAAAAAA",
+      "AAAAAAAAEAAAAAAA",
+      "AAAAAAAABAAAAAAA",
+      "AAAAAAAACAAAAAAA",
+      "AAAAAAAAHAAAAAAA"
+    ],
+    "s_store_name": [
+      "cally",
+      "ese",
+      "bar",
+      "eing",
+      "anti"
+    ],
+    "s_hours": [
+      "8AM-4PM",
+      "8AM-12AM"
+    ],
+    "s_manager": [
+      "David Thomas",
+      "Raymond Jacobs",
+      "Scott Smith",
+      "Brett Yates",
+      "Edwin Adams"
+    ],
+    "s_geography_class": [
+      "Unknown"
+    ],
+    "s_market_desc": [
+      "Competitive prices alter to a keys. Enviro",
+      "Now electoral duties fit never o",
+      "At all african females might not become able aims. Good, final men tell; cas",
+      "Great, scottish females should form sometimes. Rather necessary t",
+      "Enough high areas stop expectations. Elaborate, local is"
+    ],
+    "s_market_manager": [
+      "Thomas Benton",
+      "Michael Wilson",
+      "Dean Morrison",
+      "Dustin Kelly",
+      "Charles Bartley"
+    ],
+    "s_division_name": [
+      "Unknown"
+    ],
+    "s_company_name": [
+      "Unknown"
+    ],
+    "s_street_number": [
+      "337",
+      "767",
+      "175",
+      "27",
+      "255"
+    ],
+    "s_street_name": [
+      "Lee 6th",
+      "Lake ",
+      "12th ",
+      "College ",
+      "Lee "
+    ],
+    "s_street_type": [
+      "Road",
+      "Wy",
+      "Lane",
+      "Court",
+      "Ln"
+    ],
+    "s_suite_number": [
+      "Suite 140",
+      "Suite 160",
+      "Suite 190",
+      "Suite 410",
+      "Suite 260"
+    ],
+    "s_city": [
+      "Fairview",
+      "Midway"
+    ],
+    "s_county": [
+      "Williamson County"
+    ],
+    "s_state": [
+      "TN"
+    ],
+    "s_zip": [
+      "35709",
+      "31904"
+    ],
+    "s_country": [
+      "United States"
+    ]
+  },
+  "time_dim": {
+    "t_time_id": [
+      "AAAAAAAAKIIAAAAA",
+      "AAAAAAAACFKNAAAA",
+      "AAAAAAAAOGNCAAAA",
+      "AAAAAAAAOIENAAAA",
+      "AAAAAAAACJLBAAAA"
+    ],
+    "t_am_pm": [
+      "AM",
+      "PM"
+    ],
+    "t_shift": [
+      "second",
+      "third",
+      "first"
+    ],
+    "t_sub_shift": [
+      "night",
+      "evening",
+      "morning",
+      "afternoon"
+    ],
+    "t_meal_time": [
+      "lunch",
+      "breakfast",
+      "",
+      "dinner"
+    ]
+  },
+  "warehouse": {
+    "w_warehouse_id": [
+      "AAAAAAAABAAAAAAA",
+      "AAAAAAAAFAAAAAAA",
+      "AAAAAAAAEAAAAAAA",
+      "AAAAAAAACAAAAAAA",
+      "AAAAAAAADAAAAAAA"
+    ],
+    "w_warehouse_name": [
+      "Conventional childr",
+      "Terms overcome instr",
+      "Of course ot",
+      "Social, royal laws m"
+    ],
+    "w_street_number": [
+      "651",
+      "368",
+      "600",
+      "534"
+    ],
+    "w_street_name": [
+      "6th ",
+      "Wilson Elm",
+      "View First",
+      "Ash Laurel"
+    ],
+    "w_street_type": [
+      "Avenue",
+      "Parkway",
+      "Drive",
+      "Dr."
+    ],
+    "w_suite_number": [
+      "Suite 0",
+      "Suite 80",
+      "Suite 470",
+      "Suite P"
+    ],
+    "w_city": [
+      "Fairview"
+    ],
+    "w_county": [
+      "Williamson County"
+    ],
+    "w_state": [
+      "TN"
+    ],
+    "w_zip": [
+      "35709"
+    ],
+    "w_country": [
+      "United States"
+    ]
+  },
+  "web_page": {
+    "wp_web_page_id": [
+      "AAAAAAAACAAAAAAA",
+      "AAAAAAAAOAAAAAAA",
+      "AAAAAAAALCAAAAAA",
+      "AAAAAAAAMBAAAAAA",
+      "AAAAAAAAEDAAAAAA"
+    ],
+    "wp_autogen_flag": [
+      "N",
+      "Y"
+    ],
+    "wp_url": [
+      "http://www.foo.com"
+    ],
+    "wp_type": [
+      "welcome",
+      "protected",
+      "feedback",
+      "order",
+      "general"
+    ]
+  },
+  "web_site": {
+    "web_site_id": [
+      "AAAAAAAAEAAAAAAA",
+      "AAAAAAAAGBAAAAAA",
+      "AAAAAAAAKBAAAAAA",
+      "AAAAAAAACAAAAAAA",
+      "AAAAAAAADBAAAAAA"
+    ],
+    "web_name": [
+      "site_1",
+      "site_2",
+      "site_0",
+      "site_4",
+      "site_3"
+    ],
+    "web_class": [
+      "Unknown"
+    ],
+    "web_manager": [
+      "Peter Cassidy",
+      "Charles Parker",
+      "Robert Arnold",
+      "Dwight Aaron",
+      "Ronald Shaffer"
+    ],
+    "web_mkt_class": [
+      "Natural, fair claims would heal c",
+      "Women would not get abilit",
+      "Grey lines ought to result indeed centres. Tod",
+      "Successful problems determine too ",
+      "Rural profits shall go trousers. New homes comm"
+    ],
+    "web_mkt_desc": [
+      "Small, different women get all electoral things. Fully",
+      "Special fields see els",
+      "Good voters should rece",
+      "Words take even fine days. Individual features will touch s",
+      "Never chief police must consider therefor"
+    ],
+    "web_market_manager": [
+      "Gilbert Chapman",
+      "Casey Banks",
+      "John Sheppard",
+      "Joshua Wood",
+      "Edward George"
+    ],
+    "web_company_name": [
+      "pri",
+      "anti",
+      "able",
+      "ought",
+      "ese"
+    ],
+    "web_street_number": [
+      "909",
+      "615",
+      "835",
+      "247",
+      "887"
+    ],
+    "web_street_name": [
+      "7th ",
+      "Hill Hill",
+      "Park ",
+      "Ridge Wilson",
+      "Hill 5th"
+    ],
+    "web_street_type": [
+      "Boulevard",
+      "Dr.",
+      "Pkwy",
+      "Avenue",
+      "Parkway"
+    ],
+    "web_suite_number": [
+      "Suite 450",
+      "Suite Q",
+      "Suite 130",
+      "Suite 440",
+      "Suite 260"
+    ],
+    "web_city": [
+      "Fairview",
+      "Midway"
+    ],
+    "web_county": [
+      "Williamson County"
+    ],
+    "web_state": [
+      "TN"
+    ],
+    "web_zip": [
+      "31904",
+      "35709"
+    ],
+    "web_country": [
+      "United States"
+    ]
+  }
+}

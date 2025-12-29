@@ -1,6 +1,6 @@
 import duckdb
 
-DB_PATH = "/home/ubuntu/DataScience/Capstone-NLUS-VDD/research_pipeline/data/ecommerce_dw.duckdb"
+DB_PATH = "/home/ubuntu/DataScience/Capstone-NLUS-VDD/research_pipeline/cache/ecommerce_dw.duckdb"
 OUTPUT_FILE = "/home/ubuntu/DataScience/Capstone-NLUS-VDD/research_pipeline/db_schema.md"
 
 def dump_schema():
