@@ -54,15 +54,80 @@ MAX_NEW_TOKENS = 512  # Balanced: enough for most queries, fast generation
 MAX_TABLES = 5  # Reduced for faster schema processing
 RAG_K = 5  # Fewer examples = shorter prompt = faster
 
-# ========== SYSTEM PROMPT (Simplified for better output) ==========
-SYSTEM_PROMPT = """You are an expert SQL writer for DuckDB (TPC-DS schema). Generate ONLY valid SQL.
+# ========== DYNAMIC PROMPT BUILDER ==========
+BASE_SYSTEM_PROMPT = """You are an expert SQL writer for DuckDB (TPC-DS schema). 
+Output ONLY valid SQL code ending with semicolon. No explanations."""
 
-RULES:
-1. Output ONLY SQL code, no explanation
-2. Always end with semicolon (;)
-3. For CTEs, use EXACTLY the same name in FROM as defined in WITH
-4. Column names: i_product_name (NOT i_item_name), s_manager (NOT s_store_manager_name), ca_state (NOT cd_state)
-5. web_page columns use ws_ prefix in web_sales, NOT cs_ (catalog_sales)"""
+# Column prefix mapping (auto-generated from schema)
+COLUMN_PREFIXES = {
+    "ss_": "store_sales", "sr_": "store_returns",
+    "ws_": "web_sales", "wr_": "web_returns",
+    "cs_": "catalog_sales", "cr_": "catalog_returns",
+    "inv_": "inventory",
+    "c_": "customer", "ca_": "customer_address", "cd_": "customer_demographics",
+    "i_": "item", "d_": "date_dim", "t_": "time_dim",
+    "s_": "store", "w_": "warehouse", "p_": "promotion",
+    "r_": "reason", "sm_": "ship_mode", "hd_": "household_demographics",
+    "ib_": "income_band", "cc_": "call_center",
+    "cp_": "catalog_page", "wp_": "web_page", "web_": "web_site",
+}
+
+# Common hallucination fixes (learned from errors)
+COLUMN_CORRECTIONS = {
+    'i_item_name': 'i_product_name',
+    's_store_manager_name': 's_manager',
+    's_store_manager': 's_manager',
+    'cd_state': 'ca_state',
+    'cd_city': 'ca_city',
+    'cs_web_page_sk': 'ws_web_page_sk',
+}
+
+def build_dynamic_system_prompt(question: str, selected_tables: list[str], schema_map: dict) -> str:
+    """Build context-aware system prompt based on question and selected tables."""
+    
+    prompt_parts = [BASE_SYSTEM_PROMPT]
+    
+    # Detect query patterns and add relevant rules
+    q_lower = question.lower()
+    
+    # Rule 1: CTE pattern detection
+    if any(kw in q_lower for kw in ['so với', 'năm trước', 'tăng', 'giảm', 'growth', 'compare', 'yoy', 'previous']):
+        prompt_parts.append("\nCTE Rule: WITH alias AS (...) - use SAME alias in FROM clause.")
+    
+    # Rule 2: Aggregation detection
+    if any(kw in q_lower for kw in ['tổng', 'sum', 'count', 'trung bình', 'average', 'bao nhiêu', 'total']):
+        prompt_parts.append("\nAggregation Rule: Include all non-aggregated columns in GROUP BY.")
+    
+    # Rule 3: Dynamic column hints based on selected tables
+    column_hints = []
+    for table in selected_tables:
+        if table in schema_map:
+            cols = [col for col, _ in schema_map[table]]
+            # Find potentially confusing columns
+            if table == "customer_address" and "ca_state" in cols:
+                column_hints.append("State/City: use ca_state, ca_city (customer_address)")
+            if table == "customer_demographics":
+                column_hints.append("Demographics has NO location columns (no cd_state)")
+            if table == "item" and "i_product_name" in cols:
+                column_hints.append("Product name: i_product_name (not i_item_name)")
+            if table == "store" and "s_manager" in cols:
+                column_hints.append("Store manager: s_manager (not s_store_manager_name)")
+    
+    if column_hints:
+        prompt_parts.append("\nColumn Notes: " + "; ".join(set(column_hints)))
+    
+    # Rule 4: Table-specific prefix reminder
+    prefixes_used = set()
+    for table in selected_tables:
+        for prefix, tbl in COLUMN_PREFIXES.items():
+            if tbl == table:
+                prefixes_used.add(f"{prefix}* → {table}")
+                break
+    
+    if len(selected_tables) > 3 and prefixes_used:
+        prompt_parts.append(f"\nPrefixes: {', '.join(list(prefixes_used)[:5])}")
+    
+    return "\n".join(prompt_parts)
 
 # ========== TABLE DESCRIPTIONS - All 24 TPC-DS Tables ==========
 TABLE_DESCRIPTIONS = {
@@ -483,15 +548,8 @@ def post_process_sql(sql: str) -> str:
     if sql.rstrip().endswith(','):
         sql = sql.rstrip().rstrip(',')
     
-    # Fix common column name hallucinations
-    column_fixes = {
-        'i_item_name': 'i_product_name',
-        's_store_manager_name': 's_manager',
-        's_store_manager': 's_manager', 
-        'cd_state': 'ca_state',  # Wrong table prefix
-        'cs_web_page_sk': 'ws_web_page_sk',  # catalog_sales doesn't have web_page
-    }
-    for wrong, correct in column_fixes.items():
+    # Fix common column name hallucinations (using global COLUMN_CORRECTIONS)
+    for wrong, correct in COLUMN_CORRECTIONS.items():
         sql = re.sub(rf'\b{wrong}\b', correct, sql, flags=re.I)
     
     # Fix CTE alias mismatches - BIDIRECTIONAL
@@ -554,56 +612,33 @@ def generate_sql(prompt: str, tokenizer, model) -> str:
     raw_sql = extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
     return post_process_sql(raw_sql)
 
-def detect_query_type(question: str) -> str:
-    """Detect query type for specialized hints."""
-    q_lower = question.lower()
+def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None, 
+                  selected_tables: list = None, schema_map: dict = None) -> str:
+    """Build optimized prompt with dynamic system prompt and RAG examples."""
     
-    # Year-over-year / comparison queries (need CTE)
-    if any(kw in q_lower for kw in ['so với', 'năm trước', 'tăng', 'giảm', 'growth', 'compare', 'year-over-year', 'yoy']):
-        return 'comparison'
-    # Ranking queries
-    if any(kw in q_lower for kw in ['top', 'cao nhất', 'thấp nhất', 'best', 'worst', 'rank']):
-        return 'ranking'
-    # Aggregation
-    if any(kw in q_lower for kw in ['tổng', 'sum', 'count', 'trung bình', 'average', 'bao nhiêu']):
-        return 'aggregation'
-    return 'general'
-
-def get_query_hints(query_type: str) -> str:
-    """Get query-type specific hints (shortened for speed)."""
-    hints = {
-        'comparison': "Use CTE: WITH cy AS (...), py AS (...) SELECT ... FROM cy, py;",
-        'ranking': "Use ORDER BY DESC/ASC LIMIT.",
-        'aggregation': "Use GROUP BY for non-aggregated columns.",
-        'general': ""
-    }
-    return hints.get(query_type, "")
-
-def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None) -> str:
-    """Build optimized prompt with RAG examples and query-type hints."""
-    # Detect query type and get hints
-    query_type = detect_query_type(question)
-    query_hints = get_query_hints(query_type)
+    # Build dynamic system prompt based on context
+    if selected_tables and schema_map:
+        system_prompt = build_dynamic_system_prompt(question, selected_tables, schema_map)
+    else:
+        system_prompt = BASE_SYSTEM_PROMPT
     
     few_shot_text = ""
     if examples:
         few_shot_text = "EXAMPLES:\n"
         for ex in examples[:2]:  # Limit to 2 examples for speed
-            # Keep shorter examples for faster processing
             q = ex['question'][:300]
             s = ex['sql'][:1000]
             few_shot_text += f"Q: {q}\nSQL: {s}\n\n"
     
-    # Build user prompt with hints
-    hint_section = f"\n{query_hints}\n" if query_hints else ""
-    user = f"SCHEMA:\n{schema_text}\n\n{few_shot_text}{hint_section}QUESTION:\n{question}\n\nSQL:"
+    # Build user prompt
+    user = f"SCHEMA:\n{schema_text}\n\n{few_shot_text}QUESTION:\n{question}\n\nSQL:"
     
     if tokenizer and getattr(tokenizer, "chat_template", None):
         return tokenizer.apply_chat_template(
-            [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}],
+            [{"role": "system", "content": system_prompt}, {"role": "user", "content": user}],
             tokenize=False, add_generation_prompt=True
         )
-    return f"{SYSTEM_PROMPT}\n\n{user}"
+    return f"{system_prompt}\n\n{user}"
 
 # ========== MAIN ==========
 def main():
@@ -666,8 +701,9 @@ def main():
         examples = retrieve_multi_dimensional(retriever, question, tables, k=RAG_K)
         
         if model is not None:
-            # Generate SQL with model
-            prompt = build_prompt(question, schema_text, tokenizer, examples)
+            # Generate SQL with model - pass tables and schema_map for dynamic prompt
+            prompt = build_prompt(question, schema_text, tokenizer, examples, 
+                                  selected_tables=tables, schema_map=schema_map)
             start = time.time()
             gen_sql = generate_sql(prompt, tokenizer, model)
             gen_time = (time.time() - start) * 1000
