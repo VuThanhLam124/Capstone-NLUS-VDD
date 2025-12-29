@@ -48,7 +48,7 @@ MAX_TABLES = 8
 # B4: Schema Enrichment (sample values)
 # B5: RAG Few-shot (BGE embedding)
 # B6: Enhanced TPC-DS Prompts (descriptions + relationships)
-TEST_CONDITIONS = ["B0", "B5"]  # Only test baseline vs RAG
+TEST_CONDITIONS = ["B5"]  # Only RAG
 
 # ========== SETUP DB ==========
 def setup_db():
@@ -356,10 +356,10 @@ def main():
             else:
                 schema_text = build_schema_text(tables, schema_map, db_content, with_content=use_content)
             
-            # Get examples (RAG)
+            # Get examples (RAG) - k=5 to avoid OOM
             examples = None
             if use_rag and retriever:
-                examples = retriever.retrieve(question, k=10)
+                examples = retriever.retrieve(question, k=5)
             
             # Use enhanced system prompt for B6
             sys_prompt = SYSTEM_PROMPT_TPCDS if (use_enhanced and HAS_TPCDS_PROMPTS) else SYSTEM_PROMPT
