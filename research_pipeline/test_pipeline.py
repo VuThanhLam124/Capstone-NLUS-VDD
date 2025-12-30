@@ -621,9 +621,9 @@ def post_process_sql(sql: str) -> str:
     # Fix incomplete SQL that ends with keywords (truncation issue)
     # Pattern: SQL ends with incomplete clause like "WHERE", "AND", "OR", "GROUP BY", etc.
     incomplete_patterns = [
-        (r'\\s+(WHERE|AND|OR|ON|SET|VALUES|BY|ORDER|GROUP|HAVING|LIMIT|FROM|JOIN|SELECT)\\s*;?\\s*$', ''),  # Remove trailing incomplete clause
-        (r',\\s*;', ';'),  # Fix ", ;" 
-        (r'\\(\\s*;', ';'),  # Fix "( ;"
+        (r'\s+(WHERE|AND|OR|ON|SET|VALUES|BY|ORDER|GROUP|HAVING|LIMIT|FROM|JOIN|SELECT)\s*;?\s*$', ''),  # Remove trailing incomplete clause
+        (r',\s*;', ';'),  # Fix ", ;" 
+        (r'\(\s*;', ';'),  # Fix "( ;"
     ]
     for pattern, replacement in incomplete_patterns:
         sql = re.sub(pattern, replacement, sql, flags=re.I)
