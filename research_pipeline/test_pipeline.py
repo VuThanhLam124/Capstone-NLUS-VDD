@@ -50,7 +50,7 @@ RAG_INDEX_DIR = REPO_ROOT / "research_pipeline" / "rag_index"
 ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
 
 MAX_SAMPLES = None
-MAX_NEW_TOKENS = 768  # Increased to prevent SQL truncation
+MAX_NEW_TOKENS = 896  # Increased further to prevent SQL truncation
 MAX_TABLES = 5  # Reduced for faster schema processing
 RAG_K = 3  # Fewer examples = shorter prompt = faster generation
 
@@ -108,10 +108,13 @@ def build_dynamic_system_prompt(question: str, selected_tables: list[str], schem
                 column_hints.append("State/City: use ca_state, ca_city (customer_address)")
             if table == "customer_demographics":
                 column_hints.append("Demographics has NO location columns (no cd_state)")
+                column_hints.append("cd_purchase_estimate is INT (use 500, 1000, not 'Low')")
             if table == "item" and "i_product_name" in cols:
                 column_hints.append("Product name: i_product_name (not i_item_name)")
             if table == "store" and "s_manager" in cols:
                 column_hints.append("Store manager: s_manager (not s_store_manager_name)")
+            if table == "date_dim":
+                column_hints.append("Date: d_date_sk is INT (JOIN date_dim for filters, don't use '2001-01-01')")
     
     if column_hints:
         prompt_parts.append("\nColumn Notes: " + "; ".join(set(column_hints)))
