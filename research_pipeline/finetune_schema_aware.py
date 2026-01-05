@@ -147,7 +147,6 @@ def main():
         report_to="none",
         gradient_checkpointing=True,
         max_grad_norm=0.3,
-        max_seq_length=args.max_seq_length,
         dataset_text_field="text",
     )
     
