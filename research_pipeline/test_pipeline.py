@@ -47,6 +47,14 @@ except ImportError:
     HAS_CONTEXT_ENG = False
     print("WARNING: context_engineering module not available")
 
+# Import data sampler module
+try:
+    from research_pipeline.data_sampler import DataSampler
+    HAS_DATA_SAMPLER = True
+except ImportError:
+    HAS_DATA_SAMPLER = False
+    print("WARNING: data_sampler module not available")
+
 # ========== CONFIG ==========
 import argparse
 
@@ -62,6 +70,8 @@ def parse_args():
                         help="Number of RAG examples to retrieve")
     parser.add_argument("--context-eng", action="store_true",
                         help="Enable context engineering (dynamic context + JOIN hints)")
+    parser.add_argument("--data-samples", action="store_true",
+                        help="Enable data samples in context (show actual DB values)")
     return parser.parse_args()
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -727,6 +737,7 @@ def main():
     max_samples = args.max_samples
     rag_k = args.rag_k
     use_context_eng = args.context_eng and HAS_CONTEXT_ENG
+    use_data_samples = args.data_samples and HAS_DATA_SAMPLER
     test_data_path = Path(args.test_data) if args.test_data else TEST_DATA_PATH
     
     # Setup
@@ -736,6 +747,13 @@ def main():
     # Initialize improved schema selector
     selector = SchemaSelector(schema_map)
     print(f"Schema selector initialized with {len(schema_map)} tables")
+    
+    # Initialize data sampler if enabled
+    sampler = None
+    if use_data_samples:
+        sampler = DataSampler(str(DB_PATH))
+        sampler.extract_samples()
+        print(f"Data sampler loaded with {len(sampler.samples)} tables")
     
     # Load RAG
     retriever = load_rag_retriever()
@@ -783,6 +801,12 @@ def main():
             schema_text = build_enhanced_context(question, tables, schema_map)
         else:
             schema_text = build_schema_text(tables, schema_map)
+        
+        # Add data samples if enabled
+        if sampler:
+            sample_context = sampler.get_relevant_samples(question, tables)
+            if sample_context:
+                schema_text = f"{schema_text}\n\n{sample_context}"
         
         # Multi-dimensional RAG
         examples = retrieve_multi_dimensional(retriever, question, tables, k=rag_k)

@@ -1,0 +1,265 @@
+{
+  "customer_address": {
+    "ca_state": [
+      "AK",
+      "AZ",
+      "CA",
+      "CO",
+      "CT",
+      "FL",
+      "GA",
+      "KY",
+      "MA",
+      "MD",
+      "ME",
+      "NH",
+      "NV",
+      "RI",
+      "SD"
+    ],
+    "ca_country": [
+      "United States"
+    ]
+  },
+  "customer_demographics": {
+    "cd_gender": [
+      "F",
+      "M"
+    ],
+    "cd_marital_status": [
+      "D",
+      "M",
+      "S",
+      "U",
+      "W"
+    ],
+    "cd_education_status": [
+      "2 yr Degree",
+      "4 yr Degree",
+      "Advanced Degree",
+      "College",
+      "Primary",
+      "Secondary",
+      "Unknown"
+    ],
+    "cd_credit_rating": [
+      "Good",
+      "High Risk",
+      "Low Risk",
+      "Unknown"
+    ]
+  },
+  "household_demographics": {
+    "hd_buy_potential": [
+      "0-500",
+      "1001-5000",
+      "5001-10000",
+      "501-1000",
+      ">10000",
+      "Unknown"
+    ]
+  },
+  "item": {
+    "i_category": [
+      "Books",
+      "Children",
+      "Electronics",
+      "Home",
+      "Jewelry",
+      "Men",
+      "Music",
+      "Shoes",
+      "Sports",
+      "Women"
+    ],
+    "i_class": [
+      "accent",
+      "baseball",
+      "birdal",
+      "bracelets",
+      "computers",
+      "consignment",
+      "curtains/drapes",
+      "dresses",
+      "fragrances",
+      "lighting",
+      "memory",
+      "musical",
+      "mystery",
+      "paint",
+      "school-uniforms"
+    ],
+    "i_brand": [
+      "amalgmaxi #6",
+      "brandmaxi #2",
+      "brandmaxi #8",
+      "brandnameless #2",
+      "corpbrand #7",
+      "corpbrand #8",
+      "corpnameless #3",
+      "corpnameless #4",
+      "corpunivamalg #3",
+      "edu packbrand #4",
+      "edu packcorp #8",
+      "edu packimporto #1",
+      "exportibrand #2",
+      "exportiimporto #1",
+      "importoamalgamalg #16"
+    ],
+    "i_item_desc": [
+      "Other, soviet subjects seem properly times. Only s",
+      "Tonnes alter. Towns get schools",
+      "Complete cases shall happen to a generations. Syst"
+    ]
+  },
+  "date_dim": {
+    "d_year": [
+      "1900",
+      "1911",
+      "1915",
+      "1916",
+      "1922",
+      "1926",
+      "1931",
+      "1932",
+      "1952",
+      "1955",
+      "1967",
+      "1981",
+      "1983",
+      "1991",
+      "2010"
+    ],
+    "d_moy": [
+      "1",
+      "10",
+      "11",
+      "12",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "d_qoy": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "d_weekend": [
+      "N",
+      "Y"
+    ],
+    "d_day_name": [
+      "Friday",
+      "Monday",
+      "Saturday",
+      "Sunday",
+      "Thursday",
+      "Tuesday",
+      "Wednesday"
+    ]
+  },
+  "store": {
+    "s_state": [
+      "TN"
+    ],
+    "s_city": [
+      "Fairview",
+      "Midway"
+    ]
+  },
+  "warehouse": {
+    "w_state": [
+      "TN"
+    ],
+    "w_city": [
+      "Fairview"
+    ]
+  },
+  "ship_mode": {
+    "sm_type": [
+      "EXPRESS",
+      "LIBRARY",
+      "NEXT DAY",
+      "OVERNIGHT",
+      "REGULAR",
+      "TWO DAY"
+    ],
+    "sm_carrier": [
+      "AIRBORNE",
+      "ALLIANCE",
+      "BARIAN",
+      "BOXBUNDLES",
+      "DHL",
+      "DIAMOND",
+      "FEDEX",
+      "GERMA",
+      "GREAT EASTERN",
+      "HARMSTORF",
+      "LATVIAN",
+      "MSC",
+      "ORIENTAL",
+      "PRIVATECARRIER",
+      "RUPEKSA"
+    ]
+  },
+  "reason": {
+    "r_reason_desc": [
+      "Did not fit",
+      "Did not get it on time",
+      "Did not like the model",
+      "Did not like the warranty",
+      "Found a better extended warranty in a store",
+      "Gift exchange",
+      "Not the product that was ordred",
+      "Package was damaged",
+      "Parts missing",
+      "Stopped working",
+      "its is a boy",
+      "reason 23",
+      "reason 24",
+      "reason 25",
+      "reason 26"
+    ]
+  },
+  "web_page": {
+    "wp_type": [
+      "ad",
+      "dynamic",
+      "feedback",
+      "general",
+      "order",
+      "protected",
+      "welcome"
+    ]
+  },
+  "customer": {
+    "c_first_name": [
+      "Christopher",
+      "Daisy",
+      "Freddie"
+    ],
+    "c_last_name": [
+      "White",
+      "Schneider",
+      "Hatfield"
+    ],
+    "c_birth_country": [
+      "NIUE",
+      "GAMBIA",
+      "MALDIVES"
+    ]
+  },
+  "promotion": {
+    "p_promo_name": [
+      "eing",
+      "cally",
+      "ation"
+    ]
+  }
+}
