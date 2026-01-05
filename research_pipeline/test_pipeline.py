@@ -39,6 +39,14 @@ try:
 except ImportError:
     HAS_SKLEARN = False
 
+# Import context engineering module
+try:
+    from research_pipeline.context_engineering import build_enhanced_context
+    HAS_CONTEXT_ENG = True
+except ImportError:
+    HAS_CONTEXT_ENG = False
+    print("WARNING: context_engineering module not available")
+
 # ========== CONFIG ==========
 import argparse
 
@@ -52,6 +60,8 @@ def parse_args():
                         help="Max samples to test (default: all)")
     parser.add_argument("--rag-k", type=int, default=3,
                         help="Number of RAG examples to retrieve")
+    parser.add_argument("--context-eng", action="store_true",
+                        help="Enable context engineering (dynamic context + JOIN hints)")
     return parser.parse_args()
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -709,12 +719,14 @@ def main():
     print("="*50)
     print("Text-to-SQL Pipeline: Schema Selection + RAG")
     print(f"Adapter: {args.adapter}")
+    print(f"Context Engineering: {args.context_eng}")
     print("="*50)
     
     # Get config from args
     adapter_id = args.adapter
     max_samples = args.max_samples
     rag_k = args.rag_k
+    use_context_eng = args.context_eng and HAS_CONTEXT_ENG
     test_data_path = Path(args.test_data) if args.test_data else TEST_DATA_PATH
     
     # Setup
@@ -765,7 +777,12 @@ def main():
         
         # TF-IDF based table selection
         tables = selector.select_tables(question, MAX_TABLES)
-        schema_text = build_schema_text(tables, schema_map)
+        
+        # Build schema text - use context engineering if enabled
+        if use_context_eng:
+            schema_text = build_enhanced_context(question, tables, schema_map)
+        else:
+            schema_text = build_schema_text(tables, schema_map)
         
         # Multi-dimensional RAG
         examples = retrieve_multi_dimensional(retriever, question, tables, k=rag_k)
