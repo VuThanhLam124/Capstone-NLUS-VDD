@@ -40,6 +40,20 @@ except ImportError:
     HAS_SKLEARN = False
 
 # ========== CONFIG ==========
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Text-to-SQL Benchmark Pipeline")
+    parser.add_argument("--adapter", type=str, default="Ellbendls/Qwen-3-4b-Text_to_SQL",
+                        help="Adapter model path (HuggingFace ID or local path)")
+    parser.add_argument("--test-data", type=str, default=None,
+                        help="Path to test CSV (default: datasets/test.csv)")
+    parser.add_argument("--max-samples", type=int, default=None,
+                        help="Max samples to test (default: all)")
+    parser.add_argument("--rag-k", type=int, default=3,
+                        help="Number of RAG examples to retrieve")
+    return parser.parse_args()
+
 REPO_ROOT = Path(__file__).parent.parent
 DB_PATH = REPO_ROOT / "research_pipeline" / "cache" / "ecommerce_dw.duckdb"
 TEST_DATA_PATH = REPO_ROOT / "research_pipeline" / "datasets" / "test.csv"
@@ -47,12 +61,12 @@ TRAIN_DATA_PATH = REPO_ROOT / "research_pipeline" / "datasets" / "train_clean.cs
 DB_CONTENT_PATH = REPO_ROOT / "research_pipeline" / "datasets" / "db_content_samples.json"
 RAG_INDEX_DIR = REPO_ROOT / "research_pipeline" / "rag_index"
 
-ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
+# Default adapter (can be overridden via --adapter)
+DEFAULT_ADAPTER_ID = "Ellbendls/Qwen-3-4b-Text_to_SQL"
 
-MAX_SAMPLES = None
-MAX_NEW_TOKENS = 896  # Increased further to prevent SQL truncation
-MAX_TABLES = 5  # Reduced for faster schema processing
-RAG_K = 3  # Fewer examples = shorter prompt = faster generation
+MAX_NEW_TOKENS = 896
+MAX_TABLES = 5
+DEFAULT_RAG_K = 3
 
 # ========== DYNAMIC PROMPT BUILDER ==========
 BASE_SYSTEM_PROMPT = """You are an expert SQL writer for DuckDB (TPC-DS schema). 
@@ -488,7 +502,10 @@ def retrieve_multi_dimensional(retriever, question: str, needed_tables: list[str
 # Flag to skip model loading (set True to test RAG + Schema only)
 SKIP_MODEL_LOAD = False  # Set to True to skip model and test RAG only
 
-def load_model():
+def load_model(adapter_id=None):
+    if adapter_id is None:
+        adapter_id = DEFAULT_ADAPTER_ID
+        
     if not HAS_TORCH:
         return None, None
     
@@ -497,14 +514,14 @@ def load_model():
         return None, None
     
     try:
-        print(f"Loading adapter: {ADAPTER_ID}...")
+        print(f"Loading adapter: {adapter_id}...")
         device = "cuda" if torch.cuda.is_available() else "cpu"
         use_4bit = torch.cuda.is_available()
         
-        tokenizer = AutoTokenizer.from_pretrained(ADAPTER_ID, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(adapter_id, trust_remote_code=True)
         
         from peft import PeftConfig
-        peft_config = PeftConfig.from_pretrained(ADAPTER_ID)
+        peft_config = PeftConfig.from_pretrained(adapter_id)
         base_model_id = peft_config.base_model_name_or_path
         print(f"Base model: {base_model_id}")
         
@@ -522,7 +539,7 @@ def load_model():
             print(f"Resizing embeddings: {model.get_input_embeddings().weight.shape[0]} -> {len(tokenizer)}")
             model.resize_token_embeddings(len(tokenizer))
         
-        model = PeftModel.from_pretrained(model, ADAPTER_ID)
+        model = PeftModel.from_pretrained(model, adapter_id)
         
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
@@ -687,10 +704,18 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
 
 # ========== MAIN ==========
 def main():
+    args = parse_args()
+    
     print("="*50)
     print("Text-to-SQL Pipeline: Schema Selection + RAG")
-    print("Using BGE-M3 Multilingual + BM25 Hybrid")
+    print(f"Adapter: {args.adapter}")
     print("="*50)
+    
+    # Get config from args
+    adapter_id = args.adapter
+    max_samples = args.max_samples
+    rag_k = args.rag_k
+    test_data_path = Path(args.test_data) if args.test_data else TEST_DATA_PATH
     
     # Setup
     con = setup_db()
@@ -708,14 +733,14 @@ def main():
         print("WARNING: RAG Retriever not loaded, running without few-shot examples")
     
     # Load test data
-    if TEST_DATA_PATH.exists():
-        test_df = pd.read_csv(TEST_DATA_PATH)
+    if test_data_path.exists():
+        test_df = pd.read_csv(test_data_path)
     else:
         test_df = pd.read_csv(TRAIN_DATA_PATH)
     
     test_df = test_df.dropna(subset=["Transcription", "SQL Ground Truth"])
-    if MAX_SAMPLES:
-        test_df = test_df.head(MAX_SAMPLES)
+    if max_samples:
+        test_df = test_df.head(max_samples)
     print(f"Test samples: {len(test_df)}")
     
     # Check if we should load model (skip if not available or not needed)
@@ -723,7 +748,7 @@ def main():
     
     if load_model_flag:
         print("\nLoading Text-to-SQL model...")
-        tokenizer, model = load_model()
+        tokenizer, model = load_model(adapter_id)
     else:
         print("\nSkipping model load (SKIP_MODEL_LOAD=True or no GPU)")
         print("Running in RAG + Schema Selection test mode only")
@@ -743,7 +768,7 @@ def main():
         schema_text = build_schema_text(tables, schema_map)
         
         # Multi-dimensional RAG
-        examples = retrieve_multi_dimensional(retriever, question, tables, k=RAG_K)
+        examples = retrieve_multi_dimensional(retriever, question, tables, k=rag_k)
         
         if model is not None:
             # Generate SQL with model - pass tables and schema_map for dynamic prompt
