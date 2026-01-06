@@ -92,6 +92,11 @@ DEFAULT_RAG_K = 3
 BASE_SYSTEM_PROMPT = """You are an expert SQL writer for DuckDB (TPC-DS schema). 
 Output ONLY valid SQL code ending with semicolon. No explanations."""
 
+STRICT_SCHEMA_RULES = (
+    "STRICT RULES: Use ONLY table and column names shown in SCHEMA. "
+    "Do NOT invent names. If uncertain, choose the closest available column."
+)
+
 # Column prefix mapping (auto-generated from schema)
 COLUMN_PREFIXES = {
     "ss_": "store_sales", "sr_": "store_returns",
@@ -677,15 +682,20 @@ def post_process_sql(sql: str) -> str:
     
     return sql
 
-def detect_hallucination(sql: str, schema_map: dict) -> tuple[bool, str]:
+def detect_hallucination(sql: str, schema_map: dict, allowed_tables: list[str] | None = None) -> tuple[bool, str]:
     """
     Detect hallucinated SQL that references non-existent tables/columns.
     Returns (is_hallucinated, reason)
     """
-    valid_tables = set(schema_map.keys())
+    valid_tables = set(allowed_tables) if allowed_tables else set(schema_map.keys())
     valid_columns = set()
-    for cols in schema_map.values():
-        valid_columns.update(col for col, _ in cols)
+    if allowed_tables:
+        for table in allowed_tables:
+            cols = schema_map.get(table, [])
+            valid_columns.update(col for col, _ in cols)
+    else:
+        for cols in schema_map.values():
+            valid_columns.update(col for col, _ in cols)
     
     # Check for repetitive patterns (e.g., sc.sc.sc...)
     if re.search(r'(\b\w+\.){3,}', sql):
@@ -709,37 +719,61 @@ def detect_hallucination(sql: str, schema_map: dict) -> tuple[bool, str]:
     
     return False, ""
 
-def generate_sql(prompt: str, tokenizer, model, schema_map: dict = None) -> str:
+def generate_sql(
+    prompt: str,
+    tokenizer,
+    model,
+    schema_map: dict = None,
+    allowed_tables: list[str] | None = None,
+    retry_prompt: str | None = None,
+) -> str:
     if not HAS_TORCH or model is None:
         return "SELECT 1;"
-    
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096).to(model.device)
-    with torch.no_grad():
-        output_ids = model.generate(
-            **inputs, 
-            max_new_tokens=MAX_NEW_TOKENS, 
-            do_sample=False,
-            pad_token_id=tokenizer.eos_token_id,
-            eos_token_id=tokenizer.eos_token_id,
-            repetition_penalty=1.2,  # Prevent repetitive outputs
-            no_repeat_ngram_size=4,  # Prevent 4-gram repetition
-        )
-    gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
-    raw_sql = extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
-    processed_sql = post_process_sql(raw_sql)
-    
-    # Check for hallucination
-    if schema_map:
-        is_hallucinated, reason = detect_hallucination(processed_sql, schema_map)
-        if is_hallucinated:
-            print(f"      WARNING: Hallucination detected - {reason}")
-            # Try to return a safe fallback
-            return "SELECT 'HALLUCINATION_DETECTED' AS error;"
-    
-    return processed_sql
 
-def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None, 
-                  selected_tables: list = None, schema_map: dict = None) -> str:
+    prompts = [prompt]
+    if retry_prompt:
+        prompts.append(retry_prompt)
+
+    for attempt_idx, current_prompt in enumerate(prompts):
+        inputs = tokenizer(current_prompt, return_tensors="pt", truncation=True, max_length=4096).to(model.device)
+        with torch.no_grad():
+            output_ids = model.generate(
+                **inputs,
+                max_new_tokens=MAX_NEW_TOKENS,
+                do_sample=False,
+                pad_token_id=tokenizer.eos_token_id,
+                eos_token_id=tokenizer.eos_token_id,
+                repetition_penalty=1.2,  # Prevent repetitive outputs
+                no_repeat_ngram_size=4,  # Prevent 4-gram repetition
+            )
+        gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
+        raw_sql = extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
+        processed_sql = post_process_sql(raw_sql)
+
+        # Check for hallucination
+        if schema_map:
+            tables_scope = allowed_tables if (attempt_idx > 0 and allowed_tables) else None
+            is_hallucinated, reason = detect_hallucination(processed_sql, schema_map, tables_scope)
+            if is_hallucinated:
+                print(f"      WARNING: Hallucination detected - {reason}")
+                if attempt_idx == 0 and retry_prompt:
+                    print("      Retrying with strict schema prompt...")
+                    continue
+                return "SELECT 'HALLUCINATION_DETECTED' AS error;"
+
+        return processed_sql
+
+    return "SELECT 'HALLUCINATION_DETECTED' AS error;"
+
+def build_prompt(
+    question: str,
+    schema_text: str,
+    tokenizer,
+    examples: list = None,
+    selected_tables: list = None,
+    schema_map: dict = None,
+    strict_mode: bool = False,
+) -> str:
     """Build optimized prompt with dynamic system prompt and RAG examples."""
     
     # Build dynamic system prompt based on context
@@ -747,6 +781,9 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
         system_prompt = build_dynamic_system_prompt(question, selected_tables, schema_map)
     else:
         system_prompt = BASE_SYSTEM_PROMPT
+
+    if strict_mode:
+        system_prompt = f"{system_prompt}\n{STRICT_SCHEMA_RULES}"
     
     few_shot_text = ""
     if examples:
@@ -756,8 +793,14 @@ def build_prompt(question: str, schema_text: str, tokenizer, examples: list = No
             s = ex['sql'][:1000]
             few_shot_text += f"Q: {q}\nSQL: {s}\n\n"
     
+    allowed_tables = ""
+    if strict_mode:
+        table_list = selected_tables if selected_tables else list(schema_map.keys()) if schema_map else []
+        if table_list:
+            allowed_tables = "ALLOWED TABLES: " + ", ".join(table_list) + "\n\n"
+
     # Build user prompt
-    user = f"SCHEMA:\n{schema_text}\n\n{few_shot_text}QUESTION:\n{question}\n\nSQL:"
+    user = f"{allowed_tables}SCHEMA:\n{schema_text}\n\n{few_shot_text}QUESTION:\n{question}\n\nSQL:"
     
     if tokenizer and getattr(tokenizer, "chat_template", None):
         return tokenizer.apply_chat_template(
@@ -859,8 +902,24 @@ def main():
             # Generate SQL with model - pass tables and schema_map for dynamic prompt
             prompt = build_prompt(question, schema_text, tokenizer, examples, 
                                   selected_tables=tables, schema_map=schema_map)
+            strict_prompt = build_prompt(
+                question,
+                schema_text,
+                tokenizer,
+                examples=None,
+                selected_tables=tables,
+                schema_map=schema_map,
+                strict_mode=True,
+            )
             start = time.time()
-            gen_sql = generate_sql(prompt, tokenizer, model, schema_map)
+            gen_sql = generate_sql(
+                prompt,
+                tokenizer,
+                model,
+                schema_map,
+                allowed_tables=tables,
+                retry_prompt=strict_prompt,
+            )
             gen_time = (time.time() - start) * 1000
             
             # Validate
