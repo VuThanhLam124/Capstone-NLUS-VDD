@@ -8,6 +8,8 @@ Each sample includes:
 """
 import argparse
 import json
+import math
+from datetime import date, datetime, time
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -224,12 +226,81 @@ def is_string_type(type_str: str) -> bool:
 
 def is_date_type(type_str: str) -> bool:
     upper = type_str.upper()
-    return "DATE" in upper or "TIME" in upper
+    return any(tok in upper for tok in ["DATE", "TIME", "TIMESTAMP"])
 
 
 def is_numeric_type(type_str: str) -> bool:
     upper = type_str.upper()
     return any(tok in upper for tok in ["INT", "DECIMAL", "NUMERIC", "DOUBLE", "FLOAT", "REAL"])
+
+
+def sql_literal(value, type_str: str) -> str:
+    """Format a Python value as a SQL literal."""
+    if value is None:
+        return "NULL"
+
+    upper = type_str.upper()
+    if "TIMESTAMP" in upper and isinstance(value, datetime):
+        return f"TIMESTAMP '{value:%Y-%m-%d %H:%M:%S}'"
+    if "DATE" in upper and isinstance(value, date) and not isinstance(value, datetime):
+        return f"DATE '{value:%Y-%m-%d}'"
+    if "TIME" in upper and isinstance(value, time):
+        return f"TIME '{value:%H:%M:%S}'"
+    if is_string_type(type_str) or is_date_type(type_str):
+        escaped = str(value).replace("'", "''")
+        return f"'{escaped}'"
+    return str(value)
+
+
+def value_for_text(value, type_str: str) -> str:
+    """Format value for natural language questions."""
+    if value is None:
+        return "NULL"
+    if "TIMESTAMP" in type_str.upper() and isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+    if "DATE" in type_str.upper() and isinstance(value, date) and not isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d")
+    if "TIME" in type_str.upper() and isinstance(value, time):
+        return value.strftime("%H:%M:%S")
+    if is_string_type(type_str) or is_date_type(type_str):
+        return f"'{value}'"
+    return str(value)
+
+
+def get_sample_values(con, table: str, column: str, limit: int = 5) -> List[object]:
+    """Fetch distinct non-null sample values for a column."""
+    query = f"SELECT DISTINCT {column} FROM {table} WHERE {column} IS NOT NULL LIMIT {limit};"
+    try:
+        rows = con.execute(query).fetchall()
+    except Exception:
+        return []
+    values = []
+    seen = set()
+    for (value,) in rows:
+        if value is None:
+            continue
+        if value in seen:
+            continue
+        seen.add(value)
+        values.append(value)
+    return values
+
+
+def execute_and_validate(con, sql: str) -> bool:
+    """Execute SQL and ensure result is non-empty and contains no nulls."""
+    try:
+        rows = con.execute(sql).fetchall()
+    except Exception:
+        return False
+    if not rows:
+        return False
+    for row in rows:
+        for value in row:
+            if value is None:
+                return False
+            if isinstance(value, float) and math.isnan(value):
+                return False
+    return True
 
 
 def build_schema_info(
@@ -252,6 +323,7 @@ def build_schema_info(
 
 
 def generate_samples_for_table(
+    con,
     table: str,
     cols: List[Tuple[str, str]],
     samples_per_schema: int,
@@ -264,94 +336,124 @@ def generate_samples_for_table(
     numeric_cols = [c for c in columns if is_numeric_type(types[c])]
     measure_cols = [c for c in numeric_cols if not c.endswith("_sk") and not c.endswith("_id")]
 
-    def pick_cols(n: int) -> List[str]:
-        return columns[:n] if len(columns) >= n else columns[:]
-
     samples: List[Dict[str, str]] = []
     seen_sql = set()
 
-    def add_sample(question: str, sql: str) -> None:
+    def try_add(question: str, sql: str) -> None:
+        if len(samples) >= samples_per_schema:
+            return
         if sql in seen_sql:
             return
         seen_sql.add(sql)
-        samples.append({"question": question, "sql": sql})
+        if execute_and_validate(con, sql):
+            samples.append({"question": question, "sql": sql})
 
-    preview_cols = pick_cols(3)
-    if preview_cols:
-        cols_list = ", ".join(preview_cols)
-        add_sample(
-            f"Show 5 rows from {table} with columns {cols_list}.",
-            f"SELECT {cols_list} FROM {table} LIMIT 5;",
-        )
-
-    add_sample(
+    try_add(
         f"How many rows are in {table}?",
         f"SELECT COUNT(*) AS row_count FROM {table};",
     )
 
-    if string_cols:
-        col = string_cols[0]
-        add_sample(
-            f"List distinct values of {col} from {table} (limit 10).",
-            f"SELECT DISTINCT {col} FROM {table} LIMIT 10;",
+    for col in columns:
+        try_add(
+            f"Show 10 non-null values of {col} in {table}.",
+            f"SELECT {col} FROM {table} WHERE {col} IS NOT NULL LIMIT 10;",
+        )
+        try_add(
+            f"Count rows in {table} where {col} is not null.",
+            f"SELECT COUNT(*) AS count_not_null FROM {table} WHERE {col} IS NOT NULL;",
         )
 
-    if columns:
-        col = columns[0]
-        cols_list = ", ".join(preview_cols or [col])
-        add_sample(
-            f"List rows from {table} where {col} is not null.",
-            f"SELECT {cols_list} FROM {table} WHERE {col} IS NOT NULL LIMIT 10;",
+        if col in string_cols:
+            try_add(
+                f"List distinct values of {col} in {table} (limit 10).",
+                f"SELECT DISTINCT {col} FROM {table} WHERE {col} IS NOT NULL LIMIT 10;",
+            )
+            try_add(
+                f"Show {col} values from {table} ordered ascending.",
+                f"SELECT {col} FROM {table} WHERE {col} IS NOT NULL ORDER BY {col} ASC LIMIT 10;",
+            )
+
+        if col in numeric_cols:
+            try_add(
+                f"Show top 10 values of {col} in {table}.",
+                f"SELECT {col} FROM {table} WHERE {col} IS NOT NULL ORDER BY {col} DESC LIMIT 10;",
+            )
+            try_add(
+                f"Get the minimum {col} in {table}.",
+                f"SELECT MIN({col}) AS min_{col} FROM {table} WHERE {col} IS NOT NULL;",
+            )
+            try_add(
+                f"Get the maximum {col} in {table}.",
+                f"SELECT MAX({col}) AS max_{col} FROM {table} WHERE {col} IS NOT NULL;",
+            )
+            try_add(
+                f"Compute the average {col} in {table}.",
+                f"SELECT AVG({col}) AS avg_{col} FROM {table} WHERE {col} IS NOT NULL;",
+            )
+            if col in measure_cols:
+                try_add(
+                    f"Compute the total {col} in {table}.",
+                    f"SELECT SUM({col}) AS sum_{col} FROM {table} WHERE {col} IS NOT NULL;",
+                )
+
+        if col in date_cols:
+            try_add(
+                f"Show latest values of {col} in {table}.",
+                f"SELECT {col} FROM {table} WHERE {col} IS NOT NULL ORDER BY {col} DESC LIMIT 10;",
+            )
+            try_add(
+                f"Get the minimum {col} in {table}.",
+                f"SELECT MIN({col}) AS min_{col} FROM {table} WHERE {col} IS NOT NULL;",
+            )
+            try_add(
+                f"Get the maximum {col} in {table}.",
+                f"SELECT MAX({col}) AS max_{col} FROM {table} WHERE {col} IS NOT NULL;",
+            )
+
+        if len(samples) >= samples_per_schema:
+            return samples
+
+    max_pairs = 50
+    pair_count = 0
+    for i, col1 in enumerate(columns):
+        for col2 in columns[i + 1:]:
+            try_add(
+                f"Show {col1} and {col2} from {table} where both are not null.",
+                f"SELECT {col1}, {col2} FROM {table} "
+                f"WHERE {col1} IS NOT NULL AND {col2} IS NOT NULL LIMIT 10;",
+            )
+            pair_count += 1
+            if len(samples) >= samples_per_schema or pair_count >= max_pairs:
+                break
+        if len(samples) >= samples_per_schema or pair_count >= max_pairs:
+            break
+
+    if len(samples) < samples_per_schema:
+        for col in columns:
+            values = get_sample_values(con, table, col, limit=10)
+            if not values:
+                continue
+            for value in values:
+                literal = sql_literal(value, types[col])
+                text_value = value_for_text(value, types[col])
+                try_add(
+                    f"Show values of {col} in {table} where {col} = {text_value}.",
+                    f"SELECT {col} FROM {table} WHERE {col} = {literal} LIMIT 10;",
+                )
+                try_add(
+                    f"Count rows in {table} where {col} = {text_value}.",
+                    f"SELECT COUNT(*) AS row_count FROM {table} WHERE {col} = {literal};",
+                )
+                if len(samples) >= samples_per_schema:
+                    return samples
+
+    if len(samples) < samples_per_schema:
+        raise SystemExit(
+            f"Could not generate enough valid samples for {table}: "
+            f"{len(samples)}/{samples_per_schema}"
         )
 
-    order_col = None
-    if date_cols:
-        order_col = date_cols[0]
-    elif measure_cols:
-        order_col = measure_cols[0]
-    elif numeric_cols:
-        order_col = numeric_cols[0]
-    elif string_cols:
-        order_col = string_cols[0]
-    elif columns:
-        order_col = columns[0]
-
-    if order_col:
-        select_cols = [order_col] + [c for c in columns if c != order_col]
-        cols_list = ", ".join(select_cols[:3])
-        add_sample(
-            f"Show the top 10 rows from {table} ordered by {order_col} descending.",
-            f"SELECT {cols_list} FROM {table} ORDER BY {order_col} DESC LIMIT 10;",
-        )
-
-    if measure_cols or numeric_cols:
-        col = measure_cols[0] if measure_cols else numeric_cols[0]
-        add_sample(
-            f"Compute the total {col} in {table}.",
-            f"SELECT SUM({col}) AS total_{col} FROM {table};",
-        )
-        add_sample(
-            f"Compute the average {col} in {table}.",
-            f"SELECT AVG({col}) AS avg_{col} FROM {table};",
-        )
-
-    if date_cols:
-        col = date_cols[0]
-        add_sample(
-            f"Get the minimum and maximum {col} in {table}.",
-            f"SELECT MIN({col}) AS min_{col}, MAX({col}) AS max_{col} FROM {table};",
-        )
-
-    idx = 0
-    while len(samples) < max(samples_per_schema, 5):
-        col = columns[idx % len(columns)]
-        add_sample(
-            f"Show 10 rows from {table} with column {col}.",
-            f"SELECT {col} FROM {table} LIMIT 10;",
-        )
-        idx += 1
-
-    return samples[:samples_per_schema]
+    return samples
 
 
 def parse_args() -> argparse.Namespace:
@@ -361,16 +463,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--samples-per-schema",
         type=int,
-        default=6,
-        help="Number of samples per schema (5-10 recommended)",
+        default=50,
+        help="Number of samples per schema",
     )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    if args.samples_per_schema < 5 or args.samples_per_schema > 10:
-        raise SystemExit("--samples-per-schema must be between 5 and 10")
+    if args.samples_per_schema < 1:
+        raise SystemExit("--samples-per-schema must be >= 1")
 
     con = duckdb.connect(args.db_path)
     schema_map = build_schema_map(con)
@@ -383,7 +485,7 @@ def main() -> None:
     with output_path.open("w", encoding="utf-8") as f:
         for table in sorted(schema_map.keys()):
             schema_info = build_schema_info(table, schema_map, foreign_keys)
-            samples = generate_samples_for_table(table, schema_map[table], args.samples_per_schema)
+            samples = generate_samples_for_table(con, table, schema_map[table], args.samples_per_schema)
             for sample in samples:
                 record = {
                     "schema": schema_info,
