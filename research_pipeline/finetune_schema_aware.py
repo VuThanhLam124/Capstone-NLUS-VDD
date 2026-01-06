@@ -166,14 +166,15 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Training config - optimized to prevent hallucination
-    training_args = SFTConfig(
+    # Note: max_seq_length handling varies by trl version
+    sft_config_kwargs = dict(
         output_dir=str(output_dir),
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
-        gradient_accumulation_steps=16,  # Increased for smaller batch
+        gradient_accumulation_steps=16,
         learning_rate=args.lr,
-        weight_decay=0.05,  # Increased regularization to prevent overfitting
+        weight_decay=0.05,
         warmup_ratio=0.1,
         logging_steps=10,
         eval_strategy="steps",
@@ -185,20 +186,34 @@ def main():
         optim="paged_adamw_8bit",
         report_to="none",
         gradient_checkpointing=True,
-        max_grad_norm=0.5,  # Slightly higher for stability
+        max_grad_norm=0.5,
         dataset_text_field="text",
     )
     
-    # Trainer with max_seq_length passed directly
-    trainer = SFTTrainer(
+    # Try to add max_seq_length to config (newer trl versions)
+    try:
+        test_config = SFTConfig(**sft_config_kwargs, max_seq_length=args.max_seq_length)
+        sft_config_kwargs["max_seq_length"] = args.max_seq_length
+    except TypeError:
+        pass  # Older version, will truncate in data preprocessing
+    
+    training_args = SFTConfig(**sft_config_kwargs)
+    
+    # Trainer - try different argument combinations for compatibility
+    trainer_kwargs = dict(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         processing_class=tokenizer,
-        max_seq_length=args.max_seq_length,  # Pass to trainer instead
-        packing=False,  # Disable packing to avoid context confusion
     )
+    
+    # Try adding max_seq_length to trainer (some trl versions)
+    try:
+        trainer = SFTTrainer(**trainer_kwargs, max_seq_length=args.max_seq_length)
+    except TypeError:
+        # Fallback: no max_seq_length parameter
+        trainer = SFTTrainer(**trainer_kwargs)
     
     # Train
     print("\n" + "="*60)
