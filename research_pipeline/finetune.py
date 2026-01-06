@@ -276,14 +276,14 @@ def main():
     trainer.train()
     
     # Save
-    print(f"\nSaving model to {OUTPUT_DIR}...")
+    print(f"\nSaving model to {output_dir}...")
     trainer.save_model()
-    tokenizer.save_pretrained(OUTPUT_DIR)
+    tokenizer.save_pretrained(output_dir)
     
     print("\nFinetuning complete!")
-    print(f"Model saved to: {OUTPUT_DIR}")
+    print(f"Model saved to: {output_dir}")
     print("\nTo use the finetuned model:")
-    print(f'  model = PeftModel.from_pretrained(base_model, "{OUTPUT_DIR}")')
+    print(f'  model = PeftModel.from_pretrained(base_model, "{output_dir}")')
 
 if __name__ == "__main__":
     main()

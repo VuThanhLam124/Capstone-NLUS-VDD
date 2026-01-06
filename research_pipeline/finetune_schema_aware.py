@@ -11,6 +11,7 @@ import argparse
 
 import pandas as pd
 import torch
+import re
 from datasets import Dataset
 from transformers import (
     AutoTokenizer,
@@ -37,19 +38,57 @@ def parse_args():
     return parser.parse_args()
 
 
+# Valid TPC-DS tables for validation
+VALID_TABLES = {
+    'store_sales', 'store_returns', 'web_sales', 'web_returns', 
+    'catalog_sales', 'catalog_returns', 'inventory',
+    'customer', 'customer_address', 'customer_demographics',
+    'item', 'date_dim', 'time_dim', 'store', 'warehouse',
+    'web_site', 'web_page', 'call_center', 'catalog_page',
+    'promotion', 'reason', 'ship_mode', 'household_demographics', 'income_band'
+}
+
+def validate_sql_sample(sql: str) -> bool:
+    """Validate SQL doesn't contain hallucinated tables."""
+    import re
+    # Extract table names from SQL
+    tables = set(re.findall(r'\b(?:FROM|JOIN)\s+([a-z_]+)', sql, re.I))
+    # Check all tables are valid
+    for table in tables:
+        if table.lower() not in VALID_TABLES:
+            return False
+    # Check for repetitive patterns (hallucination indicator)
+    if re.search(r'(\.[a-z]+){4,}', sql):
+        return False
+    return True
+
 def load_jsonl_data(data_path: str, tokenizer) -> Dataset:
-    """Load JSONL training data and format for training."""
+    """Load JSONL training data and format for training with validation."""
     samples = []
+    skipped = 0
     
     with open(data_path, 'r', encoding='utf-8') as f:
         for line in f:
             sample = json.loads(line.strip())
             messages = sample.get("messages", [])
             
+            # Validate SQL in assistant response
+            assistant_msg = next((m['content'] for m in messages if m['role'] == 'assistant'), '')
+            if not validate_sql_sample(assistant_msg):
+                skipped += 1
+                continue
+            
             # Apply chat template
             text = tokenizer.apply_chat_template(messages, tokenize=False)
+            
+            # Skip if text is too long (truncation causes issues)
+            if len(tokenizer.encode(text)) > 1800:  # Leave room for generation
+                skipped += 1
+                continue
+                
             samples.append({"text": text})
     
+    print(f"Loaded {len(samples)} valid samples, skipped {skipped} invalid/long samples")
     return Dataset.from_list(samples)
 
 
@@ -126,7 +165,7 @@ def main():
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Training config
+    # Training config - optimized to prevent hallucination
     training_args = SFTConfig(
         output_dir=str(output_dir),
         num_train_epochs=args.epochs,
@@ -134,7 +173,7 @@ def main():
         per_device_eval_batch_size=args.batch_size,
         gradient_accumulation_steps=16,  # Increased for smaller batch
         learning_rate=args.lr,
-        weight_decay=0.01,
+        weight_decay=0.05,  # Increased regularization to prevent overfitting
         warmup_ratio=0.1,
         logging_steps=10,
         eval_strategy="steps",
@@ -146,8 +185,10 @@ def main():
         optim="paged_adamw_8bit",
         report_to="none",
         gradient_checkpointing=True,
-        max_grad_norm=0.3,
+        max_grad_norm=0.5,  # Slightly higher for stability
         dataset_text_field="text",
+        max_seq_length=args.max_seq_length,  # Explicit max length
+        packing=False,  # Disable packing to avoid context confusion
     )
     
     # Trainer

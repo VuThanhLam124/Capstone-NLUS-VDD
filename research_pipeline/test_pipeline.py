@@ -677,7 +677,39 @@ def post_process_sql(sql: str) -> str:
     
     return sql
 
-def generate_sql(prompt: str, tokenizer, model) -> str:
+def detect_hallucination(sql: str, schema_map: dict) -> tuple[bool, str]:
+    """
+    Detect hallucinated SQL that references non-existent tables/columns.
+    Returns (is_hallucinated, reason)
+    """
+    valid_tables = set(schema_map.keys())
+    valid_columns = set()
+    for cols in schema_map.values():
+        valid_columns.update(col for col, _ in cols)
+    
+    # Check for repetitive patterns (e.g., sc.sc.sc...)
+    if re.search(r'(\b\w+\.){3,}', sql):
+        return True, "Repetitive dot pattern detected"
+    
+    # Check for non-existent tables
+    for match in re.finditer(r'\b(?:FROM|JOIN)\s+([a-z_]+)', sql, re.I):
+        table = match.group(1).lower()
+        if table not in valid_tables and table not in {'select', 'where', 'and', 'or'}:
+            return True, f"Non-existent table: {table}"
+    
+    # Check for obviously wrong column patterns (not matching any prefix)
+    col_refs = re.findall(r'\b([a-z][a-z0-9]*_[a-z_]+)', sql.lower())
+    known_prefixes = set(COLUMN_PREFIXES.keys())
+    for col in col_refs:
+        prefix = col.split('_')[0] + '_'
+        if prefix not in known_prefixes and col not in valid_columns:
+            # Check if it's a partial match
+            if not any(col.startswith(p) for p in known_prefixes):
+                return True, f"Unknown column pattern: {col}"
+    
+    return False, ""
+
+def generate_sql(prompt: str, tokenizer, model, schema_map: dict = None) -> str:
     if not HAS_TORCH or model is None:
         return "SELECT 1;"
     
@@ -689,10 +721,22 @@ def generate_sql(prompt: str, tokenizer, model) -> str:
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
             eos_token_id=tokenizer.eos_token_id,
+            repetition_penalty=1.2,  # Prevent repetitive outputs
+            no_repeat_ngram_size=4,  # Prevent 4-gram repetition
         )
     gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
     raw_sql = extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
-    return post_process_sql(raw_sql)
+    processed_sql = post_process_sql(raw_sql)
+    
+    # Check for hallucination
+    if schema_map:
+        is_hallucinated, reason = detect_hallucination(processed_sql, schema_map)
+        if is_hallucinated:
+            print(f"      WARNING: Hallucination detected - {reason}")
+            # Try to return a safe fallback
+            return "SELECT 'HALLUCINATION_DETECTED' AS error;"
+    
+    return processed_sql
 
 def build_prompt(question: str, schema_text: str, tokenizer, examples: list = None, 
                   selected_tables: list = None, schema_map: dict = None) -> str:
@@ -816,7 +860,7 @@ def main():
             prompt = build_prompt(question, schema_text, tokenizer, examples, 
                                   selected_tables=tables, schema_map=schema_map)
             start = time.time()
-            gen_sql = generate_sql(prompt, tokenizer, model)
+            gen_sql = generate_sql(prompt, tokenizer, model, schema_map)
             gen_time = (time.time() - start) * 1000
             
             # Validate
