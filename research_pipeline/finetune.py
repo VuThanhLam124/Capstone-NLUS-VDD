@@ -4,6 +4,7 @@ Uses QLoRA (4-bit quantization + LoRA) for efficient training on consumer GPUs.
 """
 import os
 import sys
+import json
 from pathlib import Path
 from datetime import datetime
 
@@ -35,8 +36,8 @@ import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Finetune Text-to-SQL Model")
-    parser.add_argument("--data", type=str, default="research_pipeline/datasets/train_clean.csv",
-                        help="Path to training data CSV (columns: Transcription, SQL Ground Truth)")
+    parser.add_argument("--data", type=str, default="research_pipeline/datasets/train_schema_context.jsonl",
+                        help="Path to training data (CSV or JSONL)")
     parser.add_argument("--output", type=str, default="/kaggle/working/finetuned_model",
                         help="Output directory for finetuned model")
     parser.add_argument("--adapter", type=str, default="Ellbendls/Qwen-3-4b-Text_to_SQL",
@@ -50,7 +51,7 @@ def parse_args():
 REPO_ROOT = Path(__file__).parent.parent
 
 # System prompt
-SYSTEM_PROMPT = "You translate user questions into SQL for DuckDB (TPC-DS). Return only SQL, no markdown."
+SYSTEM_PROMPT = "You translate user questions into SQL for DuckDB (TPC-DS). Use only the provided schema. Return only SQL, no markdown."
 
 # ========== TABLE DESCRIPTIONS ==========
 TABLE_DESCRIPTIONS = {
@@ -89,6 +90,53 @@ def get_schema_for_sql(sql: str) -> str:
     
     return "\n".join(schema_lines) if schema_lines else "TABLE store_sales (...)\nTABLE date_dim (...)"
 
+def build_schema_text_from_record(schema: dict) -> str:
+    """Build schema text from structured schema info in JSONL records."""
+    lines = [
+        f"SCHEMA NAME: {schema.get('name', '')}",
+        f"PURPOSE: {schema.get('purpose', '')}",
+        "FEATURES:",
+    ]
+    for feature in schema.get("features", []):
+        name = feature.get("name", "")
+        typ = feature.get("type", "")
+        lines.append(f"- {name} (type: {typ})")
+
+    keys = schema.get("keys", {})
+    primary_keys = keys.get("primary_key", [])
+    foreign_keys = keys.get("foreign_keys", [])
+
+    lines.append("KEYS:")
+    if primary_keys:
+        lines.append("PRIMARY KEY: " + ", ".join(primary_keys))
+    else:
+        lines.append("PRIMARY KEY: none")
+
+    if foreign_keys:
+        lines.append("FOREIGN KEYS:")
+        for fk in foreign_keys:
+            column = fk.get("column", "")
+            references = fk.get("references", "")
+            lines.append(f"- {column} -> {references}")
+    else:
+        lines.append("FOREIGN KEYS: none")
+
+    return "\n".join(lines).strip()
+
+def format_sample_from_record(schema: dict, question: str, sql: str, tokenizer):
+    """Format a JSONL record into a training sample."""
+    schema_text = build_schema_text_from_record(schema)
+    user_content = f"{schema_text}\n\nQUESTION:\n{question}\n\nSQL:"
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_content},
+        {"role": "assistant", "content": sql},
+    ]
+
+    text = tokenizer.apply_chat_template(messages, tokenize=False)
+    return {"text": text}
+
 def format_sample(row, tokenizer):
     """Format a training sample in chat format."""
     question = row["Transcription"]
@@ -109,22 +157,52 @@ def format_sample(row, tokenizer):
     text = tokenizer.apply_chat_template(messages, tokenize=False)
     return {"text": text}
 
+def load_jsonl_data(data_path, tokenizer):
+    """Load JSONL training data with structured schema or messages."""
+    samples = []
+    skipped = 0
+    print(f"Loading data from {data_path}...")
+
+    with open(data_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            record = json.loads(line)
+
+            if "messages" in record:
+                text = tokenizer.apply_chat_template(record["messages"], tokenize=False)
+                samples.append({"text": text})
+                continue
+
+            schema = record.get("schema")
+            question = record.get("question")
+            sql = record.get("sql")
+            if not (schema and question and sql):
+                skipped += 1
+                continue
+
+            samples.append(format_sample_from_record(schema, question, sql, tokenizer))
+
+    print(f"Loaded {len(samples)} samples, skipped {skipped} invalid records")
+    return Dataset.from_list(samples)
+
+
 def load_data(data_path, tokenizer):
     """Load and format training data."""
+    if data_path.endswith(".jsonl"):
+        return load_jsonl_data(data_path, tokenizer)
+
     print(f"Loading data from {data_path}...")
     df = pd.read_csv(data_path)
     df = df.dropna(subset=["Transcription", "SQL Ground Truth"])
     print(f"Loaded {len(df)} samples")
-    
-    # Convert to dataset
+
     dataset = Dataset.from_pandas(df)
-    
-    # Format for training
     dataset = dataset.map(
         lambda x: format_sample(x, tokenizer),
-        remove_columns=dataset.column_names
+        remove_columns=dataset.column_names,
     )
-    
+
     return dataset
 
 def main():
