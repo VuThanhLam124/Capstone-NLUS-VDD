@@ -187,17 +187,17 @@ def main():
         gradient_checkpointing=True,
         max_grad_norm=0.5,  # Slightly higher for stability
         dataset_text_field="text",
-        max_seq_length=args.max_seq_length,  # Explicit max length
-        packing=False,  # Disable packing to avoid context confusion
     )
     
-    # Trainer
+    # Trainer with max_seq_length passed directly
     trainer = SFTTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         processing_class=tokenizer,
+        max_seq_length=args.max_seq_length,  # Pass to trainer instead
+        packing=False,  # Disable packing to avoid context confusion
     )
     
     # Train
