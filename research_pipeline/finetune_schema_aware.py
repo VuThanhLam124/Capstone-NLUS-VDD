@@ -167,6 +167,9 @@ def main():
     
     # Training config - optimized to prevent hallucination
     # Note: max_seq_length handling varies by trl version
+    logging_dir = output_dir / "logs"
+    logging_dir.mkdir(parents=True, exist_ok=True)
+    
     sft_config_kwargs = dict(
         output_dir=str(output_dir),
         num_train_epochs=args.epochs,
@@ -177,14 +180,15 @@ def main():
         weight_decay=0.05,
         warmup_ratio=0.1,
         logging_steps=10,
+        logging_dir=str(logging_dir),  # TensorBoard logs
         eval_strategy="steps",
-        eval_steps=200,
+        eval_steps=100,
         save_strategy="steps",
-        save_steps=200,
-        save_total_limit=2,
+        save_steps=100,
+        save_total_limit=3,
         bf16=True,
         optim="paged_adamw_8bit",
-        report_to="none",
+        report_to="tensorboard",  # Enable TensorBoard logging
         gradient_checkpointing=True,
         max_grad_norm=0.5,
         dataset_text_field="text",
