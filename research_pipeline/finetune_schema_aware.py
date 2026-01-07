@@ -170,6 +170,15 @@ def main():
     logging_dir = output_dir / "logs"
     logging_dir.mkdir(parents=True, exist_ok=True)
     
+    # Check if tensorboard is available
+    try:
+        import tensorboard
+        report_to = "tensorboard"
+        print("TensorBoard logging enabled")
+    except ImportError:
+        report_to = "none"
+        print("TensorBoard not installed, logging disabled. Install with: pip install tensorboard")
+    
     sft_config_kwargs = dict(
         output_dir=str(output_dir),
         num_train_epochs=args.epochs,
@@ -180,7 +189,7 @@ def main():
         weight_decay=0.05,
         warmup_ratio=0.1,
         logging_steps=10,
-        logging_dir=str(logging_dir),  # TensorBoard logs
+        logging_dir=str(logging_dir),
         eval_strategy="steps",
         eval_steps=100,
         save_strategy="steps",
@@ -188,7 +197,7 @@ def main():
         save_total_limit=3,
         bf16=True,
         optim="paged_adamw_8bit",
-        report_to="tensorboard",  # Enable TensorBoard logging
+        report_to=report_to,
         gradient_checkpointing=True,
         max_grad_norm=0.5,
         dataset_text_field="text",
