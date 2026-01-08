@@ -456,9 +456,12 @@ def benchmark_model(args, tokenizer, model):
         
         results.append({
             "id": idx,
-            "question": question[:50],
+            "question": question,
+            "ground_truth": gt_sql,
+            "generated_sql": gen_sql,
             "valid": valid,
             "exec_match": exec_match,
+            "error": gen_err if gen_err else None,
             "gen_time_ms": gen_time
         })
     
