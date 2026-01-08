@@ -393,7 +393,7 @@ class SchemaLinker:
     def build_dynamic_schema(self, question: str, max_tables: int = 4) -> str:
         """
         Build dynamic schema context for question
-        Returns minimal schema string
+        Returns schema with relevant columns + warnings
         """
         linking_result = self.link_schema(question, top_k_tables=max_tables, top_k_columns=15)
         
@@ -406,20 +406,65 @@ class SchemaLinker:
             table_info = TPCDS_TABLES[table_name]
             alias = table_info["alias"]
             
-            # Filter relevant columns
-            relevant_cols = [c for c in table_info["columns"] if c in linking_result["columns"]]
-            if not relevant_cols:
-                relevant_cols = table_info["columns"][:5]  # Fallback to first 5
-            
-            cols_str = ", ".join(relevant_cols)
-            schema_lines.append(f"TABLE {table_name} ({cols_str})")
+            # SHOW ALL COLUMNS (not just relevant ones) to prevent hallucination
+            all_cols = table_info["columns"]
+            cols_str = ", ".join(all_cols)
+            schema_lines.append(f"TABLE {table_name} (alias={alias}): {cols_str}")
         
         # Add JOIN hints
         if linking_result["joins"]:
             schema_lines.append("\nJOIN HINTS:")
             schema_lines.extend([f"  {j}" for j in linking_result["joins"][:3]])
         
+        # Add COLUMN WARNINGS based on question
+        warnings = self._get_column_warnings(question)
+        if warnings:
+            schema_lines.append("\nCOMMON MISTAKES TO AVOID:")
+            schema_lines.extend([f"  - {w}" for w in warnings])
+        
+        # Add final reminder
+        schema_lines.append("\nONLY use columns listed above. Do NOT invent column names.")
+        
         return "\n".join(schema_lines)
+    
+    def _get_column_warnings(self, question: str) -> List[str]:
+        """Generate warnings about commonly confused columns based on question."""
+        question_lower = question.lower()
+        warnings = []
+        
+        # State confusion
+        if "state" in question_lower or "bang" in question_lower:
+            warnings.append("State is in ca_state (customer_address) or s_state (store), NOT in date_dim")
+        
+        # Gender confusion  
+        if "gender" in question_lower or "giới tính" in question_lower:
+            warnings.append("Gender is in cd_gender (customer_demographics), NOT in customer")
+        
+        # Weekend confusion
+        if "weekend" in question_lower or "cuối tuần" in question_lower:
+            warnings.append("Use d_weekend = 'Y' for weekends (not d_weekday)")
+        
+        # Credit rating confusion
+        if "credit" in question_lower or "tín dụng" in question_lower:
+            warnings.append("Credit rating is cd_credit_rating (customer_demographics), NOT in customer")
+        
+        # Vehicle count confusion
+        if "vehicle" in question_lower or "xe" in question_lower:
+            warnings.append("Vehicle count is hd_vehicle_count (household_demographics), NOT in customer")
+        
+        # URL confusion
+        if "url" in question_lower:
+            warnings.append("URL is wp_url (web_page), NOT in web_sales")
+        
+        # Quantity confusion for inventory
+        if "tồn kho" in question_lower or "inventory" in question_lower:
+            warnings.append("Use inv_quantity_on_hand (NOT 'quantity') for inventory")
+        
+        # Return columns confusion
+        if "return" in question_lower or "trả hàng" in question_lower:
+            warnings.append("Return columns: sr_item_sk, sr_return_amt, sr_return_quantity (NOT return_item_sk)")
+        
+        return warnings
 
 
 # ========== STANDALONE USAGE ==========
