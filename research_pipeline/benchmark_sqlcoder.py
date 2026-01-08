@@ -51,7 +51,7 @@ def parse_args():
     parser.add_argument("--max-test-samples", type=int, default=None)
     parser.add_argument("--schema-linking", action="store_true")
     parser.add_argument("--n-gpu-layers", type=int, default=-1, help="Layers to offload to GPU (-1=all)")
-    parser.add_argument("--ctx-size", type=int, default=4096, help="Context size")
+    parser.add_argument("--ctx-size", type=int, default=8192, help="Context size")
     return parser.parse_args()
 
 
