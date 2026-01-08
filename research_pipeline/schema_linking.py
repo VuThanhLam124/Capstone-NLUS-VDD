@@ -18,66 +18,165 @@ except ImportError:
     HAS_EMBEDDINGS = False
     print("WARNING: sentence-transformers not installed for schema linking")
 
-# ========== TPC-DS SCHEMA DEFINITION ==========
+# ========== TPC-DS SCHEMA DEFINITION (ALL 24 TABLES) ==========
 TPCDS_TABLES = {
+    # === FACT TABLES (6) ===
     "store_sales": {
         "alias": "ss",
         "columns": ["ss_sold_date_sk", "ss_sold_time_sk", "ss_item_sk", "ss_customer_sk", 
-                   "ss_quantity", "ss_sales_price", "ss_net_paid", "ss_net_profit"],
-        "keywords": ["store", "sales", "bán hàng", "cửa hàng", "doanh thu"],
+                   "ss_cdemo_sk", "ss_hdemo_sk", "ss_addr_sk", "ss_store_sk", "ss_promo_sk",
+                   "ss_ticket_number", "ss_quantity", "ss_wholesale_cost", "ss_list_price",
+                   "ss_sales_price", "ss_ext_sales_price", "ss_net_paid", "ss_net_profit"],
+        "keywords": ["store", "sales", "bán hàng", "cửa hàng", "doanh thu", "retail"],
     },
     "store_returns": {
         "alias": "sr",
-        "columns": ["sr_returned_date_sk", "sr_item_sk", "sr_customer_sk", 
-                   "sr_return_quantity", "sr_return_amt", "sr_net_loss"],
-        "keywords": ["return", "trả hàng", "hoàn trả"],
+        "columns": ["sr_returned_date_sk", "sr_return_time_sk", "sr_item_sk", "sr_customer_sk",
+                   "sr_cdemo_sk", "sr_hdemo_sk", "sr_addr_sk", "sr_store_sk", "sr_reason_sk",
+                   "sr_ticket_number", "sr_return_quantity", "sr_return_amt", "sr_net_loss"],
+        "keywords": ["return", "trả hàng", "hoàn trả", "store return"],
     },
     "web_sales": {
         "alias": "ws",
-        "columns": ["ws_sold_date_sk", "ws_item_sk", "ws_bill_customer_sk",
+        "columns": ["ws_sold_date_sk", "ws_sold_time_sk", "ws_ship_date_sk", "ws_item_sk", 
+                   "ws_bill_customer_sk", "ws_ship_customer_sk", "ws_web_page_sk", "ws_web_site_sk",
+                   "ws_ship_mode_sk", "ws_warehouse_sk", "ws_promo_sk", "ws_order_number",
                    "ws_quantity", "ws_sales_price", "ws_net_paid", "ws_net_profit"],
-        "keywords": ["web", "online", "internet", "website"],
+        "keywords": ["web", "online", "internet", "website", "ecommerce"],
+    },
+    "web_returns": {
+        "alias": "wr",
+        "columns": ["wr_returned_date_sk", "wr_returned_time_sk", "wr_item_sk", 
+                   "wr_refunded_customer_sk", "wr_returning_customer_sk", "wr_web_page_sk",
+                   "wr_reason_sk", "wr_order_number", "wr_return_quantity", "wr_return_amt", "wr_net_loss"],
+        "keywords": ["web return", "online return", "trả hàng online"],
     },
     "catalog_sales": {
         "alias": "cs",
-        "columns": ["cs_sold_date_sk", "cs_item_sk", "cs_bill_customer_sk",
+        "columns": ["cs_sold_date_sk", "cs_sold_time_sk", "cs_ship_date_sk", "cs_bill_customer_sk",
+                   "cs_ship_customer_sk", "cs_call_center_sk", "cs_catalog_page_sk", "cs_ship_mode_sk",
+                   "cs_warehouse_sk", "cs_item_sk", "cs_promo_sk", "cs_order_number",
                    "cs_quantity", "cs_sales_price", "cs_net_paid", "cs_net_profit"],
-        "keywords": ["catalog", "catalogue", "danh mục"],
+        "keywords": ["catalog", "catalogue", "danh mục", "mail order"],
     },
+    "catalog_returns": {
+        "alias": "cr",
+        "columns": ["cr_returned_date_sk", "cr_returned_time_sk", "cr_item_sk",
+                   "cr_refunded_customer_sk", "cr_returning_customer_sk", "cr_call_center_sk",
+                   "cr_catalog_page_sk", "cr_ship_mode_sk", "cr_warehouse_sk", "cr_reason_sk",
+                   "cr_order_number", "cr_return_quantity", "cr_return_amount", "cr_net_loss"],
+        "keywords": ["catalog return", "trả hàng catalog"],
+    },
+    "inventory": {
+        "alias": "inv",
+        "columns": ["inv_date_sk", "inv_item_sk", "inv_warehouse_sk", "inv_quantity_on_hand"],
+        "keywords": ["inventory", "stock", "kho", "tồn kho", "warehouse"],
+    },
+    
+    # === DIMENSION TABLES (17) ===
     "customer": {
         "alias": "c",
-        "columns": ["c_customer_sk", "c_customer_id", "c_first_name", "c_last_name",
-                   "c_birth_year", "c_email_address"],
-        "keywords": ["customer", "khách hàng", "người mua"],
+        "columns": ["c_customer_sk", "c_customer_id", "c_current_cdemo_sk", "c_current_hdemo_sk",
+                   "c_current_addr_sk", "c_first_name", "c_last_name", "c_birth_day", "c_birth_month",
+                   "c_birth_year", "c_birth_country", "c_email_address", "c_preferred_cust_flag"],
+        "keywords": ["customer", "khách hàng", "người mua", "buyer"],
     },
     "customer_address": {
         "alias": "ca",
-        "columns": ["ca_address_sk", "ca_street_name", "ca_city", "ca_state", "ca_zip"],
-        "keywords": ["address", "địa chỉ", "state", "city", "bang", "thành phố"],
+        "columns": ["ca_address_sk", "ca_address_id", "ca_street_number", "ca_street_name", 
+                   "ca_street_type", "ca_city", "ca_county", "ca_state", "ca_zip", "ca_country", "ca_gmt_offset"],
+        "keywords": ["address", "địa chỉ", "state", "city", "bang", "thành phố", "location"],
     },
     "customer_demographics": {
         "alias": "cd",
         "columns": ["cd_demo_sk", "cd_gender", "cd_marital_status", "cd_education_status",
-                   "cd_dep_count", "cd_credit_rating"],
-        "keywords": ["gender", "education", "marital", "giới tính", "học vấn", "hôn nhân"],
+                   "cd_purchase_estimate", "cd_credit_rating", "cd_dep_count", "cd_dep_employed_count", "cd_dep_college_count"],
+        "keywords": ["gender", "education", "marital", "giới tính", "học vấn", "hôn nhân", "demographics"],
+    },
+    "household_demographics": {
+        "alias": "hd",
+        "columns": ["hd_demo_sk", "hd_income_band_sk", "hd_buy_potential", "hd_dep_count", "hd_vehicle_count"],
+        "keywords": ["household", "income", "vehicle", "hộ gia đình", "thu nhập", "xe"],
+    },
+    "income_band": {
+        "alias": "ib",
+        "columns": ["ib_income_band_sk", "ib_lower_bound", "ib_upper_bound"],
+        "keywords": ["income", "salary", "thu nhập", "lương"],
     },
     "item": {
         "alias": "i",
-        "columns": ["i_item_sk", "i_item_id", "i_item_desc", "i_current_price",
-                   "i_brand", "i_category", "i_class", "i_product_name"],
-        "keywords": ["item", "product", "sản phẩm", "brand", "thương hiệu", "category"],
+        "columns": ["i_item_sk", "i_item_id", "i_rec_start_date", "i_rec_end_date", "i_item_desc",
+                   "i_current_price", "i_wholesale_cost", "i_brand_id", "i_brand", "i_class_id", 
+                   "i_class", "i_category_id", "i_category", "i_manufact_id", "i_manufact",
+                   "i_size", "i_color", "i_units", "i_container", "i_product_name"],
+        "keywords": ["item", "product", "sản phẩm", "brand", "thương hiệu", "category", "hàng hóa"],
     },
     "date_dim": {
         "alias": "d",
-        "columns": ["d_date_sk", "d_date", "d_year", "d_moy", "d_qoy", "d_day_name",
-                   "d_weekend", "d_quarter_name"],
-        "keywords": ["date", "year", "month", "quarter", "năm", "tháng", "quý", "ngày"],
+        "columns": ["d_date_sk", "d_date_id", "d_date", "d_month_seq", "d_week_seq", "d_quarter_seq",
+                   "d_year", "d_dow", "d_moy", "d_dom", "d_qoy", "d_fy_year", "d_day_name", 
+                   "d_quarter_name", "d_holiday", "d_weekend"],
+        "keywords": ["date", "year", "month", "quarter", "năm", "tháng", "quý", "ngày", "time"],
+    },
+    "time_dim": {
+        "alias": "t",
+        "columns": ["t_time_sk", "t_time_id", "t_time", "t_hour", "t_minute", "t_second", 
+                   "t_am_pm", "t_shift", "t_sub_shift", "t_meal_time"],
+        "keywords": ["time", "hour", "minute", "giờ", "phút", "thời gian"],
     },
     "store": {
         "alias": "s",
-        "columns": ["s_store_sk", "s_store_id", "s_store_name", "s_city", "s_state",
-                   "s_number_employees", "s_floor_space"],
-        "keywords": ["store", "cửa hàng", "shop"],
+        "columns": ["s_store_sk", "s_store_id", "s_store_name", "s_number_employees", "s_floor_space",
+                   "s_hours", "s_manager", "s_market_id", "s_geography_class", "s_market_desc",
+                   "s_city", "s_county", "s_state", "s_zip", "s_country"],
+        "keywords": ["store", "cửa hàng", "shop", "retail store"],
+    },
+    "warehouse": {
+        "alias": "w",
+        "columns": ["w_warehouse_sk", "w_warehouse_id", "w_warehouse_name", "w_warehouse_sq_ft",
+                   "w_city", "w_county", "w_state", "w_zip", "w_country"],
+        "keywords": ["warehouse", "kho hàng", "storage", "distribution"],
+    },
+    "web_site": {
+        "alias": "web",
+        "columns": ["web_site_sk", "web_site_id", "web_name", "web_open_date_sk", "web_close_date_sk",
+                   "web_class", "web_manager", "web_company_name", "web_city", "web_state"],
+        "keywords": ["website", "web site", "trang web", "online store"],
+    },
+    "web_page": {
+        "alias": "wp",
+        "columns": ["wp_web_page_sk", "wp_web_page_id", "wp_creation_date_sk", "wp_customer_sk",
+                   "wp_url", "wp_type", "wp_char_count", "wp_link_count", "wp_image_count"],
+        "keywords": ["web page", "webpage", "page", "trang", "url"],
+    },
+    "call_center": {
+        "alias": "cc",
+        "columns": ["cc_call_center_sk", "cc_call_center_id", "cc_name", "cc_class", "cc_employees",
+                   "cc_sq_ft", "cc_hours", "cc_manager", "cc_city", "cc_county", "cc_state"],
+        "keywords": ["call center", "hotline", "tổng đài", "support center"],
+    },
+    "catalog_page": {
+        "alias": "cp",
+        "columns": ["cp_catalog_page_sk", "cp_catalog_page_id", "cp_start_date_sk", "cp_end_date_sk",
+                   "cp_department", "cp_catalog_number", "cp_catalog_page_number", "cp_description"],
+        "keywords": ["catalog page", "trang catalog", "catalog"],
+    },
+    "promotion": {
+        "alias": "p",
+        "columns": ["p_promo_sk", "p_promo_id", "p_start_date_sk", "p_end_date_sk", "p_item_sk",
+                   "p_cost", "p_promo_name", "p_channel_dmail", "p_channel_email", "p_channel_tv",
+                   "p_channel_radio", "p_discount_active"],
+        "keywords": ["promotion", "promo", "discount", "khuyến mãi", "giảm giá", "sale"],
+    },
+    "reason": {
+        "alias": "r",
+        "columns": ["r_reason_sk", "r_reason_id", "r_reason_desc"],
+        "keywords": ["reason", "lý do", "cause", "return reason"],
+    },
+    "ship_mode": {
+        "alias": "sm",
+        "columns": ["sm_ship_mode_sk", "sm_ship_mode_id", "sm_type", "sm_code", "sm_carrier", "sm_contract"],
+        "keywords": ["ship", "shipping", "delivery", "vận chuyển", "giao hàng", "carrier"],
     },
 }
 
@@ -102,17 +201,70 @@ COLUMN_SEMANTICS = {
     "giới tính": ["cd_gender"],
 }
 
-# JOIN paths
+# JOIN paths (ALL key relationships)
 JOIN_RELATIONSHIPS = {
+    # Store Sales
     ("store_sales", "date_dim"): "ss_sold_date_sk = d_date_sk",
     ("store_sales", "item"): "ss_item_sk = i_item_sk",
     ("store_sales", "customer"): "ss_customer_sk = c_customer_sk",
     ("store_sales", "store"): "ss_store_sk = s_store_sk",
+    ("store_sales", "promotion"): "ss_promo_sk = p_promo_sk",
+    ("store_sales", "customer_demographics"): "ss_cdemo_sk = cd_demo_sk",
+    ("store_sales", "household_demographics"): "ss_hdemo_sk = hd_demo_sk",
+    ("store_sales", "customer_address"): "ss_addr_sk = ca_address_sk",
+    ("store_sales", "time_dim"): "ss_sold_time_sk = t_time_sk",
+    
+    # Store Returns
+    ("store_returns", "date_dim"): "sr_returned_date_sk = d_date_sk",
+    ("store_returns", "item"): "sr_item_sk = i_item_sk",
+    ("store_returns", "customer"): "sr_customer_sk = c_customer_sk",
+    ("store_returns", "store"): "sr_store_sk = s_store_sk",
+    ("store_returns", "reason"): "sr_reason_sk = r_reason_sk",
+    
+    # Web Sales
     ("web_sales", "date_dim"): "ws_sold_date_sk = d_date_sk",
     ("web_sales", "item"): "ws_item_sk = i_item_sk",
+    ("web_sales", "customer"): "ws_bill_customer_sk = c_customer_sk",
+    ("web_sales", "web_site"): "ws_web_site_sk = web_site_sk",
+    ("web_sales", "web_page"): "ws_web_page_sk = wp_web_page_sk",
+    ("web_sales", "warehouse"): "ws_warehouse_sk = w_warehouse_sk",
+    ("web_sales", "ship_mode"): "ws_ship_mode_sk = sm_ship_mode_sk",
+    ("web_sales", "promotion"): "ws_promo_sk = p_promo_sk",
+    
+    # Web Returns
+    ("web_returns", "date_dim"): "wr_returned_date_sk = d_date_sk",
+    ("web_returns", "item"): "wr_item_sk = i_item_sk",
+    ("web_returns", "web_page"): "wr_web_page_sk = wp_web_page_sk",
+    ("web_returns", "reason"): "wr_reason_sk = r_reason_sk",
+    
+    # Catalog Sales
     ("catalog_sales", "date_dim"): "cs_sold_date_sk = d_date_sk",
+    ("catalog_sales", "item"): "cs_item_sk = i_item_sk",
+    ("catalog_sales", "customer"): "cs_bill_customer_sk = c_customer_sk",
+    ("catalog_sales", "call_center"): "cs_call_center_sk = cc_call_center_sk",
+    ("catalog_sales", "catalog_page"): "cs_catalog_page_sk = cp_catalog_page_sk",
+    ("catalog_sales", "warehouse"): "cs_warehouse_sk = w_warehouse_sk",
+    ("catalog_sales", "ship_mode"): "cs_ship_mode_sk = sm_ship_mode_sk",
+    ("catalog_sales", "promotion"): "cs_promo_sk = p_promo_sk",
+    
+    # Catalog Returns
+    ("catalog_returns", "date_dim"): "cr_returned_date_sk = d_date_sk",
+    ("catalog_returns", "item"): "cr_item_sk = i_item_sk",
+    ("catalog_returns", "call_center"): "cr_call_center_sk = cc_call_center_sk",
+    ("catalog_returns", "reason"): "cr_reason_sk = r_reason_sk",
+    
+    # Inventory
+    ("inventory", "date_dim"): "inv_date_sk = d_date_sk",
+    ("inventory", "item"): "inv_item_sk = i_item_sk",
+    ("inventory", "warehouse"): "inv_warehouse_sk = w_warehouse_sk",
+    
+    # Customer Dimensions
     ("customer", "customer_address"): "c_current_addr_sk = ca_address_sk",
     ("customer", "customer_demographics"): "c_current_cdemo_sk = cd_demo_sk",
+    ("customer", "household_demographics"): "c_current_hdemo_sk = hd_demo_sk",
+    
+    # Household -> Income Band
+    ("household_demographics", "income_band"): "hd_income_band_sk = ib_income_band_sk",
 }
 
 

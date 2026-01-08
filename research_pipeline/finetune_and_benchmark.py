@@ -334,41 +334,33 @@ TABLE income_band (ib_income_band_sk BIGINT, ib_lower_bound BIGINT, ib_upper_bou
 # Few-shot examples
 FEW_SHOT_EXAMPLES = [
     {
-        "question": "Năm 2002 thì kênh Store mang về bao nhiêu tiền?",
-        "sql": """SELECT d.d_year, SUM(ss.ss_net_paid) as total_revenue
-FROM store_sales ss
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-WHERE d.d_year = 2002
-GROUP BY d.d_year;"""
+        "question": "Có bao nhiêu khách hàng?",
+        "sql": """SELECT COUNT(DISTINCT c_customer_sk) FROM customer;"""
     },
     {
-        "question": "Liệt kê top 5 sản phẩm bán chạy nhất theo số lượng.",
-        "sql": """SELECT i.i_product_name, SUM(ss.ss_quantity) as total_qty
-FROM store_sales ss
-JOIN item i ON ss.ss_item_sk = i.i_item_sk
-GROUP BY i.i_product_name
-ORDER BY total_qty DESC
-LIMIT 5;"""
+        "question": "Năm 2002 kênh Store mang về bao nhiêu tiền?",
+        "sql": """SELECT SUM(ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002;"""
     },
     {
-        "question": "Tổng doanh thu theo từng bang của khách hàng.",
-        "sql": """SELECT ca.ca_state, SUM(ss.ss_net_paid) as revenue
-FROM store_sales ss
-JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
-JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
-GROUP BY ca.ca_state
-ORDER BY revenue DESC;"""
+        "question": "Top 5 sản phẩm có doanh thu cao nhất?",
+        "sql": """SELECT i.i_product_name, SUM(ss.ss_net_paid) as revenue FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk GROUP BY i.i_product_name ORDER BY revenue DESC LIMIT 5;"""
     }
 ]
 
 def build_simple_prompt(question: str, tokenizer, num_few_shot: int = 0, schema_linker=None) -> str:
     """Build prompt matching training data format with optional few-shot examples"""
     system = """You are an expert SQL writer for DuckDB (TPC-DS schema).
-CRITICAL RULES:
-1. Use ONLY exact table and column names from SCHEMA
-2. Use LIMIT N (NOT "TOP N" - that's SQL Server syntax)
-3. Use CURRENT_DATE (NOT getdate())
-4. JOIN dimension tables properly with _sk foreign keys
+
+CRITICAL RULES (MUST FOLLOW):
+1. ONLY use table/column names that EXIST in SCHEMA below
+2. DO NOT invent names (e.g., use 'customer' NOT 'customers', 'sr_item_sk' NOT 'return_item_sk')
+3. DO NOT use columns that don't exist (e.g., 'c_vehicle_count' is in household_demographics, NOT customer)
+4. CHECK exact spellings: 'inv_quantity_on_hand' NOT 'quantity', 'i_item_sk' NOT 'item_sk'
+5. Table aliases: customer='c', item='i', store_sales='ss', date_dim='d', store_returns='sr'
+6. ALL selected columns must be in GROUP BY (if using aggregation)
+7. Use LIMIT (NOT TOP), CURRENT_DATE (NOT getdate())
+8. Filter years with d_year from date_dim (NOT year() function)
+
 Output ONLY valid SQL ending with semicolon. No explanations."""
     
     # Select schema: dynamic (via linking) or full
