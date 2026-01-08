@@ -344,8 +344,9 @@ def main():
     exec_match_count = 0
     
     for idx, row in test_df.iterrows():
-        question = row['question']
-        ground_truth = row['sql']
+        # Handle different column names
+        question = row.get('question') or row.get('Transcription')
+        ground_truth = row.get('sql') or row.get('SQL Ground Truth')
         
         print(f"\n[{idx+1}/{len(test_df)}] {question[:60]}...")
         
