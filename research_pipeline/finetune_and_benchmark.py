@@ -23,6 +23,14 @@ from transformers import (
 from peft import PeftConfig, PeftModel
 from trl import SFTTrainer, SFTConfig
 
+# Import schema linking
+try:
+    from schema_linking import SchemaLinker
+    HAS_SCHEMA_LINKING = True
+except ImportError:
+    HAS_SCHEMA_LINKING = False
+    print("WARNING: schema_linking.py not found - using full schema")
+
 # ========== CONFIG ==========
 def parse_args():
     parser = argparse.ArgumentParser(description="Finetune and Benchmark Text-to-SQL")
@@ -54,6 +62,8 @@ def parse_args():
     parser.add_argument("--few-shot", type=int, default=0, help="Number of few-shot examples (0-3)")
     parser.add_argument("--base-model", type=str, default=None, 
                         help="Use base model directly (e.g., Qwen/Qwen2.5-3B-Instruct) instead of adapter")
+    parser.add_argument("--schema-linking", action="store_true", 
+                        help="Use dynamic schema linking (instead of full schema)")
     
     return parser.parse_args()
 
@@ -204,8 +214,8 @@ def extract_sql(text: str) -> str:
     return text.strip()
 
 def postprocess_sql(sql: str) -> str:
-    """Fix common SQL generation errors"""
-    # Fix TOP N -> LIMIT N (SQL Server to DuckDB)
+    """Convert SQL Server syntax to DuckDB syntax (NOT fixing model errors)"""
+    # Fix TOP N -> LIMIT N (SQL Server to DuckDB dialect)
     top_match = re.search(r'\bSELECT\s+TOP\s+(\d+)\b', sql, re.IGNORECASE)
     if top_match:
         n = top_match.group(1)
@@ -213,17 +223,9 @@ def postprocess_sql(sql: str) -> str:
         if 'LIMIT' not in sql.upper():
             sql = sql.rstrip(';').strip() + f' LIMIT {n};'
     
-    # Fix getdate() -> CURRENT_DATE
+    # SQL Server -> DuckDB function mappings
     sql = re.sub(r'\bgetdate\s*\(\s*\)', 'CURRENT_DATE', sql, flags=re.IGNORECASE)
-    
-    # Fix CHARINDEX -> POSITION
-    sql = re.sub(r'\bCHARINDEX\s*\(\s*([^,]+),\s*([^)]+)\)', r'POSITION(\1 IN \2)', sql, flags=re.IGNORECASE)
-    
-    # Fix ISNULL -> COALESCE
     sql = re.sub(r'\bISNULL\s*\(', 'COALESCE(', sql, flags=re.IGNORECASE)
-    
-    # Fix DATEPART -> EXTRACT
-    sql = re.sub(r'\bDATEPART\s*\(\s*(\w+)\s*,\s*([^)]+)\)', r'EXTRACT(\1 FROM \2)', sql, flags=re.IGNORECASE)
     
     return sql
 
@@ -359,7 +361,7 @@ ORDER BY revenue DESC;"""
     }
 ]
 
-def build_simple_prompt(question: str, tokenizer, num_few_shot: int = 0) -> str:
+def build_simple_prompt(question: str, tokenizer, num_few_shot: int = 0, schema_linker=None) -> str:
     """Build prompt matching training data format with optional few-shot examples"""
     system = """You are an expert SQL writer for DuckDB (TPC-DS schema).
 CRITICAL RULES:
@@ -369,6 +371,12 @@ CRITICAL RULES:
 4. JOIN dimension tables properly with _sk foreign keys
 Output ONLY valid SQL ending with semicolon. No explanations."""
     
+    # Select schema: dynamic (via linking) or full
+    if schema_linker:
+        schema_text = schema_linker.build_dynamic_schema(question, max_tables=5)
+    else:
+        schema_text = TPCDS_SCHEMA_COMPACT
+    
     # Build few-shot section
     few_shot_text = ""
     if num_few_shot > 0:
@@ -377,7 +385,7 @@ Output ONLY valid SQL ending with semicolon. No explanations."""
         for i, ex in enumerate(examples, 1):
             few_shot_text += f"\nQ{i}: {ex['question']}\nSQL{i}: {ex['sql']}\n"
     
-    user = f"SCHEMA:\n{TPCDS_SCHEMA_COMPACT}{few_shot_text}\n\nQUESTION:\n{question}\n\nSQL:"
+    user = f"SCHEMA:\n{schema_text}{few_shot_text}\n\nQUESTION:\n{question}\n\nSQL:"
     
     return tokenizer.apply_chat_template(
         [{"role": "system", "content": system}, {"role": "user", "content": user}],
@@ -391,6 +399,15 @@ def benchmark_model(args, tokenizer, model):
     
     # Setup DB
     con = setup_db(args.db)
+    
+    # Initialize schema linker if enabled
+    schema_linker = None
+    if args.schema_linking and HAS_SCHEMA_LINKING:
+        print("Initializing Schema Linker...")
+        schema_linker = SchemaLinker()
+        print("Schema linking ENABLED (dynamic schema)")
+    else:
+        print("Schema linking DISABLED (full schema)")
     
     # Load test data (use easy set if --easy flag)
     test_path = args.test_data
@@ -416,7 +433,7 @@ def benchmark_model(args, tokenizer, model):
         question = row["Transcription"]
         gt_sql = row["SQL Ground Truth"]
         
-        prompt = build_simple_prompt(question, tokenizer, num_few_shot=args.few_shot)
+        prompt = build_simple_prompt(question, tokenizer, num_few_shot=args.few_shot, schema_linker=schema_linker)
         
         start = time.time()
         gen_sql = generate_sql(prompt, tokenizer, model)
