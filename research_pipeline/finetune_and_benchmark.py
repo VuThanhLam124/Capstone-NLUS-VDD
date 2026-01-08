@@ -184,9 +184,19 @@ def run_sql(con, sql):
         return None, str(e)
 
 def extract_sql(text: str) -> str:
+    # Remove Qwen3 thinking blocks
+    if '</think>' in text:
+        text = text.split('</think>')[-1]
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    
     text = re.sub(r'^```sql\s*', '', text.strip())
     text = re.sub(r'^```\s*', '', text)
     text = re.sub(r'```$', '', text)
+    
+    # Find first SELECT or WITH statement
+    match = re.search(r'\b(SELECT|WITH)\b', text, re.IGNORECASE)
+    if match:
+        text = text[match.start():]
     
     if ';' in text:
         text = text[:text.index(';')+1]
@@ -229,7 +239,8 @@ def generate_sql(prompt: str, tokenizer, model) -> str:
             repetition_penalty=1.2,
         )
     gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
-    raw_sql = extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
+    raw_output = tokenizer.decode(gen_ids, skip_special_tokens=True)
+    raw_sql = extract_sql(raw_output)
     return postprocess_sql(raw_sql)
 
 # ========== TPC-DS SCHEMA (Compact) ==========
