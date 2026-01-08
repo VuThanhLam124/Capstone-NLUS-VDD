@@ -18,6 +18,7 @@ import time
 import json
 from pathlib import Path
 from typing import List, Dict, Tuple
+from datetime import datetime
 
 import pandas as pd
 import duckdb
@@ -334,6 +335,55 @@ def compare_results(pred_sql: str, gold_sql: str, db_path: str) -> Tuple[bool, s
         return False, f"Compare error: {str(e)[:50]}"
 
 
+def analyze_error(pred_sql: str, gold_sql: str, question: str) -> Dict:
+    """Analyze common error patterns"""
+    errors = {
+        "channel_mistake": False,
+        "demographics_mistake": False,
+        "table_mistake": False,
+        "join_mistake": False,
+    }
+    
+    pred_lower = pred_sql.lower()
+    gold_lower = gold_sql.lower()
+    
+    # Channel mistakes
+    if "catalog" in question.lower():
+        if "catalog_sales" in gold_lower and "catalog_sales" not in pred_lower:
+            errors["channel_mistake"] = "Expected catalog_sales"
+    if "online" in question.lower() or "website" in question.lower() or "web" in question.lower():
+        if "web_sales" in gold_lower and "web_sales" not in pred_lower:
+            errors["channel_mistake"] = "Expected web_sales"
+    if "cửa hàng" in question.lower() or "store" in question.lower():
+        if "store_sales" in gold_lower and "store_sales" not in pred_lower:
+            errors["channel_mistake"] = "Expected store_sales"
+    
+    # Demographics mistakes
+    if any(kw in question.lower() for kw in ["giới tính", "gender", "nam", "nữ", "male", "female"]):
+        if "customer_demographics" in gold_lower and "customer_demographics" not in pred_lower:
+            errors["demographics_mistake"] = "Missing customer_demographics for gender"
+    
+    if any(kw in question.lower() for kw in ["xe", "vehicle"]):
+        if "household_demographics" in gold_lower and "household_demographics" not in pred_lower:
+            errors["demographics_mistake"] = "Missing household_demographics for vehicle"
+    
+    # Table presence check
+    gold_tables = set(re.findall(r'\b(?:from|join)\s+(\w+)', gold_lower))
+    pred_tables = set(re.findall(r'\b(?:from|join)\s+(\w+)', pred_lower))
+    
+    missing_tables = gold_tables - pred_tables
+    if missing_tables:
+        errors["table_mistake"] = f"Missing tables: {missing_tables}"
+    
+    # JOIN count
+    gold_joins = len(re.findall(r'\bjoin\b', gold_lower))
+    pred_joins = len(re.findall(r'\bjoin\b', pred_lower))
+    if gold_joins != pred_joins:
+        errors["join_mistake"] = f"JOIN count: pred={pred_joins}, gold={gold_joins}"
+    
+    return errors
+
+
 def run_benchmark(args):
     """Run full benchmark with different shot counts"""
     
@@ -386,27 +436,63 @@ def run_benchmark(args):
         correct = 0
         exec_correct = 0
         
-        for idx, row in test_df.iterrows():
-            question = row[q_col]
-            gold_sql = row[sql_col]
+        # Error statistics
+        error_stats = {
+            "channel_mistakes": 0,
+            "demographics_mistakes": 0,
+            "table_mistakes": 0,
+            "join_mistakes": 0,
+            "execution_errors": 0,
+        }
+        
+        # Setup logging files
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        log_file = output_dir / f"benchmark_{num_shots}shot_log_{timestamp}.txt"
+        error_log_file = output_dir / f"error_analysis_{num_shots}shot_{timestamp}.txt"
+        
+        with open(log_file, "w", encoding="utf-8") as log_f, \
+             open(error_log_file, "w", encoding="utf-8") as err_f:
             
-            # Clean gold SQL
-            gold_sql = gold_sql.replace('\n', ' ').strip()
-            if not gold_sql.endswith(';'):
-                gold_sql += ';'
+            log_f.write("=" * 80 + "\n")
+            log_f.write(f"{num_shots}-Shot Benchmark Detailed Log\n")
+            log_f.write(f"Model: {args.model}\n")
+            log_f.write(f"Test: {test_path}\n")
+            log_f.write(f"Timestamp: {timestamp}\n")
+            log_f.write("=" * 80 + "\n\n")
             
-            print(f"\n[{idx+1}/{len(test_df)}] {question[:60]}...")
+            err_f.write(f"ERROR ANALYSIS LOG ({num_shots}-shot)\n")
+            err_f.write("=" * 80 + "\n\n")
+        
+            for idx, row in test_df.iterrows():
+                question = row[q_col]
+                gold_sql = row[sql_col]
+                
+                # Clean gold SQL
+                gold_sql = gold_sql.replace('\n', ' ').strip()
+                if not gold_sql.endswith(';'):
+                    gold_sql += ';'
+                
+                print(f"\n[{idx+1}/{len(test_df)}] {question[:60]}...")
+                log_f.write(f"\n{'='*80}\n")
+                log_f.write(f"[{idx+1}/{len(test_df)}]\n")
+                log_f.write(f"Question: {question}\n")
+                log_f.write(f"Gold SQL: {gold_sql}\n\n")
             
-            # Schema linking
-            linked = schema_linker.link_schema(question, top_k_tables=6)
-            linked_tables = linked["tables"]
-            
-            if args.verbose:
-                print(f"  Linked tables: {linked_tables}")
-            
-            # Get schema and join hints
-            schema_info = get_schema_for_tables(linked_tables)
-            join_hints = get_join_hints(linked_tables)
+                # Schema linking
+                linked = schema_linker.link_schema(question, top_k_tables=6)
+                linked_tables = linked["tables"]
+                
+                log_f.write(f"Linked Tables: {linked_tables}\n\n")
+                
+                if args.verbose:
+                    print(f"  Linked tables: {linked_tables}")
+                
+                # Get schema and join hints
+                schema_info = get_schema_for_tables(linked_tables)
+                join_hints = get_join_hints(linked_tables)
             
             # Build prompt
             prompt = build_fewshot_prompt(
@@ -425,49 +511,101 @@ def run_benchmark(args):
                 response = generate_with_transformers(llm, prompt)
             gen_time = time.time() - start_time
             
-            # Extract SQL
-            pred_sql = extract_sql(response)
+                # Extract SQL
+                pred_sql = extract_sql(response)
+                
+                log_f.write(f"Predicted SQL: {pred_sql}\n")
+                log_f.write(f"Generation time: {gen_time:.2f}s\n\n")
+                
+                if args.verbose:
+                    print(f"  Generated: {pred_sql[:100]}...")
+                    print(f"  Time: {gen_time:.2f}s")
+                
+                # Validate execution
+                exec_ok, exec_msg = validate_sql_execution(pred_sql, args.db_path)
+                
+                if not exec_ok:
+                    error_stats["execution_errors"] += 1
+                    log_f.write(f"❌ EXECUTION ERROR: {exec_msg}\n")
             
-            if args.verbose:
-                print(f"  Generated: {pred_sql[:100]}...")
-                print(f"  Time: {gen_time:.2f}s")
-            
-            # Validate execution
-            exec_ok, exec_msg = validate_sql_execution(pred_sql, args.db_path)
-            
-            # Compare results
-            match, match_msg = compare_results(pred_sql, gold_sql, args.db_path)
-            
-            if match:
-                correct += 1
-                status = "✓"
-            else:
-                status = "✗"
-            
-            if exec_ok:
-                exec_correct += 1
-            
-            print(f"  {status} Exec: {exec_msg} | Match: {match_msg}")
-            
-            results.append({
-                "question": question,
-                "gold_sql": gold_sql,
-                "pred_sql": pred_sql,
-                "linked_tables": linked_tables,
-                "exec_ok": exec_ok,
-                "match": match,
-                "gen_time": gen_time,
-            })
+                # Compare results
+                match, match_msg = compare_results(pred_sql, gold_sql, args.db_path)
+                
+                if match:
+                    correct += 1
+                    status = "✓"
+                    log_f.write(f"✓ CORRECT\n")
+                else:
+                    status = "✗"
+                    log_f.write(f"✗ WRONG: {match_msg}\n")
+                    
+                    # Analyze error
+                    error_analysis = analyze_error(pred_sql, gold_sql, question)
+                    
+                    err_f.write(f"\n{'='*80}\n")
+                    err_f.write(f"[{idx+1}] {question}\n")
+                    err_f.write(f"\nGold SQL:\n{gold_sql}\n")
+                    err_f.write(f"\nPred SQL:\n{pred_sql}\n")
+                    err_f.write(f"\nError Analysis:\n")
+                    
+                    for error_type, error_msg in error_analysis.items():
+                        if error_msg:
+                            err_f.write(f"  - {error_type}: {error_msg}\n")
+                            if "channel" in error_type:
+                                error_stats["channel_mistakes"] += 1
+                            elif "demographics" in error_type:
+                                error_stats["demographics_mistakes"] += 1
+                            elif "table" in error_type:
+                                error_stats["table_mistakes"] += 1
+                            elif "join" in error_type:
+                                error_stats["join_mistakes"] += 1
+                    
+                    err_f.write(f"\nExecution: {exec_msg}\n")
+                    err_f.write(f"Match: {match_msg}\n")
+                
+                if exec_ok:
+                    exec_correct += 1
+                
+                print(f"  {status} Exec: {exec_msg} | Match: {match_msg}")
+                
+                results.append({
+                    "question": question,
+                    "gold_sql": gold_sql,
+                    "pred_sql": pred_sql,
+                    "linked_tables": linked_tables,
+                    "exec_ok": exec_ok,
+                    "match": match,
+                    "gen_time": gen_time,
+                })
         
-        # Calculate metrics
-        accuracy = correct / len(test_df) * 100
-        exec_rate = exec_correct / len(test_df) * 100
-        
-        print(f"\n{'='*50}")
-        print(f"{num_shots}-shot Results:")
-        print(f"  Execution Accuracy: {exec_correct}/{len(test_df)} = {exec_rate:.1f}%")
-        print(f"  Result Match: {correct}/{len(test_df)} = {accuracy:.1f}%")
-        print(f"{'='*50}")
+            # Calculate metrics
+            accuracy = correct / len(test_df) * 100
+            exec_rate = exec_correct / len(test_df) * 100
+            
+            summary = f"""
+{'='*70}
+SUMMARY ({num_shots}-shot)
+{'='*70}
+Total samples: {len(test_df)}
+Execution success: {exec_correct}/{len(test_df)} = {exec_rate:.1f}%
+Result match: {correct}/{len(test_df)} = {accuracy:.1f}%
+
+ERROR STATISTICS:
+- Channel mistakes: {error_stats['channel_mistakes']}
+- Demographics mistakes: {error_stats['demographics_mistakes']}
+- Table mistakes: {error_stats['table_mistakes']}
+- JOIN mistakes: {error_stats['join_mistakes']}
+- Execution errors: {error_stats['execution_errors']}
+{'='*70}
+"""
+            
+            print(summary)
+            log_f.write(summary)
+            err_f.write(summary)
+            
+            print(f"\n✓ Logs saved:")
+            print(f"  - {log_file}")
+            print(f"  - {error_log_file}")
         
         all_results[num_shots] = {
             "accuracy": accuracy,
@@ -475,6 +613,7 @@ def run_benchmark(args):
             "correct": correct,
             "exec_correct": exec_correct,
             "total": len(test_df),
+            "error_stats": error_stats,
             "results": results,
         }
     
