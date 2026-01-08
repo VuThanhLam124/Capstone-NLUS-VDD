@@ -64,6 +64,10 @@ def parse_args():
                         help="Use base model directly (e.g., Qwen/Qwen2.5-3B-Instruct) instead of adapter")
     parser.add_argument("--schema-linking", action="store_true", 
                         help="Use dynamic schema linking (instead of full schema)")
+    parser.add_argument("--coder", action="store_true",
+                        help="Use Qwen3-Coder-30B-A3B-Instruct (optimized for code/SQL)")
+    parser.add_argument("--8bit", dest="use_8bit", action="store_true",
+                        help="Use 8-bit quantization instead of 4-bit")
     
     return parser.parse_args()
 
@@ -214,7 +218,7 @@ def extract_sql(text: str) -> str:
     return text.strip()
 
 def postprocess_sql(sql: str) -> str:
-    """Convert SQL Server syntax to DuckDB syntax (NOT fixing model errors)"""
+    """Convert SQL Server syntax to DuckDB syntax AND fix common model errors"""
     # Fix TOP N -> LIMIT N (SQL Server to DuckDB dialect)
     top_match = re.search(r'\bSELECT\s+TOP\s+(\d+)\b', sql, re.IGNORECASE)
     if top_match:
@@ -226,6 +230,19 @@ def postprocess_sql(sql: str) -> str:
     # SQL Server -> DuckDB function mappings
     sql = re.sub(r'\bgetdate\s*\(\s*\)', 'CURRENT_DATE', sql, flags=re.IGNORECASE)
     sql = re.sub(r'\bISNULL\s*\(', 'COALESCE(', sql, flags=re.IGNORECASE)
+    
+    # ===== AUTO-FIX COMMON MODEL ERRORS =====
+    # Fix double prefixes: r_r_ -> r_, sr_sr_ -> sr_, d_d_ -> d_, i_i_ -> i_
+    sql = re.sub(r'\b([a-z]{1,2})_\1_(\w+)', r'\1_\2', sql)
+    
+    # Fix common wrong column names
+    sql = re.sub(r'\bd_quarter\b', 'd_qoy', sql, flags=re.IGNORECASE)
+    sql = re.sub(r'\bd_weekday\b', 'd_day_name', sql, flags=re.IGNORECASE)
+    sql = re.sub(r'\bd_wday\b', 'd_day_name', sql, flags=re.IGNORECASE)
+    sql = re.sub(r'\binv_quantity\b(?!_on_hand)', 'inv_quantity_on_hand', sql, flags=re.IGNORECASE)
+    
+    # Fix YEAR() function - DuckDB uses EXTRACT or date_part
+    sql = re.sub(r'\bYEAR\s*\(\s*(\w+\.\w+)\s*\)', r'EXTRACT(YEAR FROM \1)', sql, flags=re.IGNORECASE)
     
     return sql
 
@@ -513,12 +530,25 @@ def main():
     print(f"\nGPU: {torch.cuda.get_device_name(0)}")
     print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
     
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.float16,
-        bnb_4bit_use_double_quant=True,
-    )
+    # Quantization config - 4-bit default, 8-bit optional
+    if getattr(args, 'use_8bit', False):
+        bnb_config = BitsAndBytesConfig(
+            load_in_8bit=True,
+        )
+        print("Using 8-bit quantization")
+    else:
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,  # bfloat16 for MoE compatibility
+            bnb_4bit_use_double_quant=True,
+        )
+        print("Using 4-bit NF4 quantization")
+    
+    # Model selection
+    if args.coder:
+        args.base_model = "Qwen/Qwen3-Coder-30B-A3B-Instruct"
+        print("\n🚀 Using Qwen3-Coder-30B-A3B-Instruct (MoE: 30.5B total, 3.3B active)")
     
     # Load model - either base model or adapter
     if args.base_model:
