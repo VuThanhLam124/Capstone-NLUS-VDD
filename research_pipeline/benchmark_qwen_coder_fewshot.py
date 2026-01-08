@@ -182,6 +182,32 @@ STATIC_FEWSHOT_EXAMPLES = [
         "question": "Tổng giá bán (sales price) của catalog ở TX",
         "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX';"
     },
+    
+    # ===== BÁN CHẠY = QUANTITY (IMPORTANT!) =====
+    {
+        "question": "Loại hàng nào bán chạy nhất trên web quý 1 năm 2000?",
+        "sql": "SELECT i.i_category, SUM(ws.ws_quantity) AS total_qty FROM web_sales ws JOIN item i ON ws.ws_item_sk = i.i_item_sk JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2000 AND d.d_qoy = 1 GROUP BY i.i_category ORDER BY total_qty DESC LIMIT 1;"
+    },
+    {
+        "question": "Sản phẩm nào bán chạy nhất năm 2001?",
+        "sql": "SELECT i.i_product_name, SUM(ss.ss_quantity) AS total_sold FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2001 GROUP BY i.i_product_name ORDER BY total_sold DESC LIMIT 1;"
+    },
+    
+    # ===== TRẢ LẠI HÀNG MẶC ĐỊNH = STORE_RETURNS =====
+    {
+        "question": "Tìm khách hàng trả lại hàng nhiều nhất",
+        "sql": "SELECT c.c_first_name, c.c_last_name, SUM(sr.sr_return_amt) as total_return FROM store_returns sr JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name ORDER BY total_return DESC LIMIT 1;"
+    },
+    {
+        "question": "Tổng giá trị hàng bị trả lại",
+        "sql": "SELECT SUM(sr.sr_return_amt) FROM store_returns sr;"
+    },
+    
+    # ===== DEMOGRAPHICS DIRECT JOIN (ss.ss_cdemo_sk) =====
+    {
+        "question": "Thống kê mua sắm theo giới tính vào thứ Hai",
+        "sql": "SELECT cd.cd_gender, COUNT(*) AS visit_count FROM store_sales ss JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_day_name = 'Monday' GROUP BY cd.cd_gender;"
+    },
 ]
 
 
@@ -308,6 +334,13 @@ def build_fewshot_prompt(
     
     system_msg = """Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.
 
+=== CRITICAL RULES (ĐỌC KỸ!) ===
+1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu (VD: không thêm d.d_year nếu không hỏi về năm)
+2. "bán chạy nhất" = SUM(quantity), KHÔNG phải SUM(sales_price)
+3. "trả lại hàng" (không nói rõ channel) → mặc định dùng store_returns (sr)
+4. "từ X trở lên" = >= X (VD: "từ 2 xe trở lên" = hd_vehicle_count >= 2)
+5. Chỉ SELECT các columns cần thiết, không thêm columns thừa
+
 === CRITICAL COLUMN MAPPINGS ===
 CUSTOMER TABLE:
 - Email: c.c_email_address (NOT c_email)
@@ -330,6 +363,7 @@ STORE_SALES TABLE (ss):
 - Tax: ss.ss_ext_tax (NOT ss_tax)
 - Revenue: ss.ss_net_paid
 - Customer: ss.ss_customer_sk
+- Demographics: ss.ss_cdemo_sk (direct link to customer_demographics)
 
 DATE_DIM TABLE (d):
 - Quarter: d.d_qoy (NOT d_quarter)
@@ -340,11 +374,10 @@ DATE_DIM TABLE (d):
 WEB_SALES TABLE (ws):
 - Customer: ws.ws_bill_customer_sk (NOT ws_customer_sk)
 
-=== REVENUE COLUMNS (IMPORTANT!) ===
-- ss_sales_price / ws_sales_price / cs_sales_price: Giá bán gốc (original selling price)
-- ss_net_paid / ws_net_paid / cs_net_paid: Tiền sau chiết khấu (after discount)
-- Khi hỏi "doanh thu" hoặc "tổng doanh thu" → dùng sales_price
-- Khi hỏi "tiền thu được" hoặc "net" → dùng net_paid
+=== REVENUE vs QUANTITY ===
+- "bán chạy nhất", "bán nhiều nhất" → SUM(ss_quantity / ws_quantity / cs_quantity)
+- "doanh thu", "tổng doanh thu" → SUM(sales_price)
+- "tiền thu được", "net" → SUM(net_paid)
 
 === ITEM TABLE (i) ===
 - i.i_category: Danh mục lớn (Women, Men, Shoes, Electronics, Music, Home, Sports, Jewelry, Children)
@@ -362,13 +395,18 @@ WEB_SALES TABLE (ws):
 - "catalog", "mail order" → catalog_sales (cs)
 
 === RETURN RULES ===
-- Store returns: store_returns (sr)
-- Web/Online returns: web_returns (wr)
-- Catalog returns: catalog_returns (cr)
+- "trả lại hàng" (không rõ channel) → store_returns (sr) [MẶC ĐỊNH]
+- "trả hàng online/web" → web_returns (wr)
+- "trả hàng catalog" → catalog_returns (cr)
 
 === STATE/LOCATION ===
 - Customer state: JOIN customer → customer_address, use ca.ca_state
 - Store state: JOIN store, use s.s_state
+
+=== DEMOGRAPHICS JOIN ===
+- Khi cần demographics từ store_sales: dùng ss.ss_cdemo_sk trực tiếp
+  VD: JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+- KHÔNG cần đi qua customer table nếu chỉ cần demographics
 
 Output ONLY the SQL query, no explanation."""
 
