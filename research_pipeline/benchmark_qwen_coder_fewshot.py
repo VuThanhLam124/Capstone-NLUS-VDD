@@ -38,6 +38,7 @@ DB_PATH = "research_pipeline/cache/ecommerce_dw.duckdb"
 
 # Static few-shot examples covering different patterns
 STATIC_FEWSHOT_EXAMPLES = [
+    # ===== CHANNEL EXAMPLES =====
     # Channel: Catalog
     {
         "question": "Tổng doanh thu từ catalog trong năm 2000",
@@ -53,7 +54,9 @@ STATIC_FEWSHOT_EXAMPLES = [
         "question": "Doanh thu cửa hàng năm 2002 là bao nhiêu?",
         "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002;"
     },
-    # Demographics: Gender
+    
+    # ===== DEMOGRAPHICS EXAMPLES =====
+    # Demographics: Gender  
     {
         "question": "Thống kê số lượng khách hàng theo giới tính",
         "sql": "SELECT cd.cd_gender, COUNT(DISTINCT c.c_customer_sk) AS cnt FROM customer c JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk GROUP BY cd.cd_gender;"
@@ -63,30 +66,91 @@ STATIC_FEWSHOT_EXAMPLES = [
         "question": "So sánh doanh thu giữa khách hàng độc thân và đã kết hôn",
         "sql": "SELECT cd.cd_marital_status, SUM(ss.ss_net_paid) AS revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_marital_status IN ('S', 'M') GROUP BY cd.cd_marital_status;"
     },
-    # Item/Product
+    # Demographics: Vehicle count (household_demographics)
     {
-        "question": "Top 5 sản phẩm bán chạy nhất trên trang web theo số lượng",
-        "sql": "SELECT i.i_product_name, SUM(ws.ws_quantity) AS total FROM web_sales ws JOIN item i ON ws.ws_item_sk = i.i_item_sk GROUP BY i.i_product_name ORDER BY total DESC LIMIT 5;"
+        "question": "Liệt kê khách hàng có trên 2 xe ô tô",
+        "sql": "SELECT c.c_customer_id, c.c_first_name, hd.hd_vehicle_count FROM customer c JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk WHERE hd.hd_vehicle_count > 2;"
     },
-    # Customer + Address
+    # Demographics: Credit rating
     {
-        "question": "Tổng số giao dịch tại các cửa hàng ở bang California",
-        "sql": "SELECT COUNT(*) FROM store_sales ss JOIN store s ON ss.ss_store_sk = s.s_store_sk WHERE s.s_state = 'CA';"
+        "question": "Tìm khách hàng có xếp hạng tín dụng thấp",
+        "sql": "SELECT c.c_customer_id, c.c_first_name, cd.cd_credit_rating FROM customer c JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_credit_rating = 'Low Risk';"
     },
-    # Returns with Reason
+    
+    # ===== ITEM/PRODUCT EXAMPLES =====
+    # Item: Category filter
+    {
+        "question": "Top 5 sản phẩm Shoes bán chạy nhất tại cửa hàng",
+        "sql": "SELECT i.i_product_name, SUM(ss.ss_quantity) AS total FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Shoes' GROUP BY i.i_product_name ORDER BY total DESC LIMIT 5;"
+    },
+    # Item: Brand by state
+    {
+        "question": "Top 10 thương hiệu Sports được ưa chuộng nhất ở NC",
+        "sql": "SELECT i.i_brand, COUNT(*) as purchase_count FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Sports' AND ca.ca_state = 'NC' GROUP BY i.i_brand ORDER BY purchase_count DESC LIMIT 10;"
+    },
+    
+    # ===== CUSTOMER + ADDRESS EXAMPLES =====
+    # Customer email (correct column name)
+    {
+        "question": "Tìm email của khách hàng VIP ở TX mua trên 5000 đô",
+        "sql": "SELECT c.c_email_address, SUM(ss.ss_net_paid) as total_spent FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX' GROUP BY c.c_customer_id, c.c_email_address HAVING SUM(ss.ss_net_paid) > 5000;"
+    },
+    # Customer state filter via customer_address
+    {
+        "question": "Tổng doanh thu từ khách hàng ở bang California",
+        "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'CA';"
+    },
+    
+    # ===== RETURNS EXAMPLES =====
+    # Store returns (not web_returns) for store
+    {
+        "question": "Có bao nhiêu đơn hàng bị trả lại tại cửa hàng ở IL năm 2002?",
+        "sql": "SELECT COUNT(*) FROM store_returns sr JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk WHERE ca.ca_state = 'IL' AND d.d_year = 2002;"
+    },
+    # Web returns
     {
         "question": "Thống kê đơn hàng online bị trả lại theo lý do",
         "sql": "SELECT r.r_reason_desc, COUNT(*) AS cnt FROM web_returns wr JOIN reason r ON wr.wr_reason_sk = r.r_reason_sk GROUP BY r.r_reason_desc ORDER BY cnt DESC;"
     },
-    # Date filtering
+    
+    # ===== DATE/TIME EXAMPLES =====
+    # Date filtering with quarter
     {
         "question": "Doanh thu quý 1 năm 2001",
         "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2001 AND d.d_qoy = 1;"
     },
-    # Inventory
+    # Day of week (Monday shopping)
+    {
+        "question": "Thống kê khách hàng mua sắm vào thứ Hai theo giới tính",
+        "sql": "SELECT cd.cd_gender, COUNT(*) AS visit_count FROM store_sales ss JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_day_name = 'Monday' GROUP BY cd.cd_gender;"
+    },
+    
+    # ===== INVENTORY EXAMPLES =====
+    {
+        "question": "Lượng tồn kho trung bình của Women vào cuối tuần tháng 12/2001",
+        "sql": "SELECT AVG(inv.inv_quantity_on_hand) FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk JOIN date_dim d ON inv.inv_date_sk = d.d_date_sk WHERE i.i_category = 'Women' AND d.d_weekend = 'Y' AND d.d_year = 2001 AND d.d_moy = 12;"
+    },
     {
         "question": "Kho nào có nhiều hàng tồn nhất?",
         "sql": "SELECT w.w_warehouse_name, SUM(inv.inv_quantity_on_hand) AS total FROM inventory inv JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk GROUP BY w.w_warehouse_name ORDER BY total DESC LIMIT 5;"
+    },
+    
+    # ===== TAX EXAMPLES =====
+    {
+        "question": "Tổng tiền thuế từ khách hàng thu nhập dưới 50000",
+        "sql": "SELECT SUM(ss.ss_ext_tax) FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk JOIN income_band ib ON hd.hd_income_band_sk = ib.ib_income_band_sk WHERE ib.ib_upper_bound < 50000;"
+    },
+    
+    # ===== YEAR-OVER-YEAR COMPARISON =====
+    {
+        "question": "Doanh số Shoes tại NC năm 1999 so với năm trước",
+        "sql": "WITH current_year AS (SELECT SUM(ss.ss_net_paid) as revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Shoes' AND ca.ca_state = 'NC' AND d.d_year = 1999), previous_year AS (SELECT SUM(ss.ss_net_paid) as revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Shoes' AND ca.ca_state = 'NC' AND d.d_year = 1998) SELECT cy.revenue - py.revenue as revenue_change FROM current_year cy, previous_year py;"
+    },
+    
+    # ===== WEB SALES CUSTOMER SK (correct column) =====
+    {
+        "question": "Khách hàng nào mua nhiều nhất trên web?",
+        "sql": "SELECT c.c_customer_id, c.c_first_name, SUM(ws.ws_net_paid) as total FROM web_sales ws JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk GROUP BY c.c_customer_id, c.c_first_name ORDER BY total DESC LIMIT 5;"
     },
 ]
 
@@ -174,14 +238,14 @@ def generate_with_transformers(model_tokenizer, prompt: str, max_tokens: int = 5
 
 
 def get_schema_for_tables(tables: List[str]) -> str:
-    """Generate schema DDL for selected tables"""
+    """Generate schema DDL for selected tables with full columns"""
     schema_parts = []
     
     for table_name in tables:
         if table_name not in TPCDS_TABLES:
             continue
         table_info = TPCDS_TABLES[table_name]
-        columns = ", ".join(table_info["columns"][:10])  # Top 10 columns
+        columns = ", ".join(table_info["columns"])  # All columns, not just top 10
         alias = table_info["alias"]
         schema_parts.append(f"-- {table_name} (alias: {alias})\n-- Columns: {columns}")
     
@@ -214,15 +278,57 @@ def build_fewshot_prompt(
     
     system_msg = """Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.
 
-IMPORTANT RULES:
-- Gender (cd_gender), marital status (cd_marital_status), credit_rating: USE customer_demographics (cd), NOT customer
-- Vehicle count (hd_vehicle_count): USE household_demographics (hd)
-- Web/Online sales: USE web_sales (ws)
-- Catalog/Mail-order: USE catalog_sales (cs)  
-- Store/Retail: USE store_sales (ss)
-- Quarter of year: USE d_qoy (NOT d_quarter)
-- Always use table aliases
-- Output ONLY the SQL query, no explanation"""
+=== CRITICAL COLUMN MAPPINGS ===
+CUSTOMER TABLE:
+- Email: c.c_email_address (NOT c_email)
+- Name: c.c_first_name, c.c_last_name
+- Login: c.c_login
+
+CUSTOMER_DEMOGRAPHICS TABLE (cd):  
+- Gender: cd.cd_gender
+- Marital status: cd.cd_marital_status ('S'=Single, 'M'=Married, 'D'=Divorced)
+- Credit rating: cd.cd_credit_rating
+- Education: cd.cd_education_status
+- Dependents: cd.cd_dep_count
+
+HOUSEHOLD_DEMOGRAPHICS TABLE (hd):
+- Vehicle count: hd.hd_vehicle_count
+- Dependents: hd.hd_dep_count  
+- Income band: hd.hd_income_band_sk
+
+STORE_SALES TABLE (ss):
+- Tax: ss.ss_ext_tax (NOT ss_tax)
+- Revenue: ss.ss_net_paid
+- Customer: ss.ss_customer_sk
+
+DATE_DIM TABLE (d):
+- Quarter: d.d_qoy (NOT d_quarter)
+- Day name: d.d_day_name ('Monday', 'Tuesday', etc.)
+- Weekend: d.d_weekend ('Y'/'N')
+- NO d_state column - use customer_address.ca_state instead
+
+WEB_SALES TABLE (ws):
+- Customer: ws.ws_bill_customer_sk (NOT ws_customer_sk)
+
+=== CHANNEL RULES ===
+- "cửa hàng", "store", "retail" → store_sales (ss)
+- "online", "web", "website", "trực tuyến" → web_sales (ws)
+- "catalog", "mail order" → catalog_sales (cs)
+
+=== RETURN RULES ===
+- Store returns: store_returns (sr)
+- Web/Online returns: web_returns (wr)
+- Catalog returns: catalog_returns (cr)
+
+=== STATE/LOCATION ===
+- Customer state: JOIN customer → customer_address, use ca.ca_state
+- Store state: JOIN store, use s.s_state
+
+=== CATEGORY ===
+- Category is in item table: i.i_category (e.g., 'Shoes', 'Women', 'Men', 'Home', 'Music', 'Sports')
+- NOT a separate category table
+
+Output ONLY the SQL query, no explanation."""
 
     # Build few-shot examples
     examples_text = ""

@@ -1,0 +1,1470 @@
+ERROR ANALYSIS LOG (3-shot)
+================================================================================
+
+
+================================================================================
+[1] Tính tổng doanh thu từ kênh Catalog cho những khách hàng sống ở bang 'Texas' (TX)
+
+Gold SQL:
+SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX';
+
+Pred SQL:
+SELECT SUM(cs.cs_net_paid) 
+FROM catalog_sales cs
+JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+WHERE ca.ca_state = 'TX';
+
+Error Analysis:
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[2] Doanh số của Shoes tại NC năm 1999 so với năm trước đó tăng bao nhiêu?
+
+Gold SQL:
+WITH current_year AS (     SELECT SUM(ss.ss_net_paid) as revenue     FROM store_sales ss     JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON ss.ss_item_sk = i.i_item_sk     JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk     WHERE i.i_category = 'Shoes' AND ca.ca_state = 'NC' AND d.d_year = 1999 ), previous_year AS (     SELECT SUM(ss.ss_net_paid) as revenue     FROM store_sales ss     JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON ss.ss_item_sk = i.i_item_sk     JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk     WHERE i.i_category = 'Shoes' AND ca.ca_state = 'NC' AND d.d_year = 1998 ) SELECT      1999 as current_year,     cy.revenue as current_revenue,     1998 as previous_year,     py.revenue as previous_revenue,     cy.revenue - py.revenue as revenue_change,     ROUND((cy.revenue - py.revenue) / py.revenue * 100, 2) as growth_pct FROM current_year cy, previous_year py;
+
+Pred SQL:
+SELECT 
+    (SUM(CASE WHEN d.d_year = 1999 THEN ss.ss_net_paid ELSE 0 END) - 
+     SUM(CASE WHEN d.d_year = 1998 THEN ss.ss_net_paid ELSE 0 END)) AS increase_in_sales
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN customer_address ca ON ss.ss_addr_sk = ca.ca_address_sk
+WHERE ca.ca_state = 'NC' 
+  AND d.d_year IN (1998, 1999);
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer', 'current_year', 'item'}
+  - join_mistake: JOIN count: pred=2, gold=8
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[3] Tìm email của các khách hàng VIP ở MO đã mua đồ Children trên 5000 đô.
+
+Gold SQL:
+SELECT      c.c_customer_id,     c.c_first_name || ' ' || c.c_last_name as customer_name,     c.c_email_address,     SUM(ss.ss_net_paid) as total_spent FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE ca.ca_state = 'MO'   AND i.i_category = 'Children' GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address HAVING SUM(ss.ss_net_paid) > 5000 ORDER BY total_spent DESC;
+
+Pred SQL:
+SELECT DISTINCT c.c_email
+FROM customer c
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE ca.ca_state = 'MO'
+  AND i.i_category = 'Children'
+  AND c.c_customer_sk IN (
+    SELECT c2.c_customer_sk
+    FROM customer c2
+    JOIN store_sales ss2 ON c2.c_customer_sk = ss2.ss_customer_sk
+    GROUP BY c2.c_customer_sk
+    HAVING SUM(ss2.ss_net_paid) > 5000
+  );
+
+Error Analysis:
+  - join_mistake: JOIN count: pred=4, gold=3
+
+Execution: Binder Error: Table "c" does not have a column named "c_email"
+LINE 1: SELECT DISTINCT c.c_email
+   
+Match: Pred error: Binder Error: Table "c" does not have a column nam
+
+================================================================================
+[4] Liệt kê khách hàng có từ 2 xe ô tô trở lên (Vehicle count).
+
+Gold SQL:
+SELECT c.c_first_name, hd.hd_vehicle_count  FROM customer c  JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk  WHERE hd.hd_vehicle_count > 2;
+
+Pred SQL:
+SELECT c.c_customer_sk
+FROM customer c
+JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
+WHERE hd.hd_vehicle_count >= 2;
+
+Error Analysis:
+
+Execution: OK (48300 rows)
+Match: Mismatch (pred=48300, gold=32223)
+
+================================================================================
+[6] Tìm 3 sản phẩm Shoes có lợi nhuận thấp nhất trong năm 2000.
+
+Gold SQL:
+SELECT      i.i_item_id,     i.i_product_name,     i.i_category,     SUM(ss.ss_net_profit) as total_profit,     SUM(ss.ss_net_paid) as total_revenue FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Shoes'   AND d.d_year = 2000 GROUP BY i.i_item_id, i.i_product_name, i.i_category ORDER BY total_profit ASC LIMIT 3;
+
+Pred SQL:
+SELECT i.i_item_id, SUM(ss.ss_net_profit) AS total_profit
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE d.d_year = 2000
+  AND i.i_category = 'Shoes'
+GROUP BY i.i_item_id
+ORDER BY total_profit ASC
+LIMIT 3;
+
+Error Analysis:
+
+Execution: OK (3 rows)
+Match: Mismatch (pred=3, gold=3)
+
+================================================================================
+[9] Ai mua đồ Home nhiều nhất ở NC vậy?
+
+Gold SQL:
+SELECT      c.c_customer_id,     c.c_first_name || ' ' || c.c_last_name as customer_name,     SUM(ss.ss_quantity) as total_quantity,     SUM(ss.ss_net_paid) as total_spent FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Home'   AND ca.ca_state = 'NC' GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name ORDER BY total_quantity DESC LIMIT 1;
+
+Pred SQL:
+SELECT c.c_customer_id, c.c_first_name, c.c_last_name, SUM(ss.ss_quantity) AS total_quantity
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE ca.ca_state = 'NC'
+  AND i.i_category = 'Home'
+GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name
+ORDER BY total_quantity DESC
+LIMIT 1;
+
+Error Analysis:
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[10] Tìm các khách hàng đã mua đồng thời các mặt hàng từ hai danh mục 'Men' và 'Women' trong cùng một đơn hàng (Ticket number).
+
+Gold SQL:
+SELECT ss.ss_ticket_number, c.c_first_name, c.c_last_name FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category IN ('Men', 'Women') GROUP BY ss.ss_ticket_number, c.c_first_name, c.c_last_name HAVING COUNT(DISTINCT i.i_category) = 2;
+
+Pred SQL:
+SELECT DISTINCT c.c_customer_sk
+FROM catalog_sales cs
+JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+JOIN item i ON cs.cs_item_sk = i.i_item_sk
+JOIN category cat ON i.i_category_sk = cat.cat_sk
+WHERE cat.cat_name IN ('Men', 'Women')
+  AND cs.cs_order_number IN (
+    SELECT cs2.cs_order_number
+    FROM catalog_sales cs2
+    JOIN item i2 ON cs2.cs_item_sk = i2.i_item_sk
+    JOIN category cat2 ON i2.i_category_sk = cat2.cat_sk
+    WHERE cat2.cat_name = 'Men'
+      AND cs2.cs_bill_customer_sk = c.c_customer_sk
+    INTERSECT
+    SELECT cs3.cs_order_number
+    FROM catalog_sales cs3
+    JOIN item i3 ON cs3.cs_item_sk = i3.i_item_sk
+    JOIN category cat3 ON i3.i_category_sk = cat3.cat_sk
+    WHERE cat3.cat_name = 'Women'
+      AND cs3.cs_bill_customer_sk = c.c_customer_sk
+  );
+
+Error Analysis:
+  - table_mistake: Missing tables: {'store_sales'}
+  - join_mistake: JOIN count: pred=7, gold=2
+
+Execution: Catalog Error: Table with name category does not exist!
+Did you mean "catalog_returns"?
+LINE 5: JOIN
+Match: Pred error: Catalog Error: Table with name category does not e
+
+================================================================================
+[11] Có bao nhiêu đơn hàng Women bị trả lại tại MO vào năm 2001?
+
+Gold SQL:
+SELECT    COUNT(*) as total_returns,   SUM(sr.sr_return_quantity) as total_returned_quantity,   SUM(sr.sr_return_amt) as total_return_amount  FROM store_returns sr  JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON sr.sr_item_sk = i.i_item_sk  JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk  WHERE i.i_category = 'Women'   AND ca.ca_state = 'MO'   AND d.d_year = 2001;
+
+Pred SQL:
+SELECT COUNT(*) 
+FROM web_returns wr
+JOIN date_dim d ON wr.wr_returned_date_sk = d.d_date_sk
+JOIN reason r ON wr.wr_reason_sk = r.r_reason_sk
+WHERE d.d_year = 2001
+  AND r.r_reason_desc = 'reason_desc_for_women_returns';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_address', 'item', 'customer', 'store_returns'}
+  - join_mistake: JOIN count: pred=2, gold=4
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[12] "Mấy ông khách nào có trên 3 cái xe hơi thì thường hay chi tiền vào loại hàng (category) nào nhiều nhất?
+
+Gold SQL:
+SELECT i.i_category, COUNT(*) AS purchase_count FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk WHERE hd.hd_vehicle_count > 3 GROUP BY i.i_category ORDER BY purchase_count DESC;
+
+Pred SQL:
+SELECT i.i_category, SUM(ss.ss_net_paid) AS total_spent
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE hd.hd_vehicle_count > 3
+GROUP BY i.i_category
+ORDER BY total_spent DESC
+LIMIT 1;
+
+Error Analysis:
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=11)
+
+================================================================================
+[13] Có bao nhiêu đơn hàng Home bị trả lại tại IL vào năm 2002?
+
+Gold SQL:
+SELECT      COUNT(*) as total_returns,     SUM(sr.sr_return_quantity) as total_returned_quantity,     SUM(sr.sr_return_amt) as total_return_amount FROM store_returns sr JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON sr.sr_item_sk = i.i_item_sk JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk WHERE i.i_category = 'Home'   AND ca.ca_state = 'IL'   AND d.d_year = 2002;
+
+Pred SQL:
+SELECT COUNT(*) 
+FROM store_returns sr
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+JOIN reason r ON sr.sr_reason_sk = r.r_reason_sk
+WHERE d.d_year = 2002
+AND r.r_reason_desc = 'Home'
+AND d.d_state = 'IL';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_address', 'customer', 'item'}
+  - join_mistake: JOIN count: pred=2, gold=4
+
+Execution: Binder Error: Table "d" does not have a column named "d_state"
+LINE 7: AND d.d_state = 'IL';
+       
+Match: Pred error: Binder Error: Table "d" does not have a column nam
+
+================================================================================
+[14] Doanh số của Home tại NC năm 1999 so với năm trước đó tăng bao nhiêu?
+
+Gold SQL:
+WITH current_year AS (   SELECT SUM(ss.ss_net_paid) as revenue   FROM store_sales ss   JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ss.ss_item_sk = i.i_item_sk   JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk   WHERE i.i_category = 'Home' AND ca.ca_state = 'NC' AND d.d_year = 1999  ),  previous_year AS (   SELECT SUM(ss.ss_net_paid) as revenue   FROM store_sales ss   JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ss.ss_item_sk = i.i_item_sk   JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk   WHERE i.i_category = 'Home' AND ca.ca_state = 'NC' AND d.d_year = 1998  )  SELECT    1999 as current_year,   cy.revenue as current_revenue,   1998 as previous_year,   py.revenue as previous_revenue,   cy.revenue - py.revenue as revenue_change,   ROUND((cy.revenue - py.revenue) / py.revenue * 100, 2) as growth_pct  FROM current_year cy, previous_year py;
+
+Pred SQL:
+SELECT 
+    (SUM(CASE WHEN d.d_year = 1999 THEN ss.ss_net_paid ELSE 0 END) - 
+     SUM(CASE WHEN d.d_year = 1998 THEN ss.ss_net_paid ELSE 0 END)) AS revenue_increase
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN store s ON ss.ss_store_sk = s.s_store_sk
+JOIN customer_address ca ON ss.ss_addr_sk = ca.ca_address_sk
+WHERE d.d_year IN (1998, 1999)
+  AND ca.ca_state = 'NC'
+  AND s.s_store_name = 'Home';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer', 'current_year', 'item'}
+  - join_mistake: JOIN count: pred=3, gold=8
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[15] So sánh lợi nhuận của Music giữa kênh Catalog và Catalog tại TX.
+
+Gold SQL:
+WITH store_profit AS (   SELECT 'Store' as channel, SUM(ss.ss_net_profit) as total_profit   FROM store_sales ss   JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ss.ss_item_sk = i.i_item_sk   WHERE i.i_category = 'Music' AND ca.ca_state = 'TX'  ),  web_profit AS (   SELECT 'Web' as channel, SUM(ws.ws_net_profit) as total_profit   FROM web_sales ws   JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ws.ws_item_sk = i.i_item_sk   WHERE i.i_category = 'Music' AND ca.ca_state = 'TX'  ),  catalog_profit AS (   SELECT 'Catalog' as channel, SUM(cs.cs_net_profit) as total_profit   FROM catalog_sales cs   JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON cs.cs_item_sk = i.i_item_sk   WHERE i.i_category = 'Music' AND ca.ca_state = 'TX'  )  SELECT * FROM store_profit WHERE channel IN ('Catalog', 'Catalog')  UNION ALL SELECT * FROM web_profit WHERE channel IN ('Catalog', 'Catalog')  UNION ALL SELECT * FROM catalog_profit WHERE channel IN ('Catalog', 'Catalog')  ORDER BY channel;
+
+Pred SQL:
+SELECT 
+    'Catalog' AS channel,
+    SUM(cs.cs_net_profit) AS total_profit
+FROM catalog_sales cs
+JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk
+JOIN item i ON cs.cs_item_sk = i.i_item_sk
+JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+WHERE i.i_category = 'Music'
+  AND ca.ca_state = 'TX'
+  AND d.d_year = 2002
+
+UNION ALL
+
+SELECT 
+    'Web' AS channel,
+    SUM(ws.ws_net_profit) AS total_profit
+FROM web_sales ws
+JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
+JOIN item i ON ws.ws_item_sk = i.i_item_sk
+JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+WHERE i.i_category = 'Music'
+  AND ca.ca_state = 'TX'
+  AND d.d_year = 2002;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'catalog_profit', 'store_profit', 'store_sales', 'web_profit'}
+  - join_mistake: JOIN count: pred=8, gold=9
+
+Execution: OK (2 rows)
+Match: Mismatch (pred=2, gold=1)
+
+================================================================================
+[17] Năm 2001 thì kênh Store mang về bao nhiêu tiền?
+
+Gold SQL:
+SELECT      d.d_year,     'Store' as channel,     SUM(ss.ss_net_paid) as total_revenue,     COUNT(*) as total_transactions FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2001 GROUP BY d.d_year;
+
+Pred SQL:
+SELECT SUM(ss.ss_net_paid) 
+FROM store_sales ss 
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk 
+WHERE d.d_year = 2001;
+
+Error Analysis:
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[18] Trong quý 1 năm 2000, loại hàng (category) nào bán chạy nhất trên trang web?
+
+Gold SQL:
+SELECT i.i_category, SUM(ws.ws_quantity) AS total_qty FROM web_sales ws JOIN item i ON ws.ws_item_sk = i.i_item_sk JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2000 AND d.d_qoy = 1 GROUP BY i.i_category ORDER BY total_qty DESC LIMIT 1;
+
+Pred SQL:
+SELECT 
+    i.i_category,
+    SUM(ws.ws_net_paid) AS total_revenue
+FROM web_sales ws
+JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
+JOIN item i ON ws.ws_item_sk = i.i_item_sk
+WHERE d.d_year = 2000 AND d.d_qoy = 1
+GROUP BY i.i_category
+ORDER BY total_revenue DESC
+LIMIT 1;
+
+Error Analysis:
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[21] Liệt kê danh sách năm khách hàng có xếp hạng tín dụng thấp nhất nhưng lại thực hiện nhiều giao dịch trả hàng nhất tại các trung tâm hỗ trợ trực tuyến.
+
+Gold SQL:
+SELECT c.c_first_name, c.c_last_name, COUNT(wr.wr_item_sk) AS return_count FROM web_returns wr JOIN customer c ON wr.wr_refunded_customer_sk = c.c_customer_sk JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_credit_rating = 'Low Risk' GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name ORDER BY return_count DESC LIMIT 5;
+
+Pred SQL:
+SELECT c.c_customer_id, COUNT(*) AS return_count
+FROM catalog_sales cs
+JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+JOIN call_center cc ON cs.cs_call_center_sk = cc.cc_call_center_sk
+JOIN web_returns wr ON cs.cs_order_number = wr.wr_order_number
+JOIN date_dim d ON wr.wr_returned_date_sk = d.d_date_sk
+WHERE cc.cc_class = 'online'
+  AND c.c_credit_rating = (
+    SELECT MIN(c2.c_credit_rating)
+    FROM customer c2
+    JOIN catalog_sales cs2 ON c2.c_customer_sk = cs2.cs_bill_customer_sk
+  )
+  AND d.d_year = (
+    SELECT MAX(d2.d_year)
+    FROM date_dim d2
+  )
+GROUP BY c.c_customer_id
+ORDER BY return_count DESC
+LIMIT 10;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_demographics'}
+  - join_mistake: JOIN count: pred=5, gold=2
+
+Execution: Binder Error: Referenced table "c2" not found!
+Candidate tables: "c", "cc", "cs"
+LINE 9:     SELECT 
+Match: Pred error: Binder Error: Referenced table "c2" not found!
+Can
+
+================================================================================
+[22] So sánh lợi nhuận của Jewelry giữa kênh Web và Web tại TX.
+
+Gold SQL:
+WITH store_profit AS (     SELECT 'Store' as channel, SUM(ss.ss_net_profit) as total_profit     FROM store_sales ss     JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON ss.ss_item_sk = i.i_item_sk     WHERE i.i_category = 'Jewelry' AND ca.ca_state = 'TX' ), web_profit AS (     SELECT 'Web' as channel, SUM(ws.ws_net_profit) as total_profit     FROM web_sales ws     JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON ws.ws_item_sk = i.i_item_sk     WHERE i.i_category = 'Jewelry' AND ca.ca_state = 'TX' ), catalog_profit AS (     SELECT 'Catalog' as channel, SUM(cs.cs_net_profit) as total_profit     FROM catalog_sales cs     JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON cs.cs_item_sk = i.i_item_sk     WHERE i.i_category = 'Jewelry' AND ca.ca_state = 'TX' ) SELECT * FROM store_profit WHERE channel IN ('Web', 'Web') UNION ALL SELECT * FROM web_profit WHERE channel IN ('Web', 'Web') UNION ALL SELECT * FROM catalog_profit WHERE channel IN ('Web', 'Web') ORDER BY channel;
+
+Pred SQL:
+SELECT 
+    'Web' AS channel,
+    SUM(ws.ws_net_profit) AS total_profit
+FROM web_sales ws
+JOIN web_page wp ON ws.ws_web_page_sk = wp.wp_web_page_sk
+JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
+JOIN web_site web ON ws.ws_web_site_sk = web.web_site_sk
+WHERE web.web_name = 'Jewelry'
+  AND web.web_city = 'TX'
+  AND d.d_year = 2002
+GROUP BY channel
+
+UNION ALL
+
+SELECT 
+    'Store' AS channel,
+    SUM(ss.ss_net_profit) AS total_profit
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+WHERE ca.ca_state = 'TX'
+  AND d.d_year = 2002
+GROUP BY channel;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'catalog_sales', 'store_profit', 'catalog_profit', 'web_profit', 'item'}
+  - join_mistake: JOIN count: pred=6, gold=9
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[23] Liệt kê 10 thương hiệu Sports được ưa chuộng nhất bởi khách hàng ở GA.
+
+Gold SQL:
+SELECT      i.i_brand,     i.i_category,     COUNT(*) as purchase_count,     SUM(ss.ss_quantity) as total_quantity,     SUM(ss.ss_net_paid) as total_revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Sports'   AND ca.ca_state = 'GA' GROUP BY i.i_brand, i.i_category ORDER BY purchase_count DESC LIMIT 10;
+
+Pred SQL:
+SELECT i.i_brand, COUNT(*) as brand_count
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE ca.ca_state = 'GA' AND i.i_category = 'Sports'
+GROUP BY i.i_brand
+ORDER BY brand_count DESC
+LIMIT 10;
+
+Error Analysis:
+
+Execution: OK (10 rows)
+Match: Mismatch (pred=10, gold=10)
+
+================================================================================
+[24] Hãy cho tôi biết lượng tồn kho trung bình của các mặt hàng thời trang 'Women' vào những ngày cuối tuần trong tháng mười hai năm 2001
+
+Gold SQL:
+SELECT AVG(inv.inv_quantity_on_hand) FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk JOIN date_dim d ON inv.inv_date_sk = d.d_date_sk WHERE i.i_category = 'Women' AND d.d_weekend = 'Y'    AND d.d_year = 2001 AND d.d_moy = 12;
+
+Pred SQL:
+SELECT AVG(i.i_inventory_quantity) 
+FROM inventory i
+JOIN item i2 ON i.i_item_sk = i2.i_item_sk
+JOIN date_dim d ON i.i_date_sk = d.d_date_sk
+WHERE d.d_year = 2001
+  AND d.d_moy = 12
+  AND d.d_dow IN (5, 6)
+  AND i2.i_category = 'Women';
+
+Error Analysis:
+
+Execution: Binder Error: Table "i" does not have a column named "i_item_sk"
+LINE 3: JOIN item i2 ON i.i_item_sk
+Match: Pred error: Binder Error: Table "i" does not have a column nam
+
+================================================================================
+[25] Tính tổng tiền thuế (sales tax) thu được từ nhóm khách hàng có thu nhập dưới 50.000.
+
+Gold SQL:
+SELECT SUM(ss.ss_ext_tax) FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk JOIN income_band ib ON hd.hd_income_band_sk = ib.ib_income_band_sk WHERE ib.ib_upper_bound < 50000;
+
+Pred SQL:
+SELECT SUM(ss.ss_tax) 
+FROM store_sales ss 
+JOIN household_demographics hd ON ss.ss_hdemo_sk = hd.hd_demo_sk 
+WHERE hd.hd_income_band_sk < 50000;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer', 'income_band'}
+  - join_mistake: JOIN count: pred=1, gold=3
+
+Execution: Binder Error: Table "ss" does not have a column named "ss_tax"
+LINE 1: SELECT SUM(ss.ss_tax) 
+      
+Match: Pred error: Binder Error: Table "ss" does not have a column na
+
+================================================================================
+[26] Thống kê xem khách hàng nam và nữ, nhóm nào hay đi mua sắm ở cửa hàng hơn vào ngày Thứ Hai?
+
+Gold SQL:
+SELECT cd.cd_gender, COUNT(*) AS visit_count FROM store_sales ss JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_day_name = 'Monday' GROUP BY cd.cd_gender;
+
+Pred SQL:
+SELECT 
+    cd.cd_gender,
+    cd.cd_marital_status,
+    COUNT(*) AS shopping_count
+FROM 
+    store_sales ss
+JOIN 
+    customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN 
+    customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN 
+    date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE 
+    d.d_dow = 1
+GROUP BY 
+    cd.cd_gender, 
+    cd.cd_marital_status;
+
+Error Analysis:
+  - join_mistake: JOIN count: pred=3, gold=2
+
+Execution: OK (10 rows)
+Match: Mismatch (pred=10, gold=2)
+
+================================================================================
+[27] Hiển thị thông tin tên đăng nhập của những khách hàng đã ly hôn và đang có từ ba người phụ thuộc trở lên trong gia đình.
+
+Gold SQL:
+SELECT c_login FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_marital_status = 'D' AND cd_dep_count >= 3;
+
+Pred SQL:
+SELECT c.c_customer_id
+FROM customer c
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
+WHERE cd.cd_marital_status = 'D'
+AND hd.hd_dep_count >= 3;
+
+Error Analysis:
+  - join_mistake: JOIN count: pred=2, gold=1
+
+Execution: OK (13283 rows)
+Match: Mismatch (pred=13283, gold=11070)
+
+================================================================================
+[28] Khách hàng có bằng Advanced Degree tại KS thường mua Shoes qua kênh nào?
+
+Gold SQL:
+WITH store_channel AS (     SELECT 'Store' as channel, SUM(ss.ss_net_paid) as total_sales     FROM store_sales ss     JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk     JOIN item i ON ss.ss_item_sk = i.i_item_sk     WHERE cd.cd_education_status = 'Advanced Degree'       AND ca.ca_state = 'KS'       AND i.i_category = 'Shoes' ), web_channel AS (     SELECT 'Web' as channel, SUM(ws.ws_net_paid) as total_sales     FROM web_sales ws     JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk     JOIN item i ON ws.ws_item_sk = i.i_item_sk     WHERE cd.cd_education_status = 'Advanced Degree'       AND ca.ca_state = 'KS'       AND i.i_category = 'Shoes' ), catalog_channel AS (     SELECT 'Catalog' as channel, SUM(cs.cs_net_paid) as total_sales     FROM catalog_sales cs     JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk     JOIN item i ON cs.cs_item_sk = i.i_item_sk     WHERE cd.cd_education_status = 'Advanced Degree'       AND ca.ca_state = 'KS'       AND i.i_category = 'Shoes' ) SELECT * FROM store_channel UNION ALL SELECT * FROM web_channel UNION ALL SELECT * FROM catalog_channel ORDER BY total_sales DESC;
+
+Pred SQL:
+SELECT 
+    CASE 
+        WHEN COUNT(ws.ws_item_sk) > 0 THEN 'Web'
+        WHEN COUNT(cs.cs_item_sk) > 0 THEN 'Catalog'
+        WHEN COUNT(ss.ss_item_sk) > 0 THEN 'Store'
+    END AS channel
+FROM customer c
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+LEFT JOIN web_sales ws ON c.c_customer_sk = ws.ws_customer_sk
+LEFT JOIN catalog_sales cs ON c.c_customer_sk = cs.cs_customer_sk
+LEFT JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk
+LEFT JOIN item i ON COALESCE(ws.ws_item_sk, cs.cs_item_sk, ss.ss_item_sk) = i.i_item_sk
+WHERE cd.cd_education_status = 'Advanced Degree'
+  AND ca.ca_state = 'KS'
+  AND i.i_category = 'Shoes';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'store_channel', 'catalog_channel', 'web_channel'}
+  - join_mistake: JOIN count: pred=6, gold=12
+
+Execution: Binder Error: Table "ws" does not have a column named "ws_customer_sk"
+LINE 10: ...T 
+    CASE 
+    
+Match: Pred error: Binder Error: Table "ws" does not have a column na
+
+================================================================================
+[29] Liệt kê 10 thương hiệu Children được ưa chuộng nhất bởi khách hàng ở NC.
+
+Gold SQL:
+SELECT      i.i_brand,     i.i_category,     COUNT(*) as purchase_count,     SUM(ss.ss_quantity) as total_quantity,     SUM(ss.ss_net_paid) as total_revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Children'   AND ca.ca_state = 'NC' GROUP BY i.i_brand, i.i_category ORDER BY purchase_count DESC LIMIT 10;
+
+Pred SQL:
+SELECT i.i_brand, COUNT(*) as brand_count
+FROM catalog_sales cs
+JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON cs.cs_item_sk = i.i_item_sk
+WHERE ca.ca_state = 'NC' AND i.i_category = 'Children'
+GROUP BY i.i_brand
+ORDER BY brand_count DESC
+LIMIT 10;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'store_sales'}
+
+Execution: OK (9 rows)
+Match: Mismatch (pred=9, gold=9)
+
+================================================================================
+[30] Doanh số của Jewelry tại TX năm 1999 so với năm trước đó tăng bao nhiêu?
+
+Gold SQL:
+WITH current_year AS (     SELECT SUM(ss.ss_net_paid) as revenue     FROM store_sales ss     JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON ss.ss_item_sk = i.i_item_sk     JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk     WHERE i.i_category = 'Jewelry' AND ca.ca_state = 'TX' AND d.d_year = 1999 ), previous_year AS (     SELECT SUM(ss.ss_net_paid) as revenue     FROM store_sales ss     JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON ss.ss_item_sk = i.i_item_sk     JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk     WHERE i.i_category = 'Jewelry' AND ca.ca_state = 'TX' AND d.d_year = 1998 ) SELECT      1999 as current_year,     cy.revenue as current_revenue,     1998 as previous_year,     py.revenue as previous_revenue,     cy.revenue - py.revenue as revenue_change,     ROUND((cy.revenue - py.revenue) / py.revenue * 100, 2) as growth_pct FROM current_year cy, previous_year py;
+
+Pred SQL:
+SELECT 
+    (SUM(CASE WHEN d.d_year = 1999 THEN ss.ss_net_paid ELSE 0 END) - 
+     SUM(CASE WHEN d.d_year = 1998 THEN ss.ss_net_paid ELSE 0 END)) AS increase
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN store s ON ss.ss_store_sk = s.s_store_sk
+WHERE i.i_category = 'Jewelry'
+  AND s.s_state = 'TX'
+  AND d.d_year IN (1998, 1999);
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_address', 'customer', 'current_year'}
+  - join_mistake: JOIN count: pred=3, gold=8
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[33] Thống kê giúp tôi số lượng đơn hàng trực tuyến của danh mục Men được đặt bởi những khách hàng sinh sau năm một chín tám mươi và chọn phương thức giao hàng TWO DAY.
+
+Gold SQL:
+SELECT COUNT(ws.ws_order_number) FROM web_sales ws JOIN item i ON ws.ws_item_sk = i.i_item_sk JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk JOIN ship_mode sm ON ws.ws_ship_mode_sk = sm.sm_ship_mode_sk WHERE i.i_category = 'Men'    AND c.c_birth_year > 1980    AND sm.sm_type = 'TWO DAY';
+
+Pred SQL:
+SELECT COUNT(*) 
+FROM web_sales ws
+JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
+JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN item i ON ws.ws_item_sk = i.i_item_sk
+JOIN ship_mode sm ON ws.ws_ship_mode_sk = sm.sm_ship_mode_sk
+WHERE i.i_category = 'Men'
+  AND c.c_birth_year > 1980
+  AND sm.sm_ship_mode_desc = 'TWO DAY';
+
+Error Analysis:
+  - join_mistake: JOIN count: pred=5, gold=3
+
+Execution: Binder Error: Table "sm" does not have a column named "sm_ship_mode_desc"
+LINE 10:   AND sm.sm_ship_
+Match: Pred error: Binder Error: Table "sm" does not have a column na
+
+================================================================================
+[34] Bạn hãy liệt kê năm nhà sản xuất có lượng tồn kho danh mục 'Children' bị sụt giảm nhiều nhất khi so sánh giữa quý một và quý hai năm 2002
+
+Gold SQL:
+SELECT i.i_manufact,         SUM(CASE WHEN d.d_qoy = 1 THEN inv.inv_quantity_on_hand ELSE 0 END) -         SUM(CASE WHEN d.d_qoy = 2 THEN inv.inv_quantity_on_hand ELSE 0 END) AS stock_drop FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk JOIN date_dim d ON inv.inv_date_sk = d.d_date_sk WHERE i.i_category = 'Children' AND d.d_year = 2002 GROUP BY i.i_manufact ORDER BY stock_drop DESC LIMIT 5;
+
+Pred SQL:
+SELECT i.i_manufact_id
+FROM inventory inv
+JOIN date_dim d ON inv.inv_date_sk = d.d_date_sk
+JOIN item i ON inv.inv_item_sk = i.i_item_sk
+WHERE d.d_year = 2002 AND d.d_qoy IN (1, 2) AND i.i_category = 'Children'
+GROUP BY i.i_manufact_id, d.d_qoy
+HAVING d.d_qoy = 2 AND SUM(inv.inv_quantity_on_hand) < (
+    SELECT SUM(inv2.inv_quantity_on_hand)
+    FROM inventory inv2
+    JOIN date_dim d2 ON inv2.inv_date_sk = d2.d_date_sk
+    JOIN item i2 ON inv2.inv_item_sk = i2.i_item_sk
+    WHERE d2.d_year = 2002 AND d2.d_qoy = 1 AND i2.i_manufact_id = i.i_manufact_id
+)
+ORDER BY SUM(inv.inv_quantity_on_hand) ASC
+LIMIT 1;
+
+Error Analysis:
+  - join_mistake: JOIN count: pred=4, gold=2
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=5)
+
+================================================================================
+[35] Có bao nhiêu đơn hàng Music bị trả lại tại TX vào năm 2002?
+
+Gold SQL:
+SELECT    COUNT(*) as total_returns,   SUM(sr.sr_return_quantity) as total_returned_quantity,   SUM(sr.sr_return_amt) as total_return_amount  FROM store_returns sr  JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON sr.sr_item_sk = i.i_item_sk  JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk  WHERE i.i_category = 'Music'   AND ca.ca_state = 'TX'   AND d.d_year = 2002;
+
+Pred SQL:
+SELECT COUNT(*) 
+FROM catalog_returns cr
+JOIN date_dim d ON cr.cr_returned_date_sk = d.d_date_sk
+JOIN item i ON cr.cr_item_sk = i.i_item_sk
+JOIN customer c ON cr.cr_refunded_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+WHERE d.d_year = 2002
+AND ca.ca_state = 'TX'
+AND i.i_category = 'Music';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'store_returns'}
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[36] Trong năm 2001, khách hàng ở MO mua nhiều Books không?
+
+Gold SQL:
+SELECT      ca.ca_state,     i.i_category,     COUNT(*) as total_transactions,     SUM(ss.ss_quantity) as total_quantity,     SUM(ss.ss_net_paid) as total_revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE ca.ca_state = 'MO'   AND i.i_category = 'Books'   AND d.d_year = 2001 GROUP BY ca.ca_state, i.i_category;
+
+Pred SQL:
+SELECT COUNT(*) 
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
+JOIN store s ON ss.ss_store_sk = s.s_store_sk
+WHERE d.d_year = 2001
+AND s.s_state = 'MO'
+AND cd.cd_gender = 'M'
+AND cd.cd_marital_status = 'S'
+AND hd.hd_vehicle_count > 0;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_address', 'item'}
+  - join_mistake: JOIN count: pred=5, gold=4
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[37] Cho tôi biết top 5 khách hàng chi tiêu nhiều nhất cho mặt hàng Men tại IL.
+
+Gold SQL:
+SELECT    c.c_customer_id,   c.c_first_name || ' ' || c.c_last_name as customer_name,   c.c_email_address,   SUM(ss.ss_net_paid) as total_spent,   COUNT(*) as total_transactions  FROM store_sales ss  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON ss.ss_item_sk = i.i_item_sk  WHERE i.i_category = 'Men'   AND ca.ca_state = 'IL'  GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address  ORDER BY total_spent DESC  LIMIT 5;
+
+Pred SQL:
+SELECT 
+    c.c_customer_id,
+    SUM(ss.ss_net_paid) AS total_spent
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Men'
+  AND ca.ca_state = 'IL'
+GROUP BY c.c_customer_id
+ORDER BY total_spent DESC
+LIMIT 5;
+
+Error Analysis:
+
+Execution: OK (5 rows)
+Match: Mismatch (pred=5, gold=5)
+
+================================================================================
+[38] Bạn hãy xác định xem nhà sản xuất nào có nhiều sản phẩm được liệt kê trên các trang Catalog nhất và tổng số lượng đơn hàng tương ứng của họ là bao nhiêu.
+
+Gold SQL:
+SELECT i.i_manufact, COUNT(cs.cs_order_number) AS order_count FROM catalog_sales cs JOIN item i ON cs.cs_item_sk = i.i_item_sk GROUP BY i.i_manufact ORDER BY COUNT(DISTINCT i.i_item_sk) DESC LIMIT 1;
+
+Pred SQL:
+SELECT 
+    i_manufact,
+    COUNT(*) AS order_count
+FROM catalog_sales cs
+JOIN item i ON cs.cs_item_sk = i.i_item_sk
+GROUP BY i_manufact
+ORDER BY COUNT(*) DESC
+LIMIT 1;
+
+Error Analysis:
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[40] Hàng Women trả lại ở MO có nhiều không, xem số liệu năm 1999 thử.
+
+Gold SQL:
+SELECT    i.i_category,   ca.ca_state,   d.d_year,   COUNT(*) as total_returns,   SUM(sr.sr_return_quantity) as total_returned_quantity,   SUM(sr.sr_return_amt) as total_return_amount,   AVG(sr.sr_return_amt) as avg_return_amount  FROM store_returns sr  JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON sr.sr_item_sk = i.i_item_sk  JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk  WHERE i.i_category = 'Women'   AND ca.ca_state = 'MO'   AND d.d_year = 1999  GROUP BY i.i_category, ca.ca_state, d.d_year;
+
+Pred SQL:
+SELECT COUNT(*) 
+FROM store_returns sr
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+JOIN household_demographics hd ON sr.sr_hdemo_sk = hd.hd_demo_sk
+WHERE d.d_year = 1999
+AND hd.hd_vehicle_count > 0;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_address', 'customer', 'item'}
+  - join_mistake: JOIN count: pred=2, gold=4
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[41] Trong năm 2001, khách hàng ở NC mua nhiều Women không?
+
+Gold SQL:
+SELECT    ca.ca_state,   i.i_category,   COUNT(*) as total_transactions,   SUM(ss.ss_quantity) as total_quantity,   SUM(ss.ss_net_paid) as total_revenue  FROM store_sales ss  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON ss.ss_item_sk = i.i_item_sk  JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk  WHERE ca.ca_state = 'NC'   AND i.i_category = 'Women'   AND d.d_year = 2001  GROUP BY ca.ca_state, i.i_category;
+
+Pred SQL:
+SELECT 
+    COUNT(*) AS total_purchases
+FROM 
+    store_sales ss
+JOIN 
+    customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN 
+    customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN 
+    date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE 
+    d.d_year = 2001
+    AND cd.cd_gender = 'F'
+    AND cd.cd_marital_status = 'M'
+    AND cd.cd_education_status = 'College'
+    AND cd.cd_credit_rating = 'Good';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_address', 'item'}
+  - join_mistake: JOIN count: pred=3, gold=4
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[43] Tìm email của các khách hàng VIP ở TX đã mua đồ Jewelry trên 5000 đô.
+
+Gold SQL:
+SELECT    c.c_customer_id,   c.c_first_name || ' ' || c.c_last_name as customer_name,   c.c_email_address,   SUM(ss.ss_net_paid) as total_spent  FROM store_sales ss  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON ss.ss_item_sk = i.i_item_sk  WHERE ca.ca_state = 'TX'   AND i.i_category = 'Jewelry'  GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address  HAVING SUM(ss.ss_net_paid) > 5000  ORDER BY total_spent DESC;
+
+Pred SQL:
+SELECT DISTINCT c.c_email
+FROM customer c
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE ca.ca_state = 'TX'
+  AND i.i_category = 'Jewelry'
+  AND ss.ss_net_paid > 5000;
+
+Error Analysis:
+
+Execution: Binder Error: Table "c" does not have a column named "c_email"
+LINE 1: SELECT DISTINCT c.c_email
+   
+Match: Pred error: Binder Error: Table "c" does not have a column nam
+
+================================================================================
+[46] Tìm 10 sản phẩm Jewelry có lợi nhuận thấp nhất trong năm 2002.
+
+Gold SQL:
+SELECT      i.i_item_id,     i.i_product_name,     i.i_category,     SUM(ss.ss_net_profit) as total_profit,     SUM(ss.ss_net_paid) as total_revenue FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Jewelry'   AND d.d_year = 2002 GROUP BY i.i_item_id, i.i_product_name, i.i_category ORDER BY total_profit ASC LIMIT 10;
+
+Pred SQL:
+SELECT 
+    i.i_item_id,
+    SUM(ss.ss_net_profit) AS total_profit
+FROM 
+    store_sales ss
+JOIN 
+    date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN 
+    item i ON ss.ss_item_sk = i.i_item_sk
+WHERE 
+    d.d_year = 2002
+    AND i.i_category = 'Jewelry'
+GROUP BY 
+    i.i_item_id
+ORDER BY 
+    total_profit ASC
+LIMIT 10;
+
+Error Analysis:
+
+Execution: OK (10 rows)
+Match: Mismatch (pred=10, gold=10)
+
+================================================================================
+[47] Hàng Women trả lại ở GA có nhiều không, xem số liệu năm 2002 thử.
+
+Gold SQL:
+SELECT      i.i_category,     ca.ca_state,     d.d_year,     COUNT(*) as total_returns,     SUM(sr.sr_return_quantity) as total_returned_quantity,     SUM(sr.sr_return_amt) as total_return_amount,     AVG(sr.sr_return_amt) as avg_return_amount FROM store_returns sr JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON sr.sr_item_sk = i.i_item_sk JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk WHERE i.i_category = 'Women'   AND ca.ca_state = 'GA'   AND d.d_year = 2002 GROUP BY i.i_category, ca.ca_state, d.d_year;
+
+Pred SQL:
+SELECT COUNT(*) 
+FROM store_returns sr
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+JOIN customer_demographics cd ON sr.sr_cdemo_sk = cd.cd_demo_sk
+JOIN household_demographics hd ON sr.sr_hdemo_sk = hd.hd_demo_sk
+WHERE d.d_year = 2002
+AND cd.cd_gender = 'F'
+AND hd.hd_vehicle_count > 0;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_address', 'customer', 'item'}
+  - join_mistake: JOIN count: pred=3, gold=4
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[48] Cho tôi xem danh sách sản phẩm Women bán chạy nhất ở NC.
+
+Gold SQL:
+SELECT      i.i_item_id,     i.i_product_name,     i.i_brand,     i.i_category,     SUM(ss.ss_quantity) as total_quantity_sold,     SUM(ss.ss_net_paid) as total_revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Women'   AND ca.ca_state = 'NC' GROUP BY i.i_item_id, i.i_product_name, i.i_brand, i.i_category ORDER BY total_quantity_sold DESC LIMIT 10;
+
+Pred SQL:
+SELECT 
+    ss.ss_item_sk AS item_sk
+FROM 
+    store_sales ss
+JOIN 
+    customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+JOIN 
+    customer_address ca ON ss.ss_addr_sk = ca.ca_address_sk
+JOIN 
+    date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE 
+    cd.cd_gender = 'F'
+    AND ca.ca_state = 'NC'
+    AND d.d_year = 2002
+GROUP BY 
+    ss.ss_item_sk
+ORDER BY 
+    SUM(ss.ss_quantity) DESC
+LIMIT 10;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer', 'item'}
+
+Execution: OK (10 rows)
+Match: Mismatch (pred=10, gold=10)
+
+================================================================================
+[49] Tìm email của các khách hàng VIP ở IA đã mua đồ Women trên 5000 đô.
+
+Gold SQL:
+SELECT      c.c_customer_id,     c.c_first_name || ' ' || c.c_last_name as customer_name,     c.c_email_address,     SUM(ss.ss_net_paid) as total_spent FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE ca.ca_state = 'IA'   AND i.i_category = 'Women' GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address HAVING SUM(ss.ss_net_paid) > 5000 ORDER BY total_spent DESC;
+
+Pred SQL:
+SELECT DISTINCT c.c_email
+FROM customer c
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE ca.ca_state = 'IA'
+  AND i.i_category = 'Women'
+  AND d.d_year = 2002
+  AND c.c_customer_sk IN (
+    SELECT c2.c_customer_sk
+    FROM customer c2
+    JOIN store_sales ss2 ON c2.c_customer_sk = ss2.ss_customer_sk
+    JOIN date_dim d2 ON ss2.ss_sold_date_sk = d2.d_date_sk
+    WHERE d2.d_year = 2002
+    GROUP BY c2.c_customer_sk
+    HAVING SUM(ss2.ss_net_paid) > 5000
+  );
+
+Error Analysis:
+  - join_mistake: JOIN count: pred=6, gold=3
+
+Execution: Binder Error: Table "c" does not have a column named "c_email"
+LINE 1: SELECT DISTINCT c.c_email
+   
+Match: Pred error: Binder Error: Table "c" does not have a column nam
+
+================================================================================
+[50] Năm 2002 thì kênh Web mang về bao nhiêu tiền?
+
+Gold SQL:
+SELECT      d.d_year,     'Web' as channel,     SUM(ws.ws_net_paid) as total_revenue,     COUNT(*) as total_transactions FROM web_sales ws JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002 GROUP BY d.d_year;
+
+Pred SQL:
+SELECT SUM(ws.ws_net_paid) 
+FROM web_sales ws 
+JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk 
+WHERE d.d_year = 2002;
+
+Error Analysis:
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[51] So sánh lợi nhuận của Music giữa kênh Store và Catalog tại VA.
+
+Gold SQL:
+WITH store_profit AS (     SELECT 'Store' as channel, SUM(ss.ss_net_profit) as total_profit     FROM store_sales ss     JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON ss.ss_item_sk = i.i_item_sk     WHERE i.i_category = 'Music' AND ca.ca_state = 'VA' ), web_profit AS (     SELECT 'Web' as channel, SUM(ws.ws_net_profit) as total_profit     FROM web_sales ws     JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON ws.ws_item_sk = i.i_item_sk     WHERE i.i_category = 'Music' AND ca.ca_state = 'VA' ), catalog_profit AS (     SELECT 'Catalog' as channel, SUM(cs.cs_net_profit) as total_profit     FROM catalog_sales cs     JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN item i ON cs.cs_item_sk = i.i_item_sk     WHERE i.i_category = 'Music' AND ca.ca_state = 'VA' ) SELECT * FROM store_profit WHERE channel IN ('Store', 'Catalog') UNION ALL SELECT * FROM web_profit WHERE channel IN ('Store', 'Catalog') UNION ALL SELECT * FROM catalog_profit WHERE channel IN ('Store', 'Catalog') ORDER BY channel;
+
+Pred SQL:
+SELECT 
+    'Store' AS channel,
+    SUM(ss.ss_net_profit) AS total_profit
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN store s ON ss.ss_store_sk = s.s_store_sk
+WHERE i.i_category = 'Music'
+  AND s.s_state = 'VA'
+UNION ALL
+SELECT 
+    'Catalog' AS channel,
+    SUM(cs.cs_net_profit) AS total_profit
+FROM catalog_sales cs
+JOIN item i ON cs.cs_item_sk = i.i_item_sk
+JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk
+WHERE i.i_category = 'Music'
+  AND cp.cp_department = 'VA';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'store_profit', 'web_sales', 'catalog_profit', 'customer', 'web_profit', 'customer_address'}
+  - join_mistake: JOIN count: pred=4, gold=9
+
+Execution: OK (2 rows)
+Match: Mismatch (pred=2, gold=2)
+
+================================================================================
+[53] Hãy tìm giúp tôi tổng mức tổn thất ròng từ việc trả hàng qua Catalog đối với mặt hàng có mã số sản phẩm là một trăm năm mươi tư
+
+Gold SQL:
+SELECT SUM(cr_net_loss) FROM catalog_returns WHERE cr_item_sk = 154;
+
+Pred SQL:
+SELECT SUM(cr.cr_loss) 
+FROM catalog_returns cr
+JOIN date_dim d ON cr.cr_returned_date_sk = d.d_date_sk
+WHERE d.d_year = 2002 
+  AND cr.cr_item_sk = 154;
+
+Error Analysis:
+  - join_mistake: JOIN count: pred=1, gold=0
+
+Execution: Binder Error: Table "cr" does not have a column named "cr_loss"
+LINE 1: SELECT SUM(cr.cr_loss) 
+    
+Match: Pred error: Binder Error: Table "cr" does not have a column na
+
+================================================================================
+[54] Có bao nhiêu đơn hàng Electronics bị trả lại tại NC vào năm 1999?
+
+Gold SQL:
+SELECT      COUNT(*) as total_returns,     SUM(sr.sr_return_quantity) as total_returned_quantity,     SUM(sr.sr_return_amt) as total_return_amount FROM store_returns sr JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON sr.sr_item_sk = i.i_item_sk JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk WHERE i.i_category = 'Electronics'   AND ca.ca_state = 'NC'   AND d.d_year = 1999;
+
+Pred SQL:
+SELECT COUNT(*) 
+FROM catalog_returns cr
+JOIN date_dim d ON cr.cr_returned_date_sk = d.d_date_sk
+JOIN item i ON cr.cr_item_sk = i.i_item_sk
+JOIN customer c ON cr.cr_refunded_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+WHERE d.d_year = 1999
+  AND i.i_category = 'Electronics'
+  AND ca.ca_state = 'NC';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'store_returns'}
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[55] So sánh tổng số lượng sản phẩm bán ra trong các ngày lễ so với các ngày bình thường để đánh giá sức mua của khách hàng
+
+Gold SQL:
+SELECT d.d_holiday, SUM(ss.ss_quantity) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk GROUP BY d.d_holiday;
+
+Pred SQL:
+SELECT 
+    CASE WHEN d.d_holiday_flag = 'Y' THEN 'Holiday' ELSE 'Normal Day' END AS day_type,
+    SUM(ss.ss_quantity) AS total_quantity
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE d.d_year = 2002
+GROUP BY day_type;
+
+Error Analysis:
+
+Execution: Binder Error: Table "d" does not have a column named "d_holiday_flag"
+LINE 2:     CASE WHEN d.d_holi
+Match: Pred error: Binder Error: Table "d" does not have a column nam
+
+================================================================================
+[56] Tìm 10 sản phẩm Shoes có lợi nhuận thấp nhất trong năm 2001.
+
+Gold SQL:
+SELECT    i.i_item_id,   i.i_product_name,   i.i_category,   SUM(ss.ss_net_profit) as total_profit,   SUM(ss.ss_net_paid) as total_revenue  FROM store_sales ss  JOIN item i ON ss.ss_item_sk = i.i_item_sk  JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk  WHERE i.i_category = 'Shoes'   AND d.d_year = 2001  GROUP BY i.i_item_id, i.i_product_name, i.i_category  ORDER BY total_profit ASC  LIMIT 10;
+
+Pred SQL:
+SELECT 
+    i.i_item_id,
+    SUM(ss.ss_net_profit) AS total_profit
+FROM 
+    store_sales ss
+JOIN 
+    date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN 
+    item i ON ss.ss_item_sk = i.i_item_sk
+WHERE 
+    d.d_year = 2001
+    AND i.i_category = 'Shoes'
+GROUP BY 
+    i.i_item_id
+ORDER BY 
+    total_profit ASC
+LIMIT 10;
+
+Error Analysis:
+
+Execution: OK (10 rows)
+Match: Mismatch (pred=10, gold=10)
+
+================================================================================
+[57] Khách hàng có bằng Primary tại IA thường mua Shoes qua kênh nào?
+
+Gold SQL:
+WITH store_channel AS (     SELECT 'Store' as channel, SUM(ss.ss_net_paid) as total_sales     FROM store_sales ss     JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk     JOIN item i ON ss.ss_item_sk = i.i_item_sk     WHERE cd.cd_education_status = 'Primary'       AND ca.ca_state = 'IA'       AND i.i_category = 'Shoes' ), web_channel AS (     SELECT 'Web' as channel, SUM(ws.ws_net_paid) as total_sales     FROM web_sales ws     JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk     JOIN item i ON ws.ws_item_sk = i.i_item_sk     WHERE cd.cd_education_status = 'Primary'       AND ca.ca_state = 'IA'       AND i.i_category = 'Shoes' ), catalog_channel AS (     SELECT 'Catalog' as channel, SUM(cs.cs_net_paid) as total_sales     FROM catalog_sales cs     JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk     JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk     JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk     JOIN item i ON cs.cs_item_sk = i.i_item_sk     WHERE cd.cd_education_status = 'Primary'       AND ca.ca_state = 'IA'       AND i.i_category = 'Shoes' ) SELECT * FROM store_channel UNION ALL SELECT * FROM web_channel UNION ALL SELECT * FROM catalog_channel ORDER BY total_sales DESC;
+
+Pred SQL:
+SELECT 
+    CASE 
+        WHEN COUNT(ws.ws_item_sk) > 0 THEN 'Web'
+        WHEN COUNT(cs.cs_item_sk) > 0 THEN 'Catalog'
+        WHEN COUNT(ss.ss_item_sk) > 0 THEN 'Store'
+        ELSE 'None'
+    END AS channel
+FROM customer c
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN item i ON i.i_item_desc = 'Shoes'
+LEFT JOIN web_sales ws ON c.c_customer_sk = ws.ws_customer_sk AND ws.ws_item_sk = i.i_item_sk
+LEFT JOIN catalog_sales cs ON c.c_customer_sk = cs.cs_customer_sk AND cs.cs_item_sk = i.i_item_sk
+LEFT JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk AND ss.ss_item_sk = i.i_item_sk
+WHERE ca.ca_state = 'IA'
+  AND cd.cd_education_status = 'Primary';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'store_channel', 'catalog_channel', 'web_channel'}
+  - join_mistake: JOIN count: pred=6, gold=12
+
+Execution: Binder Error: Table "ws" does not have a column named "ws_customer_sk"
+LINE 12: ...T 
+    CASE 
+    
+Match: Pred error: Binder Error: Table "ws" does not have a column na
+
+================================================================================
+[58] Năm ngoái dân ở VA mua Women nhiều hay ít?
+
+Gold SQL:
+SELECT      d.d_year,     ca.ca_state,     i.i_category,     COUNT(*) as total_transactions,     SUM(ss.ss_quantity) as total_quantity,     SUM(ss.ss_net_paid) as total_revenue,     AVG(ss.ss_net_paid) as avg_transaction_value FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE ca.ca_state = 'VA'   AND i.i_category = 'Women'   AND d.d_year = (SELECT MAX(d_year) - 1 FROM date_dim WHERE d_date_sk IN (SELECT ss_sold_date_sk FROM store_sales)) GROUP BY d.d_year, ca.ca_state, i.i_category;
+
+Pred SQL:
+SELECT 
+    CASE 
+        WHEN SUM(CASE WHEN cd.cd_gender = 'F' THEN 1 ELSE 0 END) > SUM(CASE WHEN cd.cd_gender = 'M' THEN 1 ELSE 0 END) 
+        THEN 'Women' 
+        ELSE 'Men' 
+    END AS gender_with_more_purchases
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE ca.ca_state = 'VA' AND d.d_year = YEAR(CURRENT_DATE) - 1;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'item'}
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[61] Tìm khách hàng sống ở bang Texas (TX) mà có gia đình đông người (trên 4 người phụ thuộc).
+
+Gold SQL:
+SELECT c.c_first_name, c.c_last_name FROM customer c JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk WHERE ca.ca_state = 'TX' AND hd.hd_dep_count > 4;
+
+Pred SQL:
+SELECT c.c_customer_sk
+FROM customer c
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
+WHERE ca.ca_state = 'TX'
+AND hd.hd_dep_count > 4;
+
+Error Analysis:
+
+Execution: OK (3838 rows)
+Match: Mismatch (pred=3838, gold=3838)
+
+================================================================================
+[62] Có bao nhiêu đơn hàng Music bị trả lại tại KS vào năm 2002?
+
+Gold SQL:
+SELECT    COUNT(*) as total_returns,   SUM(sr.sr_return_quantity) as total_returned_quantity,   SUM(sr.sr_return_amt) as total_return_amount  FROM store_returns sr  JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON sr.sr_item_sk = i.i_item_sk  JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk  WHERE i.i_category = 'Music'   AND ca.ca_state = 'KS'   AND d.d_year = 2002;
+
+Pred SQL:
+SELECT COUNT(*) 
+FROM store_returns sr
+JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk
+JOIN reason r ON sr.sr_reason_sk = r.r_reason_sk
+WHERE d.d_year = 2002
+AND r.r_reason_desc = 'Music';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_address', 'customer', 'item'}
+  - join_mistake: JOIN count: pred=2, gold=4
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[63] Doanh số của Men tại VA năm 1999 so với năm trước đó tăng bao nhiêu?
+
+Gold SQL:
+WITH current_year AS (   SELECT SUM(ss.ss_net_paid) as revenue   FROM store_sales ss   JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ss.ss_item_sk = i.i_item_sk   JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk   WHERE i.i_category = 'Men' AND ca.ca_state = 'VA' AND d.d_year = 1999  ),  previous_year AS (   SELECT SUM(ss.ss_net_paid) as revenue   FROM store_sales ss   JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ss.ss_item_sk = i.i_item_sk   JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk   WHERE i.i_category = 'Men' AND ca.ca_state = 'VA' AND d.d_year = 1998  )  SELECT    1999 as current_year,   cy.revenue as current_revenue,   1998 as previous_year,   py.revenue as previous_revenue,   cy.revenue - py.revenue as revenue_change,   ROUND((cy.revenue - py.revenue) / py.revenue * 100, 2) as growth_pct  FROM current_year cy, previous_year py;
+
+Pred SQL:
+SELECT 
+    (SUM(CASE WHEN d.d_year = 1999 THEN ss.ss_net_paid ELSE 0 END) - 
+     SUM(CASE WHEN d.d_year = 1998 THEN ss.ss_net_paid ELSE 0 END)) AS increase
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+JOIN household_demographics hd ON ss.ss_hdemo_sk = hd.hd_demo_sk
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+WHERE cd.cd_gender = 'M' 
+  AND hd.hd_vehicle_count > 0
+  AND d.d_year IN (1998, 1999);
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer_address', 'current_year', 'item'}
+  - join_mistake: JOIN count: pred=4, gold=8
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[64] Tổng doanh thu của Children tại bang IL năm 2002 là bao nhiêu?
+
+Gold SQL:
+SELECT      SUM(ss.ss_net_paid) as total_revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Children'   AND ca.ca_state = 'IL'   AND d.d_year = 2002;
+
+Pred SQL:
+SELECT SUM(ss.ss_net_paid) 
+FROM store_sales ss 
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk 
+JOIN customer_address ca ON ss.ss_addr_sk = ca.ca_address_sk 
+WHERE d.d_year = 2002 
+AND ca.ca_state = 'IL';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer', 'item'}
+  - join_mistake: JOIN count: pred=2, gold=4
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[67] Doanh số của Electronics tại NC năm 2002 so với năm trước đó tăng bao nhiêu?
+
+Gold SQL:
+WITH current_year AS (   SELECT SUM(ss.ss_net_paid) as revenue   FROM store_sales ss   JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ss.ss_item_sk = i.i_item_sk   JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk   WHERE i.i_category = 'Electronics' AND ca.ca_state = 'NC' AND d.d_year = 2002  ),  previous_year AS (   SELECT SUM(ss.ss_net_paid) as revenue   FROM store_sales ss   JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ss.ss_item_sk = i.i_item_sk   JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk   WHERE i.i_category = 'Electronics' AND ca.ca_state = 'NC' AND d.d_year = 2001  )  SELECT    2002 as current_year,   cy.revenue as current_revenue,   2001 as previous_year,   py.revenue as previous_revenue,   cy.revenue - py.revenue as revenue_change,   ROUND((cy.revenue - py.revenue) / py.revenue * 100, 2) as growth_pct  FROM current_year cy, previous_year py;
+
+Pred SQL:
+SELECT 
+    (SUM(CASE WHEN d.d_year = 2002 THEN ss.ss_net_paid ELSE 0 END) - 
+     SUM(CASE WHEN d.d_year = 2001 THEN ss.ss_net_paid ELSE 0 END)) AS revenue_increase
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN customer_address ca ON ss.ss_addr_sk = ca.ca_address_sk
+WHERE ca.ca_state = 'NC'
+  AND d.d_year IN (2001, 2002);
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer', 'current_year', 'item'}
+  - join_mistake: JOIN count: pred=2, gold=8
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[68] Ai mua đồ Women nhiều nhất ở KY vậy?
+
+Gold SQL:
+SELECT    c.c_customer_id,   c.c_first_name || ' ' || c.c_last_name as customer_name,   SUM(ss.ss_quantity) as total_quantity,   SUM(ss.ss_net_paid) as total_spent  FROM store_sales ss  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON ss.ss_item_sk = i.i_item_sk  WHERE i.i_category = 'Women'   AND ca.ca_state = 'KY'  GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name  ORDER BY total_quantity DESC  LIMIT 1;
+
+Pred SQL:
+SELECT c.c_customer_id, SUM(ss.ss_net_paid) AS total_spent
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+JOIN customer_address ca ON ss.ss_addr_sk = ca.ca_address_sk
+WHERE ca.ca_state = 'KY'
+  AND cd.cd_gender = 'F'
+GROUP BY c.c_customer_id
+ORDER BY total_spent DESC
+LIMIT 1;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'item'}
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[69] Trong năm 2002, khách hàng ở VA mua nhiều Women không?
+
+Gold SQL:
+SELECT    ca.ca_state,   i.i_category,   COUNT(*) as total_transactions,   SUM(ss.ss_quantity) as total_quantity,   SUM(ss.ss_net_paid) as total_revenue  FROM store_sales ss  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON ss.ss_item_sk = i.i_item_sk  JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk  WHERE ca.ca_state = 'VA'   AND i.i_category = 'Women'   AND d.d_year = 2002  GROUP BY ca.ca_state, i.i_category;
+
+Pred SQL:
+SELECT 
+    COUNT(*) AS total_orders
+FROM 
+    store_sales ss
+JOIN 
+    customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN 
+    customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+JOIN 
+    date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE 
+    d.d_year = 2002
+    AND c.c_current_addr_sk IN (
+        SELECT ca_address_sk 
+        FROM customer_address ca 
+        WHERE ca.ca_state = 'VA'
+    )
+    AND cd.cd_gender = 'F';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'item'}
+  - join_mistake: JOIN count: pred=3, gold=4
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[70] Trong quý 4 năm 2002, nhóm khách hàng 4 yr Degree chi bao nhiêu tiền cho Men?
+
+Gold SQL:
+SELECT    cd.cd_education_status,   i.i_category,   SUM(ss.ss_net_paid) as total_spent,   COUNT(*) as total_transactions  FROM store_sales ss  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk  JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk  JOIN item i ON ss.ss_item_sk = i.i_item_sk  JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk  WHERE cd.cd_education_status = '4 yr Degree'   AND i.i_category = 'Men'   AND d.d_year = 2002   AND d.d_qoy = 4  GROUP BY cd.cd_education_status, i.i_category;
+
+Pred SQL:
+SELECT SUM(ss.ss_net_paid) 
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE d.d_year = 2002 
+  AND d.d_qoy = 4
+  AND cd.cd_education_status = '4 yr Degree'
+  AND i.i_category = 'Men';
+
+Error Analysis:
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[73] Tìm email của các khách hàng VIP ở MO đã mua đồ Home trên 10000 đô.
+
+Gold SQL:
+SELECT    c.c_customer_id,   c.c_first_name || ' ' || c.c_last_name as customer_name,   c.c_email_address,   SUM(ss.ss_net_paid) as total_spent  FROM store_sales ss  JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk  JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk  JOIN item i ON ss.ss_item_sk = i.i_item_sk  WHERE ca.ca_state = 'MO'   AND i.i_category = 'Home'  GROUP BY c.c_customer_id, c.c_first_name, c.c_last_name, c.c_email_address  HAVING SUM(ss.ss_net_paid) > 10000  ORDER BY total_spent DESC;
+
+Pred SQL:
+SELECT DISTINCT c.c_email
+FROM customer c
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE ca.ca_state = 'MO'
+  AND d.d_year = 2002
+  AND ss.ss_net_paid > 10000;
+
+Error Analysis:
+  - table_mistake: Missing tables: {'item'}
+
+Execution: Binder Error: Table "c" does not have a column named "c_email"
+LINE 1: SELECT DISTINCT c.c_email
+   
+Match: Pred error: Binder Error: Table "c" does not have a column nam
+
+================================================================================
+[74] Doanh số của Children tại NC năm 2000 so với năm trước đó tăng bao nhiêu?
+
+Gold SQL:
+WITH current_year AS (   SELECT SUM(ss.ss_net_paid) as revenue   FROM store_sales ss   JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ss.ss_item_sk = i.i_item_sk   JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk   WHERE i.i_category = 'Children' AND ca.ca_state = 'NC' AND d.d_year = 2000  ),  previous_year AS (   SELECT SUM(ss.ss_net_paid) as revenue   FROM store_sales ss   JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk   JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk   JOIN item i ON ss.ss_item_sk = i.i_item_sk   JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk   WHERE i.i_category = 'Children' AND ca.ca_state = 'NC' AND d.d_year = 1999  )  SELECT    2000 as current_year,   cy.revenue as current_revenue,   1999 as previous_year,   py.revenue as previous_revenue,   cy.revenue - py.revenue as revenue_change,   ROUND((cy.revenue - py.revenue) / py.revenue * 100, 2) as growth_pct  FROM current_year cy, previous_year py;
+
+Pred SQL:
+SELECT 
+    (SUM(CASE WHEN d.d_year = 2000 THEN ss.ss_net_paid ELSE 0 END) - 
+     SUM(CASE WHEN d.d_year = 1999 THEN ss.ss_net_paid ELSE 0 END)) AS increase_in_revenue
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+JOIN customer_address ca ON ss.ss_addr_sk = ca.ca_address_sk
+WHERE cd.cd_gender = 'F' 
+  AND cd.cd_marital_status = 'W' 
+  AND ca.ca_state = 'NC'
+  AND d.d_year IN (1999, 2000);
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer', 'current_year', 'item'}
+  - join_mistake: JOIN count: pred=3, gold=8
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[76] Bạn hãy liệt kê tên các khách hàng đã từng mua mặt hàng 'Music' trực tiếp tại cửa hàng nhưng lại thực hiện trả lại món hàng đó thông qua hệ thống Web
+
+Gold SQL:
+SELECT DISTINCT c.c_first_name, c.c_last_name FROM customer c JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Music'   AND EXISTS (       SELECT 1 FROM web_returns wr        WHERE wr.wr_refunded_customer_sk = c.c_customer_sk AND wr.wr_item_sk = i.i_item_sk   );
+
+Pred SQL:
+SELECT DISTINCT c.c_first_name, c.c_last_name
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN store_returns sr ON ss.ss_ticket_number = sr.sr_ticket_number AND ss.ss_item_sk = sr.sr_item_sk
+JOIN web_returns wr ON sr.sr_item_sk = wr.wr_item_sk
+WHERE i.i_category = 'Music'
+AND ss.ss_sold_date_sk IN (SELECT d_date_sk FROM date_dim WHERE d_year = 2002)
+AND wr.wr_returned_date_sk IN (SELECT d_date_sk FROM date_dim WHERE d_year = 2002);
+
+Error Analysis:
+  - join_mistake: JOIN count: pred=4, gold=2
+
+Execution: OK (3199 rows)
+Match: Mismatch (pred=3199, gold=13)
+
+================================================================================
+[77] Trong quý 4 năm 2002, nhóm khách hàng College chi bao nhiêu tiền cho Sports?
+
+Gold SQL:
+SELECT      cd.cd_education_status,     i.i_category,     SUM(ss.ss_net_paid) as total_spent,     COUNT(*) as total_transactions FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE cd.cd_education_status = 'College'   AND i.i_category = 'Sports'   AND d.d_year = 2002   AND d.d_qoy = 4 GROUP BY cd.cd_education_status, i.i_category;
+
+Pred SQL:
+SELECT SUM(ss.ss_net_paid) 
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE d.d_year = 2002 
+  AND d.d_qoy = 4
+  AND cd.cd_education_status = 'College'
+  AND i.i_category = 'Sports';
+
+Error Analysis:
+  - table_mistake: Missing tables: {'customer'}
+  - join_mistake: JOIN count: pred=3, gold=4
+
+Execution: OK (1 rows)
+Match: Mismatch (pred=1, gold=1)
+
+================================================================================
+[78] Giá bán trung bình của mặt hàng Women trong năm 2000 là bao nhiêu?
+
+Gold SQL:
+SELECT      i.i_category,     AVG(ss.ss_sales_price) as avg_sales_price,     MIN(ss.ss_sales_price) as min_sales_price,     MAX(ss.ss_sales_price) as max_sales_price FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Women'   AND d.d_year = 2000 GROUP BY i.i_category;
+
+Pred SQL:
+SELECT AVG(ws.ws_net_paid) 
+FROM web_sales ws 
+JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk 
+JOIN promotion p ON ws.ws_promo_sk = p.p_promo_sk 
+WHERE d.d_year = 2000 
+AND p.p_promo_name = 'Women';

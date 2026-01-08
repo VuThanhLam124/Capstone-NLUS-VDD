@@ -26,15 +26,15 @@ TPCDS_TABLES = {
         "columns": ["ss_sold_date_sk", "ss_sold_time_sk", "ss_item_sk", "ss_customer_sk", 
                    "ss_cdemo_sk", "ss_hdemo_sk", "ss_addr_sk", "ss_store_sk", "ss_promo_sk",
                    "ss_ticket_number", "ss_quantity", "ss_wholesale_cost", "ss_list_price",
-                   "ss_sales_price", "ss_ext_sales_price", "ss_net_paid", "ss_net_profit"],
-        "keywords": ["store", "sales", "bán hàng", "cửa hàng", "doanh thu", "retail"],
+                   "ss_sales_price", "ss_ext_sales_price", "ss_ext_tax", "ss_net_paid", "ss_net_profit"],
+        "keywords": ["store", "sales", "bán hàng", "cửa hàng", "doanh thu", "retail", "thuế", "tax"],
     },
     "store_returns": {
         "alias": "sr",
         "columns": ["sr_returned_date_sk", "sr_return_time_sk", "sr_item_sk", "sr_customer_sk",
                    "sr_cdemo_sk", "sr_hdemo_sk", "sr_addr_sk", "sr_store_sk", "sr_reason_sk",
                    "sr_ticket_number", "sr_return_quantity", "sr_return_amt", "sr_net_loss"],
-        "keywords": ["return", "trả hàng", "hoàn trả", "store return"],
+        "keywords": ["return", "trả hàng", "hoàn trả", "store return", "trả lại"],
     },
     "web_sales": {
         "alias": "ws",
@@ -42,7 +42,7 @@ TPCDS_TABLES = {
                    "ws_bill_customer_sk", "ws_ship_customer_sk", "ws_web_page_sk", "ws_web_site_sk",
                    "ws_ship_mode_sk", "ws_warehouse_sk", "ws_promo_sk", "ws_order_number",
                    "ws_quantity", "ws_sales_price", "ws_net_paid", "ws_net_profit"],
-        "keywords": ["web", "online", "internet", "website", "ecommerce"],
+        "keywords": ["web", "online", "internet", "website", "ecommerce", "trực tuyến"],
     },
     "web_returns": {
         "alias": "wr",
@@ -78,8 +78,8 @@ TPCDS_TABLES = {
         "alias": "c",
         "columns": ["c_customer_sk", "c_customer_id", "c_current_cdemo_sk", "c_current_hdemo_sk",
                    "c_current_addr_sk", "c_first_name", "c_last_name", "c_birth_day", "c_birth_month",
-                   "c_birth_year", "c_birth_country", "c_email_address", "c_preferred_cust_flag"],
-        "keywords": ["customer", "khách hàng", "người mua", "buyer"],
+                   "c_birth_year", "c_birth_country", "c_login", "c_email_address", "c_preferred_cust_flag"],
+        "keywords": ["customer", "khách hàng", "người mua", "buyer", "email", "login"],
     },
     "customer_address": {
         "alias": "ca",
