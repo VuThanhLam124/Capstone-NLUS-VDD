@@ -393,11 +393,11 @@ class SchemaLinker:
     def build_dynamic_schema(self, question: str, max_tables: int = 4) -> str:
         """
         Build dynamic schema context for question
-        Returns schema with relevant columns + warnings
+        Returns schema in SAME FORMAT as training data (multi-line with types)
         """
         linking_result = self.link_schema(question, top_k_tables=max_tables, top_k_columns=15)
         
-        # Build compact schema
+        # Build schema in TRAINING DATA FORMAT (multi-line with types + FK comments)
         schema_lines = []
         for table_name in linking_result["tables"]:
             if table_name not in TPCDS_TABLES:
@@ -406,26 +406,82 @@ class SchemaLinker:
             table_info = TPCDS_TABLES[table_name]
             alias = table_info["alias"]
             
-            # SHOW ALL COLUMNS (not just relevant ones) to prevent hallucination
-            all_cols = table_info["columns"]
-            cols_str = ", ".join(all_cols)
-            schema_lines.append(f"TABLE {table_name} (alias={alias}): {cols_str}")
+            # Start table definition
+            schema_lines.append(f"TABLE {table_name} (")
+            
+            # Add each column on separate line with type (match training format)
+            for col in table_info["columns"]:
+                col_type = self._get_column_type(col)
+                fk_comment = self._get_fk_comment(table_name, col)
+                if fk_comment:
+                    schema_lines.append(f"  {col} {col_type}   -- {fk_comment}")
+                else:
+                    schema_lines.append(f"  {col} {col_type}")
+            
+            schema_lines.append(")")
+            schema_lines.append("")  # Empty line between tables
         
         # Add JOIN hints
         if linking_result["joins"]:
-            schema_lines.append("\nJOIN HINTS:")
+            schema_lines.append("JOIN HINTS:")
             schema_lines.extend([f"  {j}" for j in linking_result["joins"][:3]])
+            schema_lines.append("")
         
         # Add COLUMN WARNINGS based on question
         warnings = self._get_column_warnings(question)
         if warnings:
-            schema_lines.append("\nCOMMON MISTAKES TO AVOID:")
+            schema_lines.append("IMPORTANT:")
             schema_lines.extend([f"  - {w}" for w in warnings])
         
-        # Add final reminder
-        schema_lines.append("\nONLY use columns listed above. Do NOT invent column names.")
-        
         return "\n".join(schema_lines)
+    
+    def _get_column_type(self, col_name: str) -> str:
+        """Get column data type based on naming convention."""
+        if col_name.endswith("_sk"):
+            return "BIGINT"
+        elif col_name.endswith("_id"):
+            return "VARCHAR"
+        elif col_name.endswith("_date"):
+            return "DATE"
+        elif col_name.endswith("_name") or col_name.endswith("_desc"):
+            return "VARCHAR"
+        elif col_name.endswith("_price") or col_name.endswith("_amt") or col_name.endswith("_cost"):
+            return "DECIMAL"
+        elif col_name.endswith("_count") or col_name.endswith("_quantity"):
+            return "INTEGER"
+        elif "year" in col_name or "month" in col_name or "day" in col_name:
+            return "BIGINT"
+        else:
+            return "VARCHAR"
+    
+    def _get_fk_comment(self, table_name: str, col_name: str) -> str:
+        """Get FK comment for column."""
+        fk_mappings = {
+            "c_current_cdemo_sk": "FK -> customer_demographics.cd_demo_sk",
+            "c_current_hdemo_sk": "FK -> household_demographics.hd_demo_sk",
+            "c_current_addr_sk": "FK -> customer_address.ca_address_sk",
+            "ss_sold_date_sk": "FK -> date_dim.d_date_sk",
+            "ss_item_sk": "FK -> item.i_item_sk",
+            "ss_customer_sk": "FK -> customer.c_customer_sk",
+            "ss_store_sk": "FK -> store.s_store_sk",
+            "ws_sold_date_sk": "FK -> date_dim.d_date_sk",
+            "ws_item_sk": "FK -> item.i_item_sk",
+            "ws_bill_customer_sk": "FK -> customer.c_customer_sk",
+            "ws_web_page_sk": "FK -> web_page.wp_web_page_sk",
+            "cs_sold_date_sk": "FK -> date_dim.d_date_sk",
+            "cs_item_sk": "FK -> item.i_item_sk",
+            "cs_bill_customer_sk": "FK -> customer.c_customer_sk",
+            "inv_date_sk": "FK -> date_dim.d_date_sk",
+            "inv_item_sk": "FK -> item.i_item_sk",
+            "inv_warehouse_sk": "FK -> warehouse.w_warehouse_sk",
+            "hd_income_band_sk": "FK -> income_band.ib_income_band_sk",
+        }
+        
+        # Check for PK
+        if col_name.endswith("_sk") and col_name.startswith(table_name[:2]):
+            return "PRIMARY KEY"
+        
+        return fk_mappings.get(col_name, "")
     
     def _get_column_warnings(self, question: str) -> List[str]:
         """Generate warnings about commonly confused columns based on question."""
