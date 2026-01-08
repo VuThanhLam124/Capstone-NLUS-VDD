@@ -495,46 +495,78 @@ class SchemaLinker:
         question_lower = question.lower()
         warnings = []
         
-        # ALWAYS add these common mistakes
-        warnings.append("DO NOT double prefix: sr_return_amt (NOT sr_sr_return_amt)")
-        warnings.append("Quarter: use d_qoy (NOT d_quarter)")
-        warnings.append("Day name: use d_day_name (NOT d_wday)")
+        # ============ CHANNEL DISAMBIGUATION (CRITICAL!) ============
+        # These sales channels are DIFFERENT and should NOT be confused:
+        # - store_sales (ss): Physical retail stores
+        # - web_sales (ws): Online website sales  
+        # - catalog_sales (cs): Mail-order catalog sales
         
-        # State confusion
-        if "state" in question_lower or "bang" in question_lower:
-            warnings.append("State: ca_state (customer_address), s_state (store). Use alias ca or s correctly!")
+        web_keywords = ["web", "online", "website", "internet", "trang web", "web_page", "wp_"]
+        catalog_keywords = ["catalog", "catalogue", "danh mục", "mail order", "call_center", "cc_"]
+        store_keywords = ["store", "cửa hàng", "retail", "shop", "s_store"]
         
-        # Gender confusion  
-        if "gender" in question_lower or "giới tính" in question_lower:
-            warnings.append("Gender is in cd_gender (customer_demographics), NOT in customer")
+        has_web = any(kw in question_lower for kw in web_keywords)
+        has_catalog = any(kw in question_lower for kw in catalog_keywords)
+        has_store = any(kw in question_lower for kw in store_keywords)
         
-        # Weekend confusion
-        if "weekend" in question_lower or "cuối tuần" in question_lower:
-            warnings.append("Use d_weekend = 'Y' for weekends (not d_weekday)")
+        if has_web:
+            warnings.append("CHANNEL: 'web/online' -> USE web_sales (ws), web_returns (wr), web_page (wp)")
+            warnings.append("   DO NOT use catalog_sales for web questions!")
+        elif has_catalog:
+            warnings.append("CHANNEL: 'catalog/mail' -> USE catalog_sales (cs), catalog_returns (cr)")
+            warnings.append("   DO NOT use web_sales for catalog questions!")
+        elif has_store:
+            warnings.append("CHANNEL: 'store/cửa hàng' -> USE store_sales (ss), store_returns (sr)")
+        
+        # ============ TABLE-COLUMN OWNERSHIP (CRITICAL!) ============
+        # These columns are often confused between tables:
+        
+        # Gender confusion - VERY COMMON ERROR
+        if "gender" in question_lower or "giới tính" in question_lower or "nam" in question_lower or "nữ" in question_lower:
+            warnings.append("GENDER: cd_gender is in customer_demographics (cd), NOT in customer (c)")
+            warnings.append("   Use: JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk")
+            warnings.append("   Then: cd.cd_gender (NOT c.c_gender)")
+        
+        # Marital status confusion - VERY COMMON ERROR  
+        if "hôn nhân" in question_lower or "marital" in question_lower or "ly hôn" in question_lower or "divorce" in question_lower:
+            warnings.append("MARITAL: cd_marital_status is in customer_demographics (cd), NOT in household_demographics (hd)")
+            warnings.append("   Use: JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk")
+            warnings.append("   Values: 'S'=Single, 'M'=Married, 'D'=Divorced, 'W'=Widowed")
         
         # Credit rating confusion
         if "credit" in question_lower or "tín dụng" in question_lower:
-            warnings.append("Credit rating is cd_credit_rating (customer_demographics), NOT in customer")
+            warnings.append("CREDIT: cd_credit_rating is in customer_demographics (cd), NOT in customer")
+            warnings.append("   Values: 'Low Risk', 'Good', 'High Risk', etc.")
         
         # Vehicle count confusion
-        if "vehicle" in question_lower or "xe" in question_lower:
-            warnings.append("Vehicle count is hd_vehicle_count (household_demographics), NOT in customer")
+        if "vehicle" in question_lower or "xe" in question_lower or "ô tô" in question_lower:
+            warnings.append("VEHICLE: hd_vehicle_count is in household_demographics (hd), NOT in customer")
+            warnings.append("   Use: JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk")
+        
+        # Dependent count confusion
+        if "phụ thuộc" in question_lower or "dependent" in question_lower:
+            warnings.append("DEPENDENTS: cd_dep_count (customer_demographics) or hd_dep_count (household)")
+            
+        # ============ COMMON SYNTAX ERRORS ============
+        warnings.append("SYNTAX: DO NOT double prefix columns (sr_return_amt, NOT sr_sr_return_amt)")
+        warnings.append("DATE: Quarter=d_qoy, Day name=d_day_name, Weekend=d_weekend='Y'")
+        
+        # State confusion
+        if "state" in question_lower or "bang" in question_lower:
+            warnings.append("STATE: ca_state (customer_address) vs s_state (store) vs w_state (warehouse)")
         
         # URL confusion
         if "url" in question_lower:
-            warnings.append("URL is wp_url (web_page), NOT in web_sales")
+            warnings.append("URL: wp_url is in web_page (wp), NOT in web_sales")
         
-        # Quantity confusion for inventory
-        if "tồn kho" in question_lower or "inventory" in question_lower:
-            warnings.append("Use inv_quantity_on_hand (NOT 'quantity') for inventory")
-        
-        # Return columns confusion
-        if "return" in question_lower or "trả hàng" in question_lower:
-            warnings.append("Return columns: sr_item_sk, sr_return_amt (NOT sr_sr_return_amt)")
+        # Inventory confusion
+        if "tồn kho" in question_lower or "inventory" in question_lower or "kho" in question_lower:
+            warnings.append("INVENTORY: Use inv_quantity_on_hand from inventory (inv)")
+            warnings.append("   JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk for warehouse info")
         
         # Year/date confusion
-        if "năm" in question_lower or "year" in question_lower:
-            warnings.append("Always JOIN date_dim d ON *_date_sk = d.d_date_sk to filter by d_year")
+        if "năm" in question_lower or "year" in question_lower or "quý" in question_lower or "quarter" in question_lower:
+            warnings.append("DATE: Always JOIN date_dim d ON *_sold_date_sk = d.d_date_sk to filter by d_year")
         
         return warnings
 
