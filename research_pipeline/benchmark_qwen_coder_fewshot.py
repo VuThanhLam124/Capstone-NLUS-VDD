@@ -16,12 +16,16 @@ import re
 import sys
 import time
 import json
+import multiprocessing
 from pathlib import Path
 from typing import List, Dict, Tuple
 from datetime import datetime
 
 import pandas as pd
 import duckdb
+
+# Fix vLLM CUDA multiprocessing issue
+multiprocessing.set_start_method('spawn', force=True)
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
