@@ -52,6 +52,8 @@ def parse_args():
     parser.add_argument("--skip-train", action="store_true", help="Skip training, only benchmark")
     parser.add_argument("--easy", action="store_true", help="Use easy test set (test_easy.csv)")
     parser.add_argument("--few-shot", type=int, default=0, help="Number of few-shot examples (0-3)")
+    parser.add_argument("--base-model", type=str, default=None, 
+                        help="Use base model directly (e.g., Qwen/Qwen2.5-3B-Instruct) instead of adapter")
     
     return parser.parse_args()
 
@@ -451,7 +453,9 @@ def benchmark_model(args, tokenizer, model):
     print(f"Exec Match: {correct}/{total} ({100*correct/total:.1f}%)")
     
     # Save results
-    results_path = Path(args.output) / "benchmark_results.json"
+    results_dir = Path(args.output)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    results_path = results_dir / "benchmark_results.json"
     with open(results_path, 'w') as f:
         json.dump({
             "valid_sql": valid_count,
@@ -473,6 +477,7 @@ def main():
     print(f"Train data: {args.train_data}")
     print(f"Test data: {args.test_data}")
     print(f"Adapter: {args.adapter}")
+    print(f"Base model only: {args.base_model}")
     print(f"Output: {args.output}")
     print(f"Epochs: {args.epochs}")
     print(f"Skip train: {args.skip_train}")
@@ -485,15 +490,6 @@ def main():
     print(f"\nGPU: {torch.cuda.get_device_name(0)}")
     print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
     
-    # Load base model and adapter
-    peft_config = PeftConfig.from_pretrained(args.adapter)
-    base_model_id = peft_config.base_model_name_or_path
-    print(f"\nBase model: {base_model_id}")
-    
-    tokenizer = AutoTokenizer.from_pretrained(args.adapter, trust_remote_code=True)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
@@ -501,17 +497,42 @@ def main():
         bnb_4bit_use_double_quant=True,
     )
     
-    model = AutoModelForCausalLM.from_pretrained(
-        base_model_id,
-        quantization_config=bnb_config,
-        device_map="auto",
-        trust_remote_code=True,
-    )
-    
-    if len(tokenizer) != model.get_input_embeddings().weight.shape[0]:
-        model.resize_token_embeddings(len(tokenizer))
-    
-    model = PeftModel.from_pretrained(model, args.adapter, is_trainable=not args.skip_train)
+    # Load model - either base model or adapter
+    if args.base_model:
+        # Use base model directly (no adapter)
+        print(f"\nLoading BASE MODEL: {args.base_model}")
+        tokenizer = AutoTokenizer.from_pretrained(args.base_model, trust_remote_code=True)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        
+        model = AutoModelForCausalLM.from_pretrained(
+            args.base_model,
+            quantization_config=bnb_config,
+            device_map="auto",
+            trust_remote_code=True,
+        )
+    else:
+        # Load adapter on top of base model
+        peft_config = PeftConfig.from_pretrained(args.adapter)
+        base_model_id = peft_config.base_model_name_or_path
+        print(f"\nBase model: {base_model_id}")
+        print(f"Loading adapter: {args.adapter}")
+        
+        tokenizer = AutoTokenizer.from_pretrained(args.adapter, trust_remote_code=True)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        
+        model = AutoModelForCausalLM.from_pretrained(
+            base_model_id,
+            quantization_config=bnb_config,
+            device_map="auto",
+            trust_remote_code=True,
+        )
+        
+        if len(tokenizer) != model.get_input_embeddings().weight.shape[0]:
+            model.resize_token_embeddings(len(tokenizer))
+        
+        model = PeftModel.from_pretrained(model, args.adapter, is_trainable=not args.skip_train)
     
     # Phase 1: Training
     if not args.skip_train:
