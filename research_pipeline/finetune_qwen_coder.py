@@ -81,13 +81,13 @@ def parse_args():
                         help="Output directory for finetuned model")
     
     # Training params
-    parser.add_argument("--epochs", type=int, default=3, help="Number of epochs")
-    parser.add_argument("--batch-size", type=int, default=1, help="Batch size (use 1 for 48GB GPU)")
-    parser.add_argument("--grad-accum", type=int, default=16, help="Gradient accumulation steps")
-    parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate")
-    parser.add_argument("--max-seq-length", type=int, default=2048, help="Max sequence length")
-    parser.add_argument("--lora-r", type=int, default=16, help="LoRA rank")
-    parser.add_argument("--lora-alpha", type=int, default=32, help="LoRA alpha")
+    parser.add_argument("--epochs", type=int, default=1, help="Number of epochs")
+    parser.add_argument("--batch-size", type=int, default=4, help="Batch size (4 for 48GB GPU)")
+    parser.add_argument("--grad-accum", type=int, default=4, help="Gradient accumulation steps")
+    parser.add_argument("--lr", type=float, default=2e-5, help="Learning rate")
+    parser.add_argument("--max-seq-length", type=int, default=1024, help="Max sequence length")
+    parser.add_argument("--lora-r", type=int, default=8, help="LoRA rank")
+    parser.add_argument("--lora-alpha", type=int, default=16, help="LoRA alpha")
     
     # Benchmark params
     parser.add_argument("--skip-train", action="store_true", help="Skip training, only benchmark")
@@ -349,7 +349,7 @@ def train_model(args, model, tokenizer):
         gradient_checkpointing_kwargs={"use_reentrant": False},
         max_grad_norm=0.3,
         dataset_text_field="text",
-        report_to="tensorboard",
+        report_to="none",
     )
     
     # Trainer
