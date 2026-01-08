@@ -50,6 +50,8 @@ def parse_args():
     # Benchmark params
     parser.add_argument("--max-test-samples", type=int, default=None, help="Max test samples")
     parser.add_argument("--skip-train", action="store_true", help="Skip training, only benchmark")
+    parser.add_argument("--easy", action="store_true", help="Use easy test set (test_easy.csv)")
+    parser.add_argument("--few-shot", type=int, default=0, help="Number of few-shot examples (0-3)")
     
     return parser.parse_args()
 
@@ -189,6 +191,30 @@ def extract_sql(text: str) -> str:
     
     return text.strip()
 
+def postprocess_sql(sql: str) -> str:
+    """Fix common SQL generation errors"""
+    # Fix TOP N -> LIMIT N (SQL Server to DuckDB)
+    top_match = re.search(r'\bSELECT\s+TOP\s+(\d+)\b', sql, re.IGNORECASE)
+    if top_match:
+        n = top_match.group(1)
+        sql = re.sub(r'\bSELECT\s+TOP\s+\d+\b', 'SELECT', sql, flags=re.IGNORECASE)
+        if 'LIMIT' not in sql.upper():
+            sql = sql.rstrip(';').strip() + f' LIMIT {n};'
+    
+    # Fix getdate() -> CURRENT_DATE
+    sql = re.sub(r'\bgetdate\s*\(\s*\)', 'CURRENT_DATE', sql, flags=re.IGNORECASE)
+    
+    # Fix CHARINDEX -> POSITION
+    sql = re.sub(r'\bCHARINDEX\s*\(\s*([^,]+),\s*([^)]+)\)', r'POSITION(\1 IN \2)', sql, flags=re.IGNORECASE)
+    
+    # Fix ISNULL -> COALESCE
+    sql = re.sub(r'\bISNULL\s*\(', 'COALESCE(', sql, flags=re.IGNORECASE)
+    
+    # Fix DATEPART -> EXTRACT
+    sql = re.sub(r'\bDATEPART\s*\(\s*(\w+)\s*,\s*([^)]+)\)', r'EXTRACT(\1 FROM \2)', sql, flags=re.IGNORECASE)
+    
+    return sql
+
 def generate_sql(prompt: str, tokenizer, model) -> str:
     inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=8192).to(model.device)
     with torch.no_grad():
@@ -201,7 +227,8 @@ def generate_sql(prompt: str, tokenizer, model) -> str:
             repetition_penalty=1.2,
         )
     gen_ids = output_ids[0][inputs["input_ids"].shape[1]:]
-    return extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
+    raw_sql = extract_sql(tokenizer.decode(gen_ids, skip_special_tokens=True))
+    return postprocess_sql(raw_sql)
 
 # ========== TPC-DS SCHEMA (Compact) ==========
 TPCDS_SCHEMA = """
@@ -289,11 +316,55 @@ TABLE ship_mode (sm_ship_mode_sk BIGINT, sm_ship_mode_id VARCHAR, sm_type VARCHA
 TABLE household_demographics (hd_demo_sk BIGINT, hd_income_band_sk BIGINT, hd_buy_potential VARCHAR, hd_dep_count BIGINT, hd_vehicle_count INTEGER)
 TABLE income_band (ib_income_band_sk BIGINT, ib_lower_bound BIGINT, ib_upper_bound INTEGER)"""
 
-def build_simple_prompt(question: str, tokenizer) -> str:
-    """Build prompt matching training data format"""
-    system = "You are an expert SQL writer for DuckDB (TPC-DS schema).\nIMPORTANT: Use ONLY the exact table and column names shown in SCHEMA.\nOutput ONLY valid SQL ending with semicolon. No explanations."
+# Few-shot examples
+FEW_SHOT_EXAMPLES = [
+    {
+        "question": "Năm 2002 thì kênh Store mang về bao nhiêu tiền?",
+        "sql": """SELECT d.d_year, SUM(ss.ss_net_paid) as total_revenue
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE d.d_year = 2002
+GROUP BY d.d_year;"""
+    },
+    {
+        "question": "Liệt kê top 5 sản phẩm bán chạy nhất theo số lượng.",
+        "sql": """SELECT i.i_product_name, SUM(ss.ss_quantity) as total_qty
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+GROUP BY i.i_product_name
+ORDER BY total_qty DESC
+LIMIT 5;"""
+    },
+    {
+        "question": "Tổng doanh thu theo từng bang của khách hàng.",
+        "sql": """SELECT ca.ca_state, SUM(ss.ss_net_paid) as revenue
+FROM store_sales ss
+JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+GROUP BY ca.ca_state
+ORDER BY revenue DESC;"""
+    }
+]
+
+def build_simple_prompt(question: str, tokenizer, num_few_shot: int = 0) -> str:
+    """Build prompt matching training data format with optional few-shot examples"""
+    system = """You are an expert SQL writer for DuckDB (TPC-DS schema).
+CRITICAL RULES:
+1. Use ONLY exact table and column names from SCHEMA
+2. Use LIMIT N (NOT "TOP N" - that's SQL Server syntax)
+3. Use CURRENT_DATE (NOT getdate())
+4. JOIN dimension tables properly with _sk foreign keys
+Output ONLY valid SQL ending with semicolon. No explanations."""
     
-    user = f"SCHEMA:\n{TPCDS_SCHEMA_COMPACT}\n\nQUESTION:\n{question}\n\nSQL:"
+    # Build few-shot section
+    few_shot_text = ""
+    if num_few_shot > 0:
+        examples = FEW_SHOT_EXAMPLES[:num_few_shot]
+        few_shot_text = "\n\nEXAMPLES:\n"
+        for i, ex in enumerate(examples, 1):
+            few_shot_text += f"\nQ{i}: {ex['question']}\nSQL{i}: {ex['sql']}\n"
+    
+    user = f"SCHEMA:\n{TPCDS_SCHEMA_COMPACT}{few_shot_text}\n\nQUESTION:\n{question}\n\nSQL:"
     
     return tokenizer.apply_chat_template(
         [{"role": "system", "content": system}, {"role": "user", "content": user}],
@@ -308,12 +379,18 @@ def benchmark_model(args, tokenizer, model):
     # Setup DB
     con = setup_db(args.db)
     
-    # Load test data
-    test_df = pd.read_csv(args.test_data)
+    # Load test data (use easy set if --easy flag)
+    test_path = args.test_data
+    if args.easy:
+        test_path = "research_pipeline/datasets/test_easy.csv"
+        print(f"Using EASY test set: {test_path}")
+    
+    test_df = pd.read_csv(test_path)
     test_df = test_df.dropna(subset=["Transcription", "SQL Ground Truth"])
     if args.max_test_samples:
         test_df = test_df.head(args.max_test_samples)
     print(f"Test samples: {len(test_df)}")
+    print(f"Few-shot examples: {args.few_shot}")
     
     # Run benchmark
     correct = 0
@@ -326,7 +403,7 @@ def benchmark_model(args, tokenizer, model):
         question = row["Transcription"]
         gt_sql = row["SQL Ground Truth"]
         
-        prompt = build_simple_prompt(question, tokenizer)
+        prompt = build_simple_prompt(question, tokenizer, num_few_shot=args.few_shot)
         
         start = time.time()
         gen_sql = generate_sql(prompt, tokenizer, model)

@@ -1,0 +1,165 @@
+ID,Transcription,SQL Ground Truth
+68,Tính tổng doanh thu từ kênh Catalog cho những khách hàng sống ở bang 'Texas' (TX),"SELECT SUM(cs.cs_sales_price)
+FROM catalog_sales cs
+JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+WHERE ca.ca_state = 'TX';"
+61,Liệt kê khách hàng có từ 2 xe ô tô trở lên (Vehicle count).,"SELECT c.c_first_name, hd.hd_vehicle_count 
+FROM customer c 
+JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk 
+WHERE hd.hd_vehicle_count > 2;"
+276,Bạn hãy liệt kê danh sách tên các nhà sản xuất có mặt hàng thuộc danh mục Music hiện đang có sẵn trong kho tại bang Kansas để chuẩn bị cho đợt kiểm hàng tới,"SELECT DISTINCT i.i_manufact
+FROM inventory inv
+JOIN item i ON inv.inv_item_sk = i.i_item_sk
+JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
+WHERE i.i_category = 'Music' AND w.w_state = 'KS' AND inv.inv_quantity_on_hand > 0;"
+329,Check giùm tôi tồn kho của Music ở chi nhánh KS.,"SELECT 
+    w.w_warehouse_name,
+    w.w_state,
+    i.i_category,
+    SUM(inv.inv_quantity_on_hand) as total_inventory
+FROM inventory inv
+JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
+JOIN item i ON inv.inv_item_sk = i.i_item_sk
+WHERE i.i_category = 'Music'
+  AND w.w_state = 'KS'
+GROUP BY w.w_warehouse_name, w.w_state, i.i_category
+ORDER BY total_inventory DESC;"
+169,Tính trung bình số lượng sản phẩm mỗi đơn hàng trên các trang web có URL chứa từ 'sales',"SELECT AVG(ws_quantity)
+FROM web_sales ws
+JOIN web_page wp ON ws.ws_web_page_sk = wp.wp_web_page_sk
+WHERE wp.wp_url LIKE '%sales%';"
+353,Năm 2001 thì kênh Store mang về bao nhiêu tiền?,"SELECT 
+    d.d_year,
+    'Store' as channel,
+    SUM(ss.ss_net_paid) as total_revenue,
+    COUNT(*) as total_transactions
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE d.d_year = 2001
+GROUP BY d.d_year;"
+79,"Trong quý 1 năm 2000, loại hàng (category) nào bán chạy nhất trên trang web?","SELECT i.i_category, SUM(ws.ws_quantity) AS total_qty
+FROM web_sales ws
+JOIN item i ON ws.ws_item_sk = i.i_item_sk
+JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
+WHERE d.d_year = 2000 AND d.d_qoy = 1
+GROUP BY i.i_category
+ORDER BY total_qty DESC
+LIMIT 1;"
+77,Mấy món đồ nào bị trả lại nhiều nhất vì lý do 'không giống mô tả' (not as described)?,"SELECT i.i_item_desc, COUNT(*) AS return_times
+FROM store_returns sr
+JOIN item i ON sr.sr_item_sk = i.i_item_sk
+JOIN reason r ON sr.sr_reason_sk = r.r_reason_sk
+WHERE r.r_reason_desc ILIKE '%not as described%'
+GROUP BY i.i_item_desc
+ORDER BY return_times DESC;"
+138,"Trong năm 2001, thương hiệu (brand) nào của mặt hàng 'Men' bán chạy nhất tại cửa hàng?","SELECT i.i_brand, SUM(ss.ss_quantity) AS total_sold
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE i.i_category = 'Men' AND d.d_year = 2001
+GROUP BY i.i_brand
+ORDER BY total_sold DESC
+LIMIT 1;"
+197,Liệt kê danh sách năm khách hàng có xếp hạng tín dụng thấp nhất nhưng lại thực hiện nhiều giao dịch trả hàng nhất tại các trung tâm hỗ trợ trực tuyến.,"SELECT c.c_first_name, c.c_last_name, COUNT(wr.wr_item_sk) AS return_count
+FROM web_returns wr
+JOIN customer c ON wr.wr_refunded_customer_sk = c.c_customer_sk
+JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+WHERE cd.cd_credit_rating = 'Low Risk'
+GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name
+ORDER BY return_count DESC LIMIT 5;"
+261,Hãy cho tôi biết lượng tồn kho trung bình của các mặt hàng thời trang 'Women' vào những ngày cuối tuần trong tháng mười hai năm 2001,"SELECT AVG(inv.inv_quantity_on_hand)
+FROM inventory inv
+JOIN item i ON inv.inv_item_sk = i.i_item_sk
+JOIN date_dim d ON inv.inv_date_sk = d.d_date_sk
+WHERE i.i_category = 'Women' AND d.d_weekend = 'Y' 
+  AND d.d_year = 2001 AND d.d_moy = 12;"
+98,"Thống kê xem khách hàng nam và nữ, nhóm nào hay đi mua sắm ở cửa hàng hơn vào ngày Thứ Hai?","SELECT cd.cd_gender, COUNT(*) AS visit_count
+FROM store_sales ss
+JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE d.d_day_name = 'Monday'
+GROUP BY cd.cd_gender;"
+45,Hiển thị thông tin tên đăng nhập của những khách hàng đã ly hôn và đang có từ ba người phụ thuộc trở lên trong gia đình.,SELECT c_login FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_marital_status = 'D' AND cd_dep_count >= 3;
+193,Tính giúp tôi tổng số lượng hàng tồn kho của các sản phẩm có màu sắc là xanh dương và thuộc sản phẩm váy,"SELECT SUM(inv.inv_quantity_on_hand)
+FROM inventory inv
+JOIN item i ON inv.inv_item_sk = i.i_item_sk
+WHERE i.i_color = 'blue' AND i.i_class = 'dresses';"
+214,Hãy tính tổng lợi nhuận từ các cửa hàng do quản lý có tên bắt đầu bằng chữ 'W' điều hành trong suốt cả năm 2001,"SELECT SUM(ss.ss_net_profit)
+FROM store_sales ss
+JOIN store s ON ss.ss_store_sk = s.s_store_sk
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+WHERE s.s_manager LIKE 'W%' AND d.d_year = 2001;"
+199,Bạn hãy xác định xem nhà sản xuất nào có nhiều sản phẩm được liệt kê trên các trang Catalog nhất và tổng số lượng đơn hàng tương ứng của họ là bao nhiêu.,"SELECT i.i_manufact, COUNT(cs.cs_order_number) AS order_count
+FROM catalog_sales cs
+JOIN item i ON cs.cs_item_sk = i.i_item_sk
+GROUP BY i.i_manufact
+ORDER BY COUNT(DISTINCT i.i_item_sk) DESC LIMIT 1;"
+571,Check giùm tôi tồn kho của Jewelry ở chi nhánh IL.,"SELECT 
+    w.w_warehouse_name,
+    w.w_state,
+    i.i_category,
+    SUM(inv.inv_quantity_on_hand) as total_inventory
+FROM inventory inv
+JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
+JOIN item i ON inv.inv_item_sk = i.i_item_sk
+WHERE i.i_category = 'Jewelry'
+  AND w.w_state = 'IL'
+GROUP BY w.w_warehouse_name, w.w_state, i.i_category
+ORDER BY total_inventory DESC;"
+650,Check giùm tôi tồn kho của Home ở chi nhánh GA.,"SELECT 
+  w.w_warehouse_name,
+  w.w_state,
+  i.i_category,
+  SUM(inv.inv_quantity_on_hand) as total_inventory
+ FROM inventory inv
+ JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
+ JOIN item i ON inv.inv_item_sk = i.i_item_sk
+ WHERE i.i_category = 'Home'
+  AND w.w_state = 'GA'
+ GROUP BY w.w_warehouse_name, w.w_state, i.i_category
+ ORDER BY total_inventory DESC;"
+466,Năm 2002 thì kênh Web mang về bao nhiêu tiền?,"SELECT 
+    d.d_year,
+    'Web' as channel,
+    SUM(ws.ws_net_paid) as total_revenue,
+    COUNT(*) as total_transactions
+FROM web_sales ws
+JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
+WHERE d.d_year = 2002
+GROUP BY d.d_year;"
+232,Hãy tìm giúp tôi tổng mức tổn thất ròng từ việc trả hàng qua Catalog đối với mặt hàng có mã số sản phẩm là một trăm năm mươi tư,"SELECT SUM(cr_net_loss)
+FROM catalog_returns
+WHERE cr_item_sk = 154;"
+216,So sánh tổng số lượng sản phẩm bán ra trong các ngày lễ so với các ngày bình thường để đánh giá sức mua của khách hàng,"SELECT d.d_holiday, SUM(ss.ss_quantity)
+FROM store_sales ss
+JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
+GROUP BY d.d_holiday;"
+166,Trung tâm hỗ trợ (Call Center) nào ở bang 'NY' đã xử lý doanh thu cao nhất cho kênh Catalog?,"SELECT cc.cc_name, SUM(cs.cs_sales_price) AS revenue
+FROM catalog_sales cs
+JOIN call_center cc ON cs.cs_call_center_sk = cc.cc_call_center_sk
+WHERE cc.cc_state = 'NY'
+GROUP BY cc.cc_name
+ORDER BY revenue DESC LIMIT 1;"
+31,Tìm tên các sản phẩm thuộc danh mục Fashion có giá bán hiện tại lớn hơn một trăm đô la trong bảng hàng hóa,"SELECT i_product_name, i_current_price 
+FROM item 
+WHERE i_category = 'Fashion' AND i_current_price > 100;"
+110,Tìm khách hàng sống ở bang Texas (TX) mà có gia đình đông người (trên 4 người phụ thuộc).,"SELECT c.c_first_name, c.c_last_name
+FROM customer c
+JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
+JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
+WHERE ca.ca_state = 'TX' AND hd.hd_dep_count > 4;"
+24,Liệt kê các khách hàng có danh xưng là tiến sĩ và đến từ Việt Nam ,SELECT * FROM customer WHERE c_salutation = 'Dr.' AND c_birth_country = 'VN';
+40,Liệt kê thông tin các khách hàng nữ có mức ước tính mua sắm đạt mức tám điểm và có xếp hạng tín dụng ở mức ưu tú,"SELECT * FROM customer_demographics 
+WHERE cd_gender = 'F' AND cd_purchase_estimate = 8 AND cd_credit_rating = 'Elite'"
+209,Hãy cho tôi biết tổng doanh thu thu được từ các sản phẩm thuộc danh mục đồ điện tử đã được bán thông qua trang số năm trong cuốn danh mục Catalog,"SELECT SUM(cs.cs_sales_price)
+FROM catalog_sales cs
+JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk
+JOIN item i ON cs.cs_item_sk = i.i_item_sk
+WHERE cp.cp_catalog_page_number = 5 AND i.i_category = 'Electronics';"
+64,Tìm tên khách hàng đã trả lại hàng với tổng giá trị hoàn lại lớn nhất.,"SELECT c.c_first_name, c.c_last_name, SUM(sr.sr_return_amt) as total_returned_value
+FROM customer c
+JOIN store_returns sr ON c.c_customer_sk = sr.sr_customer_sk
+GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name
+ORDER BY total_returned_value DESC
+LIMIT 1;"
