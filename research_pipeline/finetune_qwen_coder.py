@@ -259,14 +259,22 @@ def load_model_and_tokenizer(args):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     
+    # Check if flash attention is available
+    try:
+        import flash_attn
+        attn_impl = "flash_attention_2"
+        print("Using FlashAttention2")
+    except ImportError:
+        attn_impl = "eager"
+        print("FlashAttention2 not available, using eager attention")
+    
     # Load model
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
         quantization_config=bnb_config,
         device_map="auto",
         trust_remote_code=True,
-        torch_dtype=torch.bfloat16,
-        attn_implementation="flash_attention_2" if torch.cuda.get_device_capability()[0] >= 8 else "eager",
+        attn_implementation=attn_impl,
     )
     
     print(f"Model loaded! Memory: {get_gpu_memory()}")
@@ -341,7 +349,6 @@ def train_model(args, model, tokenizer):
         gradient_checkpointing_kwargs={"use_reentrant": False},
         max_grad_norm=0.3,
         dataset_text_field="text",
-        max_seq_length=args.max_seq_length,
         report_to="tensorboard",
     )
     
