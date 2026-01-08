@@ -109,7 +109,8 @@ TPCDS_TABLES = {
                    "i_current_price", "i_wholesale_cost", "i_brand_id", "i_brand", "i_class_id", 
                    "i_class", "i_category_id", "i_category", "i_manufact_id", "i_manufact",
                    "i_size", "i_color", "i_units", "i_container", "i_product_name"],
-        "keywords": ["item", "product", "sản phẩm", "brand", "thương hiệu", "category", "hàng hóa"],
+        "keywords": ["item", "product", "sản phẩm", "brand", "thương hiệu", "category", "hàng hóa",
+                    "váy", "dresses", "áo", "shirts", "quần", "pants", "jeans", "màu", "color", "class"],
     },
     "date_dim": {
         "alias": "d",
@@ -159,7 +160,7 @@ TPCDS_TABLES = {
         "alias": "cp",
         "columns": ["cp_catalog_page_sk", "cp_catalog_page_id", "cp_start_date_sk", "cp_end_date_sk",
                    "cp_department", "cp_catalog_number", "cp_catalog_page_number", "cp_description"],
-        "keywords": ["catalog page", "trang catalog", "catalog"],
+        "keywords": ["catalog page", "trang catalog", "catalog", "trang số", "page number", "cuốn danh mục", "danh mục catalog"],
     },
     "promotion": {
         "alias": "p",

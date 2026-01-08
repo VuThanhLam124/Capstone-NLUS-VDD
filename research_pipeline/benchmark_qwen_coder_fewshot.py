@@ -152,6 +152,36 @@ STATIC_FEWSHOT_EXAMPLES = [
         "question": "Khách hàng nào mua nhiều nhất trên web?",
         "sql": "SELECT c.c_customer_id, c.c_first_name, SUM(ws.ws_net_paid) as total FROM web_sales ws JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk GROUP BY c.c_customer_id, c.c_first_name ORDER BY total DESC LIMIT 5;"
     },
+    
+    # ===== ITEM CLASS (váy, áo, quần...) =====
+    {
+        "question": "Tồn kho của sản phẩm váy màu xanh dương",
+        "sql": "SELECT SUM(inv.inv_quantity_on_hand) FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk WHERE i.i_color = 'blue' AND i.i_class = 'dresses';"
+    },
+    {
+        "question": "Top 5 áo sơ mi bán chạy nhất",
+        "sql": "SELECT i.i_product_name, SUM(ss.ss_quantity) AS total FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_class = 'shirts' GROUP BY i.i_product_name ORDER BY total DESC LIMIT 5;"
+    },
+    {
+        "question": "Doanh thu từ quần jeans năm 2001",
+        "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_class = 'jeans' AND d.d_year = 2001;"
+    },
+    
+    # ===== CATALOG PAGE =====
+    {
+        "question": "Doanh thu từ trang số 5 trong catalog",
+        "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk WHERE cp.cp_catalog_page_number = 5;"
+    },
+    {
+        "question": "Sản phẩm Electronics bán qua trang catalog số 10",
+        "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk JOIN item i ON cs.cs_item_sk = i.i_item_sk WHERE cp.cp_catalog_page_number = 10 AND i.i_category = 'Electronics';"
+    },
+    
+    # ===== SALES_PRICE vs NET_PAID =====
+    {
+        "question": "Tổng giá bán (sales price) của catalog ở TX",
+        "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX';"
+    },
 ]
 
 
@@ -310,6 +340,22 @@ DATE_DIM TABLE (d):
 WEB_SALES TABLE (ws):
 - Customer: ws.ws_bill_customer_sk (NOT ws_customer_sk)
 
+=== REVENUE COLUMNS (IMPORTANT!) ===
+- ss_sales_price / ws_sales_price / cs_sales_price: Giá bán gốc (original selling price)
+- ss_net_paid / ws_net_paid / cs_net_paid: Tiền sau chiết khấu (after discount)
+- Khi hỏi "doanh thu" hoặc "tổng doanh thu" → dùng sales_price
+- Khi hỏi "tiền thu được" hoặc "net" → dùng net_paid
+
+=== ITEM TABLE (i) ===
+- i.i_category: Danh mục lớn (Women, Men, Shoes, Electronics, Music, Home, Sports, Jewelry, Children)
+- i.i_class: Loại sản phẩm cụ thể (dresses=váy, shirts=áo, pants=quần, jeans, blouses...)
+- i.i_color: Màu sắc (blue, red, white, black...)
+- "váy" → i.i_class = 'dresses'
+- "áo" → i.i_class = 'shirts' hoặc 'blouses'
+
+=== CATALOG PAGE ===
+- Khi hỏi về "trang số X trong catalog" → JOIN catalog_page cp, use cp.cp_catalog_page_number
+
 === CHANNEL RULES ===
 - "cửa hàng", "store", "retail" → store_sales (ss)
 - "online", "web", "website", "trực tuyến" → web_sales (ws)
@@ -323,10 +369,6 @@ WEB_SALES TABLE (ws):
 === STATE/LOCATION ===
 - Customer state: JOIN customer → customer_address, use ca.ca_state
 - Store state: JOIN store, use s.s_state
-
-=== CATEGORY ===
-- Category is in item table: i.i_category (e.g., 'Shoes', 'Women', 'Men', 'Home', 'Music', 'Sports')
-- NOT a separate category table
 
 Output ONLY the SQL query, no explanation."""
 
