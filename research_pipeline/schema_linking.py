@@ -397,8 +397,16 @@ class SchemaLinker:
         """
         linking_result = self.link_schema(question, top_k_tables=max_tables, top_k_columns=15)
         
-        # Build schema in TRAINING DATA FORMAT (multi-line with types + FK comments)
+        # Add ALIAS MAPPING first (prevent alias confusion)
         schema_lines = []
+        schema_lines.append("TABLE ALIASES (USE EXACTLY):")
+        for table_name in linking_result["tables"]:
+            if table_name in TPCDS_TABLES:
+                alias = TPCDS_TABLES[table_name]["alias"]
+                schema_lines.append(f"  {table_name} = {alias}")
+        schema_lines.append("")
+        
+        # Build schema in TRAINING DATA FORMAT (multi-line with types + FK comments)
         for table_name in linking_result["tables"]:
             if table_name not in TPCDS_TABLES:
                 continue
@@ -406,8 +414,8 @@ class SchemaLinker:
             table_info = TPCDS_TABLES[table_name]
             alias = table_info["alias"]
             
-            # Start table definition
-            schema_lines.append(f"TABLE {table_name} (")
+            # Start table definition with alias
+            schema_lines.append(f"TABLE {table_name} (alias: {alias})")
             
             # Add each column on separate line with type (match training format)
             for col in table_info["columns"]:
@@ -418,7 +426,6 @@ class SchemaLinker:
                 else:
                     schema_lines.append(f"  {col} {col_type}")
             
-            schema_lines.append(")")
             schema_lines.append("")  # Empty line between tables
         
         # Add JOIN hints
@@ -488,9 +495,14 @@ class SchemaLinker:
         question_lower = question.lower()
         warnings = []
         
+        # ALWAYS add these common mistakes
+        warnings.append("DO NOT double prefix: sr_return_amt (NOT sr_sr_return_amt)")
+        warnings.append("Quarter: use d_qoy (NOT d_quarter)")
+        warnings.append("Day name: use d_day_name (NOT d_wday)")
+        
         # State confusion
         if "state" in question_lower or "bang" in question_lower:
-            warnings.append("State is in ca_state (customer_address) or s_state (store), NOT in date_dim")
+            warnings.append("State: ca_state (customer_address), s_state (store). Use alias ca or s correctly!")
         
         # Gender confusion  
         if "gender" in question_lower or "giới tính" in question_lower:
@@ -518,7 +530,11 @@ class SchemaLinker:
         
         # Return columns confusion
         if "return" in question_lower or "trả hàng" in question_lower:
-            warnings.append("Return columns: sr_item_sk, sr_return_amt, sr_return_quantity (NOT return_item_sk)")
+            warnings.append("Return columns: sr_item_sk, sr_return_amt (NOT sr_sr_return_amt)")
+        
+        # Year/date confusion
+        if "năm" in question_lower or "year" in question_lower:
+            warnings.append("Always JOIN date_dim d ON *_date_sk = d.d_date_sk to filter by d_year")
         
         return warnings
 
