@@ -493,24 +493,24 @@ def run_benchmark(args):
                 # Get schema and join hints
                 schema_info = get_schema_for_tables(linked_tables)
                 join_hints = get_join_hints(linked_tables)
-            
-            # Build prompt
-            prompt = build_fewshot_prompt(
-                question=question,
-                schema_info=schema_info,
-                join_hints=join_hints,
-                examples=STATIC_FEWSHOT_EXAMPLES,
-                num_shots=num_shots
-            )
-            
-            # Generate
-            start_time = time.time()
-            if backend == "vllm":
-                response = generate_with_vllm(llm, prompt)
-            else:
-                response = generate_with_transformers(llm, prompt)
-            gen_time = time.time() - start_time
-            
+                
+                # Build prompt
+                prompt = build_fewshot_prompt(
+                    question=question,
+                    schema_info=schema_info,
+                    join_hints=join_hints,
+                    examples=STATIC_FEWSHOT_EXAMPLES,
+                    num_shots=num_shots
+                )
+                
+                # Generate
+                start_time = time.time()
+                if backend == "vllm":
+                    response = generate_with_vllm(llm, prompt)
+                else:
+                    response = generate_with_transformers(llm, prompt)
+                gen_time = time.time() - start_time
+                
                 # Extract SQL
                 pred_sql = extract_sql(response)
                 
@@ -526,7 +526,7 @@ def run_benchmark(args):
                 
                 if not exec_ok:
                     error_stats["execution_errors"] += 1
-                    log_f.write(f"❌ EXECUTION ERROR: {exec_msg}\n")
+                    log_f.write(f"EXECUTION ERROR: {exec_msg}\n")
             
                 # Compare results
                 match, match_msg = compare_results(pred_sql, gold_sql, args.db_path)
