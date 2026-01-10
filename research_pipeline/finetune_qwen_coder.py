@@ -47,6 +47,16 @@ from peft import (
 )
 from trl import SFTTrainer, SFTConfig
 
+# Monkey-patch DynamicCache for DeepSeek-Coder-V2 compatibility
+# DeepSeek uses old .seen_tokens attribute, but new transformers uses get_seq_length()
+try:
+    from transformers.cache_utils import DynamicCache
+    if not hasattr(DynamicCache, 'seen_tokens'):
+        DynamicCache.seen_tokens = property(lambda self: self.get_seq_length())
+        print("Patched DynamicCache.seen_tokens for DeepSeek compatibility")
+except ImportError:
+    pass
+
 # Import schema linking
 try:
     from schema_linking import SchemaLinker
@@ -476,31 +486,16 @@ def generate_sql(model, tokenizer, question: str, schema_linker=None, few_shot: 
     inputs = tokenizer([text], return_tensors="pt").to(model.device)
     
     with torch.no_grad():
-        # Try static cache for DeepSeek compatibility, fallback to no cache
-        try:
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=512,
-                temperature=0.1,
-                do_sample=True,
-                top_p=0.9,
-                repetition_penalty=1.05,
-                pad_token_id=tokenizer.eos_token_id,
-                use_cache=True,
-                cache_implementation="static",
-            )
-        except (AttributeError, TypeError):
-            # Fallback: disable cache for incompatible models
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=512,
-                temperature=0.1,
-                do_sample=True,
-                top_p=0.9,
-                repetition_penalty=1.05,
-                pad_token_id=tokenizer.eos_token_id,
-                use_cache=False,
-            )
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=512,
+            temperature=0.1,
+            do_sample=True,
+            top_p=0.9,
+            repetition_penalty=1.05,
+            pad_token_id=tokenizer.eos_token_id,
+            use_cache=True,  # KV cache enabled with DynamicCache patch
+        )
     
     response = tokenizer.decode(outputs[0][len(inputs.input_ids[0]):], skip_special_tokens=True)
     return postprocess_sql(response)
