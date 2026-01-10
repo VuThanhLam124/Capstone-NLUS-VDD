@@ -47,6 +47,13 @@ from peft import (
 )
 from trl import SFTTrainer, SFTConfig
 
+from business_rules import load_business_rules
+from prompt_assets import (
+    load_few_shot_examples,
+    load_full_schema,
+    load_valid_tables,
+)
+
 # Monkey-patch DynamicCache for DeepSeek-Coder-V2 compatibility
 # DeepSeek uses old cache API, but new transformers changed method names
 try:
@@ -123,80 +130,14 @@ def parse_args():
 
 
 # ========== TPC-DS SCHEMA ==========
-FULL_SCHEMA = """
--- Sales Channels (CHOOSE CORRECT ONE):
--- store_sales (ss): Physical retail store transactions
--- web_sales (ws): Online website transactions  
--- catalog_sales (cs): Mail-order catalog transactions
-
--- FACT TABLES:
-store_sales (ss_sold_date_sk, ss_item_sk, ss_customer_sk, ss_store_sk, ss_quantity, ss_sales_price, ss_net_paid, ss_net_profit)
-store_returns (sr_returned_date_sk, sr_item_sk, sr_customer_sk, sr_store_sk, sr_reason_sk, sr_return_quantity, sr_return_amt)
-web_sales (ws_sold_date_sk, ws_item_sk, ws_bill_customer_sk, ws_web_page_sk, ws_quantity, ws_sales_price, ws_net_paid, ws_net_profit)
-web_returns (wr_returned_date_sk, wr_item_sk, wr_refunded_customer_sk, wr_web_page_sk, wr_reason_sk, wr_return_quantity, wr_return_amt)
-catalog_sales (cs_sold_date_sk, cs_item_sk, cs_bill_customer_sk, cs_call_center_sk, cs_quantity, cs_sales_price, cs_net_paid, cs_net_profit)
-catalog_returns (cr_returned_date_sk, cr_item_sk, cr_refunded_customer_sk, cr_call_center_sk, cr_reason_sk, cr_return_quantity, cr_return_amount)
-inventory (inv_date_sk, inv_item_sk, inv_warehouse_sk, inv_quantity_on_hand)
-
--- DIMENSION TABLES:
-customer (c_customer_sk, c_customer_id, c_current_cdemo_sk, c_current_hdemo_sk, c_current_addr_sk, c_first_name, c_last_name, c_email_address)
-customer_demographics (cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_credit_rating, cd_dep_count)
-  -- NOTE: Gender, marital status, credit rating are HERE, not in customer!
-household_demographics (hd_demo_sk, hd_income_band_sk, hd_buy_potential, hd_dep_count, hd_vehicle_count)
-  -- NOTE: Vehicle count is HERE, not in customer!
-customer_address (ca_address_sk, ca_city, ca_county, ca_state, ca_zip, ca_country)
-item (i_item_sk, i_item_id, i_item_desc, i_current_price, i_brand, i_class, i_category, i_manufact, i_color, i_size, i_product_name)
-date_dim (d_date_sk, d_date, d_year, d_moy, d_dom, d_qoy, d_day_name, d_weekend)
-store (s_store_sk, s_store_name, s_manager, s_city, s_state)
-warehouse (w_warehouse_sk, w_warehouse_name, w_city, w_state)
-web_page (wp_web_page_sk, wp_url, wp_type)
-call_center (cc_call_center_sk, cc_name, cc_manager)
-reason (r_reason_sk, r_reason_desc)
-promotion (p_promo_sk, p_promo_name, p_discount_active)
-"""
+FULL_SCHEMA = load_full_schema()
 
 # Few-shot examples với channel disambiguation
-FEW_SHOT_EXAMPLES = [
-    {
-        "question": "Tính tổng doanh thu từ kênh web trong năm 2001",
-        "sql": """SELECT SUM(ws.ws_net_paid) AS total_revenue
-FROM web_sales ws
-JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
-WHERE d.d_year = 2001;"""
-    },
-    {
-        "question": "Thống kê khách hàng nam và nữ mua hàng tại cửa hàng trong quý 1 năm 2002",
-        "sql": """SELECT cd.cd_gender, COUNT(*) AS customer_count
-FROM store_sales ss
-JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
-JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-WHERE d.d_year = 2002 AND d.d_qoy = 1
-GROUP BY cd.cd_gender;"""
-    },
-    {
-        "question": "Tìm top 5 sản phẩm bị trả lại nhiều nhất qua catalog với lý do hư hỏng",
-        "sql": """SELECT i.i_product_name, SUM(cr.cr_return_quantity) AS total_returns
-FROM catalog_returns cr
-JOIN item i ON cr.cr_item_sk = i.i_item_sk
-JOIN reason r ON cr.cr_reason_sk = r.r_reason_sk
-WHERE r.r_reason_desc ILIKE '%damage%'
-GROUP BY i.i_product_name
-ORDER BY total_returns DESC
-LIMIT 5;"""
-    },
-]
+FEW_SHOT_EXAMPLES = load_few_shot_examples("finetune_qwen_coder")
 
 
 # ========== VALID TABLES ==========
-VALID_TABLES = {
-    'store_sales', 'store_returns', 'web_sales', 'web_returns', 
-    'catalog_sales', 'catalog_returns', 'inventory',
-    'customer', 'customer_address', 'customer_demographics',
-    'item', 'date_dim', 'time_dim', 'store', 'warehouse',
-    'web_site', 'web_page', 'call_center', 'catalog_page',
-    'promotion', 'reason', 'ship_mode', 'household_demographics', 'income_band'
-}
+VALID_TABLES = load_valid_tables()
 
 
 def get_gpu_memory():
@@ -461,69 +402,14 @@ def build_prompt(question: str, schema_linker=None, few_shot: int = 0) -> str:
     else:
         schema = FULL_SCHEMA
     
-    system_rules = """Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.
-
-=== CRITICAL RULES (ĐỌC KỸ!) ===
-1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu (VD: không thêm d.d_year nếu không hỏi về năm)
-2. "bán chạy nhất" = SUM(quantity), KHÔNG phải SUM(sales_price)
-3. "trả lại hàng" (không nói rõ channel) → mặc định dùng store_returns (sr)
-4. "từ X trở lên" = >= X (VD: "từ 2 xe trở lên" = hd_vehicle_count >= 2)
-5. Chỉ SELECT các columns cần thiết, không thêm columns thừa, không bịa ra cột không có trong schema
-
-=== CRITICAL COLUMN MAPPINGS ===
-CUSTOMER TABLE:
-- Email: c.c_email_address (NOT c_email)
-- Name: c.c_first_name, c.c_last_name
-
-CUSTOMER_DEMOGRAPHICS TABLE (cd):  
-- Gender: cd.cd_gender
-- Marital status: cd.cd_marital_status ('S'=Single, 'M'=Married, 'D'=Divorced)
-- Credit rating: cd.cd_credit_rating
-- Dependents: cd.cd_dep_count
-
-HOUSEHOLD_DEMOGRAPHICS TABLE (hd):
-- Vehicle count: hd.hd_vehicle_count
-- Dependents: hd.hd_dep_count  
-
-STORE_SALES TABLE (ss):
-- Tax: ss.ss_ext_tax (NOT ss_tax)
-- Revenue: ss.ss_net_paid
-- Demographics: ss.ss_cdemo_sk (direct link to customer_demographics)
-
-DATE_DIM TABLE (d):
-- Quarter: d.d_qoy (NOT d_quarter)
-- Day name: d.d_day_name
-- NO d_state column - use customer_address.ca_state instead
-
-WEB_SALES TABLE (ws):
-- Customer: ws.ws_bill_customer_sk (NOT ws_customer_sk)
-
-=== REVENUE vs QUANTITY ===
-- "bán chạy nhất", "bán nhiều nhất" → SUM(quantity)
-- "doanh thu", "tổng doanh thu" → SUM(sales_price)
-- "tiền thu được", "net" → SUM(net_paid)
-
-=== ITEM TABLE (i) ===
-- i.i_category: Danh mục lớn (Women, Men, Shoes, Electronics, Music, Home, Sports, Jewelry, Children)
-- i.i_class: Loại sản phẩm cụ thể (dresses=váy, shirts=áo, pants=quần)
-- "váy" → i.i_class = 'dresses'
-
-=== CHANNEL RULES ===
-- "cửa hàng", "store", "retail" → store_sales (ss)
-- "online", "web", "website", "trực tuyến" → web_sales (ws)
-- "catalog", "mail order" → catalog_sales (cs)
-
-=== RETURN RULES ===
-- "trả lại hàng" (không rõ channel) → store_returns (sr) [MẶC ĐỊNH]
-- "trả hàng online/web" → web_returns (wr)
-- "trả hàng catalog" → catalog_returns (cr)
-
-=== DEMOGRAPHICS JOIN ===
-- Khi cần demographics từ store_sales: dùng ss.ss_cdemo_sk trực tiếp
-  VD: JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
-- KHÔNG cần đi qua customer table nếu chỉ cần demographics
-
-Output ONLY the SQL query, no explanation."""
+    rules = load_business_rules()
+    system_rules = "\n".join(
+        [
+            "Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.",
+            "",
+            rules,
+        ]
+    )
 
     prompt_parts = [
         system_rules,

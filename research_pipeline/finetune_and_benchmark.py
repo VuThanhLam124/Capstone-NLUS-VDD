@@ -31,6 +31,8 @@ except ImportError:
     HAS_SCHEMA_LINKING = False
     print("WARNING: schema_linking.py not found - using full schema")
 
+from prompt_assets import load_few_shot_examples, load_valid_tables
+
 # ========== CONFIG ==========
 def parse_args():
     parser = argparse.ArgumentParser(description="Finetune and Benchmark Text-to-SQL")
@@ -72,14 +74,7 @@ def parse_args():
     return parser.parse_args()
 
 # ========== VALID TABLES ==========
-VALID_TABLES = {
-    'store_sales', 'store_returns', 'web_sales', 'web_returns', 
-    'catalog_sales', 'catalog_returns', 'inventory',
-    'customer', 'customer_address', 'customer_demographics',
-    'item', 'date_dim', 'time_dim', 'store', 'warehouse',
-    'web_site', 'web_page', 'call_center', 'catalog_page',
-    'promotion', 'reason', 'ship_mode', 'household_demographics', 'income_band'
-}
+VALID_TABLES = load_valid_tables()
 
 # ========== DATA LOADING ==========
 def validate_sql_sample(sql: str) -> bool:
@@ -349,20 +344,7 @@ TABLE household_demographics (hd_demo_sk BIGINT, hd_income_band_sk BIGINT, hd_bu
 TABLE income_band (ib_income_band_sk BIGINT, ib_lower_bound BIGINT, ib_upper_bound INTEGER)"""
 
 # Few-shot examples
-FEW_SHOT_EXAMPLES = [
-    {
-        "question": "Có bao nhiêu khách hàng?",
-        "sql": """SELECT COUNT(DISTINCT c_customer_sk) FROM customer;"""
-    },
-    {
-        "question": "Năm 2002 kênh Store mang về bao nhiêu tiền?",
-        "sql": """SELECT SUM(ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002;"""
-    },
-    {
-        "question": "Top 5 sản phẩm có doanh thu cao nhất?",
-        "sql": """SELECT i.i_product_name, SUM(ss.ss_net_paid) as revenue FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk GROUP BY i.i_product_name ORDER BY revenue DESC LIMIT 5;"""
-    }
-]
+FEW_SHOT_EXAMPLES = load_few_shot_examples("finetune_and_benchmark")
 
 def build_simple_prompt(question: str, tokenizer, num_few_shot: int = 0, schema_linker=None) -> str:
     """Build prompt matching training data format with optional few-shot examples"""

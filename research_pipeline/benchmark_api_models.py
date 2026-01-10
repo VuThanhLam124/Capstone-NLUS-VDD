@@ -30,6 +30,7 @@ import duckdb
 sys.path.insert(0, str(Path(__file__).parent))
 
 from schema_linking import SchemaLinker, TPCDS_TABLES
+from prompt_assets import load_few_shot_examples
 
 # Try importing API clients
 try:
@@ -62,39 +63,7 @@ MODEL_CONFIGS = {
 }
 
 # Static few-shot examples (same as Qwen benchmark)
-STATIC_FEWSHOT_EXAMPLES = [
-    # Channels
-    {
-        "question": "Tổng doanh thu từ catalog trong năm 2000",
-        "sql": "SELECT SUM(cs.cs_net_paid) FROM catalog_sales cs JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk WHERE d.d_year = 2000;"
-    },
-    {
-        "question": "Bao nhiêu đơn hàng được đặt qua website trong quý 2 năm 2002?",
-        "sql": "SELECT COUNT(*) FROM web_sales ws JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002 AND d.d_qoy = 2;"
-    },
-    {
-        "question": "Doanh thu cửa hàng năm 2002 là bao nhiêu?",
-        "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002;"
-    },
-    
-    # Demographics
-    {
-        "question": "Thống kê số lượng khách hàng theo giới tính",
-        "sql": "SELECT cd.cd_gender, COUNT(DISTINCT c.c_customer_sk) AS cnt FROM customer c JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk GROUP BY cd.cd_gender;"
-    },
-    {
-        "question": "So sánh doanh thu giữa khách hàng độc thân và đã kết hôn",
-        "sql": "SELECT cd.cd_marital_status, SUM(ss.ss_net_paid) AS revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_marital_status IN ('S', 'M') GROUP BY cd.cd_marital_status;"
-    },
-    {
-        "question": "Liệt kê khách hàng có trên 2 xe ô tô",
-        "sql": "SELECT c.c_customer_id, c.c_first_name, hd.hd_vehicle_count FROM customer c JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk WHERE hd.hd_vehicle_count > 2;"
-    },
-    {
-        "question": "Tìm khách hàng có xếp hạng tín dụng thấp",
-        "sql": "SELECT c.c_customer_id, c.c_first_name, cd.cd_credit_rating FROM customer c JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_credit_rating = 'Low Risk';"
-    },
-]
+STATIC_FEWSHOT_EXAMPLES = load_few_shot_examples("benchmark")
 
 
 class APIModelBenchmark:

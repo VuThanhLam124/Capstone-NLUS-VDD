@@ -1,0 +1,282 @@
+{
+  "finetune_qwen_coder": [
+    {
+      "question": "Tính tổng doanh thu từ kênh web trong năm 2001",
+      "sql": "SELECT SUM(ws.ws_net_paid) AS total_revenue\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001;"
+    },
+    {
+      "question": "Thống kê khách hàng nam và nữ mua hàng tại cửa hàng trong quý 1 năm 2002",
+      "sql": "SELECT cd.cd_gender, COUNT(*) AS customer_count\nFROM store_sales ss\nJOIN customer c ON ss.ss_customer_sk = c.c_customer_sk\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nJOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002 AND d.d_qoy = 1\nGROUP BY cd.cd_gender;"
+    },
+    {
+      "question": "Tìm top 5 sản phẩm bị trả lại nhiều nhất qua catalog với lý do hư hỏng",
+      "sql": "SELECT i.i_product_name, SUM(cr.cr_return_quantity) AS total_returns\nFROM catalog_returns cr\nJOIN item i ON cr.cr_item_sk = i.i_item_sk\nJOIN reason r ON cr.cr_reason_sk = r.r_reason_sk\nWHERE r.r_reason_desc ILIKE '%damage%'\nGROUP BY i.i_product_name\nORDER BY total_returns DESC\nLIMIT 5;"
+    }
+  ],
+  "benchmark": [
+    {
+      "question": "Tổng doanh thu từ catalog trong năm 2000",
+      "sql": "SELECT SUM(cs.cs_net_paid) FROM catalog_sales cs JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk WHERE d.d_year = 2000;"
+    },
+    {
+      "question": "Bao nhiêu đơn hàng được đặt qua website trong quý 2 năm 2002?",
+      "sql": "SELECT COUNT(*) FROM web_sales ws JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002 AND d.d_qoy = 2;"
+    },
+    {
+      "question": "Doanh thu cửa hàng năm 2002 là bao nhiêu?",
+      "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002;"
+    },
+    {
+      "question": "Thống kê số lượng khách hàng theo giới tính",
+      "sql": "SELECT cd.cd_gender, COUNT(DISTINCT c.c_customer_sk) AS cnt FROM customer c JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk GROUP BY cd.cd_gender;"
+    },
+    {
+      "question": "So sánh doanh thu giữa khách hàng độc thân và đã kết hôn",
+      "sql": "SELECT cd.cd_marital_status, SUM(ss.ss_net_paid) AS revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_marital_status IN ('S', 'M') GROUP BY cd.cd_marital_status;"
+    },
+    {
+      "question": "Liệt kê khách hàng có trên 2 xe ô tô",
+      "sql": "SELECT c.c_customer_id, c.c_first_name, hd.hd_vehicle_count FROM customer c JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk WHERE hd.hd_vehicle_count > 2;"
+    },
+    {
+      "question": "Tìm khách hàng có xếp hạng tín dụng thấp",
+      "sql": "SELECT c.c_customer_id, c.c_first_name, cd.cd_credit_rating FROM customer c JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_credit_rating = 'Low Risk';"
+    },
+    {
+      "question": "Top 5 sản phẩm Shoes bán chạy nhất tại cửa hàng",
+      "sql": "SELECT i.i_product_name, SUM(ss.ss_quantity) AS total FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Shoes' GROUP BY i.i_product_name ORDER BY total DESC LIMIT 5;"
+    },
+    {
+      "question": "Top 10 thương hiệu Sports được ưa chuộng nhất ở NC",
+      "sql": "SELECT i.i_brand, COUNT(*) as purchase_count FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Sports' AND ca.ca_state = 'NC' GROUP BY i.i_brand ORDER BY purchase_count DESC LIMIT 10;"
+    },
+    {
+      "question": "Tìm email của khách hàng VIP ở TX mua trên 5000 đô",
+      "sql": "SELECT c.c_email_address, SUM(ss.ss_net_paid) as total_spent FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX' GROUP BY c.c_customer_id, c.c_email_address HAVING SUM(ss.ss_net_paid) > 5000;"
+    },
+    {
+      "question": "Tổng doanh thu từ khách hàng ở bang California",
+      "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'CA';"
+    },
+    {
+      "question": "Có bao nhiêu đơn hàng bị trả lại tại cửa hàng ở IL năm 2002?",
+      "sql": "SELECT COUNT(*) FROM store_returns sr JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk WHERE ca.ca_state = 'IL' AND d.d_year = 2002;"
+    },
+    {
+      "question": "Thống kê đơn hàng online bị trả lại theo lý do",
+      "sql": "SELECT r.r_reason_desc, COUNT(*) AS cnt FROM web_returns wr JOIN reason r ON wr.wr_reason_sk = r.r_reason_sk GROUP BY r.r_reason_desc ORDER BY cnt DESC;"
+    },
+    {
+      "question": "Doanh thu quý 1 năm 2001",
+      "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2001 AND d.d_qoy = 1;"
+    },
+    {
+      "question": "Thống kê khách hàng mua sắm vào thứ Hai theo giới tính",
+      "sql": "SELECT cd.cd_gender, COUNT(*) AS visit_count FROM store_sales ss JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_day_name = 'Monday' GROUP BY cd.cd_gender;"
+    },
+    {
+      "question": "Lượng tồn kho trung bình của Women vào cuối tuần tháng 12/2001",
+      "sql": "SELECT AVG(inv.inv_quantity_on_hand) FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk JOIN date_dim d ON inv.inv_date_sk = d.d_date_sk WHERE i.i_category = 'Women' AND d.d_weekend = 'Y' AND d.d_year = 2001 AND d.d_moy = 12;"
+    },
+    {
+      "question": "Kho nào có nhiều hàng tồn nhất?",
+      "sql": "SELECT w.w_warehouse_name, SUM(inv.inv_quantity_on_hand) AS total FROM inventory inv JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk GROUP BY w.w_warehouse_name ORDER BY total DESC LIMIT 5;"
+    },
+    {
+      "question": "Tổng tiền thuế từ khách hàng thu nhập dưới 50000",
+      "sql": "SELECT SUM(ss.ss_ext_tax) FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk JOIN income_band ib ON hd.hd_income_band_sk = ib.ib_income_band_sk WHERE ib.ib_upper_bound < 50000;"
+    },
+    {
+      "question": "Doanh số Shoes tại NC năm 1999 so với năm trước",
+      "sql": "WITH current_year AS (SELECT SUM(ss.ss_net_paid) as revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Shoes' AND ca.ca_state = 'NC' AND d.d_year = 1999), previous_year AS (SELECT SUM(ss.ss_net_paid) as revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Shoes' AND ca.ca_state = 'NC' AND d.d_year = 1998) SELECT cy.revenue - py.revenue as revenue_change FROM current_year cy, previous_year py;"
+    },
+    {
+      "question": "Khách hàng nào mua nhiều nhất trên web?",
+      "sql": "SELECT c.c_customer_id, c.c_first_name, SUM(ws.ws_net_paid) as total FROM web_sales ws JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk GROUP BY c.c_customer_id, c.c_first_name ORDER BY total DESC LIMIT 5;"
+    },
+    {
+      "question": "Tồn kho của sản phẩm váy màu xanh dương",
+      "sql": "SELECT SUM(inv.inv_quantity_on_hand) FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk WHERE i.i_color = 'blue' AND i.i_class = 'dresses';"
+    },
+    {
+      "question": "Top 5 áo sơ mi bán chạy nhất",
+      "sql": "SELECT i.i_product_name, SUM(ss.ss_quantity) AS total FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_class = 'shirts' GROUP BY i.i_product_name ORDER BY total DESC LIMIT 5;"
+    },
+    {
+      "question": "Doanh thu từ quần jeans năm 2001",
+      "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_class = 'jeans' AND d.d_year = 2001;"
+    },
+    {
+      "question": "Doanh thu từ trang số 5 trong catalog",
+      "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk WHERE cp.cp_catalog_page_number = 5;"
+    },
+    {
+      "question": "Sản phẩm Electronics bán qua trang catalog số 10",
+      "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk JOIN item i ON cs.cs_item_sk = i.i_item_sk WHERE cp.cp_catalog_page_number = 10 AND i.i_category = 'Electronics';"
+    },
+    {
+      "question": "Tổng giá bán (sales price) của catalog ở TX",
+      "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX';"
+    },
+    {
+      "question": "Loại hàng nào bán chạy nhất trên web quý 1 năm 2000?",
+      "sql": "SELECT i.i_category, SUM(ws.ws_quantity) AS total_qty FROM web_sales ws JOIN item i ON ws.ws_item_sk = i.i_item_sk JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2000 AND d.d_qoy = 1 GROUP BY i.i_category ORDER BY total_qty DESC LIMIT 1;"
+    },
+    {
+      "question": "Sản phẩm nào bán chạy nhất năm 2001?",
+      "sql": "SELECT i.i_product_name, SUM(ss.ss_quantity) AS total_sold FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2001 GROUP BY i.i_product_name ORDER BY total_sold DESC LIMIT 1;"
+    },
+    {
+      "question": "Tìm khách hàng trả lại hàng nhiều nhất",
+      "sql": "SELECT c.c_first_name, c.c_last_name, SUM(sr.sr_return_amt) as total_return FROM store_returns sr JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name ORDER BY total_return DESC LIMIT 1;"
+    },
+    {
+      "question": "Tổng giá trị hàng bị trả lại",
+      "sql": "SELECT SUM(sr.sr_return_amt) FROM store_returns sr;"
+    },
+    {
+      "question": "Thống kê mua sắm theo giới tính vào thứ Hai",
+      "sql": "SELECT cd.cd_gender, COUNT(*) AS visit_count FROM store_sales ss JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_day_name = 'Monday' GROUP BY cd.cd_gender;"
+    }
+  ],
+  "finetune_and_benchmark": [
+    {
+      "question": "Có bao nhiêu khách hàng?",
+      "sql": "SELECT COUNT(DISTINCT c_customer_sk) FROM customer;"
+    },
+    {
+      "question": "Năm 2002 kênh Store mang về bao nhiêu tiền?",
+      "sql": "SELECT SUM(ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002;"
+    },
+    {
+      "question": "Top 5 sản phẩm có doanh thu cao nhất?",
+      "sql": "SELECT i.i_product_name, SUM(ss.ss_net_paid) as revenue FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk GROUP BY i.i_product_name ORDER BY revenue DESC LIMIT 5;"
+    }
+  ],
+  "default": [
+    {
+      "question": "Tổng doanh thu từ catalog trong năm 2000",
+      "sql": "SELECT SUM(cs.cs_net_paid) FROM catalog_sales cs JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk WHERE d.d_year = 2000;"
+    },
+    {
+      "question": "Bao nhiêu đơn hàng được đặt qua website trong quý 2 năm 2002?",
+      "sql": "SELECT COUNT(*) FROM web_sales ws JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002 AND d.d_qoy = 2;"
+    },
+    {
+      "question": "Doanh thu cửa hàng năm 2002 là bao nhiêu?",
+      "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002;"
+    },
+    {
+      "question": "Thống kê số lượng khách hàng theo giới tính",
+      "sql": "SELECT cd.cd_gender, COUNT(DISTINCT c.c_customer_sk) AS cnt FROM customer c JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk GROUP BY cd.cd_gender;"
+    },
+    {
+      "question": "So sánh doanh thu giữa khách hàng độc thân và đã kết hôn",
+      "sql": "SELECT cd.cd_marital_status, SUM(ss.ss_net_paid) AS revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_marital_status IN ('S', 'M') GROUP BY cd.cd_marital_status;"
+    },
+    {
+      "question": "Liệt kê khách hàng có trên 2 xe ô tô",
+      "sql": "SELECT c.c_customer_id, c.c_first_name, hd.hd_vehicle_count FROM customer c JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk WHERE hd.hd_vehicle_count > 2;"
+    },
+    {
+      "question": "Tìm khách hàng có xếp hạng tín dụng thấp",
+      "sql": "SELECT c.c_customer_id, c.c_first_name, cd.cd_credit_rating FROM customer c JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_credit_rating = 'Low Risk';"
+    },
+    {
+      "question": "Top 5 sản phẩm Shoes bán chạy nhất tại cửa hàng",
+      "sql": "SELECT i.i_product_name, SUM(ss.ss_quantity) AS total FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Shoes' GROUP BY i.i_product_name ORDER BY total DESC LIMIT 5;"
+    },
+    {
+      "question": "Top 10 thương hiệu Sports được ưa chuộng nhất ở NC",
+      "sql": "SELECT i.i_brand, COUNT(*) as purchase_count FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_category = 'Sports' AND ca.ca_state = 'NC' GROUP BY i.i_brand ORDER BY purchase_count DESC LIMIT 10;"
+    },
+    {
+      "question": "Tìm email của khách hàng VIP ở TX mua trên 5000 đô",
+      "sql": "SELECT c.c_email_address, SUM(ss.ss_net_paid) as total_spent FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX' GROUP BY c.c_customer_id, c.c_email_address HAVING SUM(ss.ss_net_paid) > 5000;"
+    },
+    {
+      "question": "Tổng doanh thu từ khách hàng ở bang California",
+      "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'CA';"
+    },
+    {
+      "question": "Có bao nhiêu đơn hàng bị trả lại tại cửa hàng ở IL năm 2002?",
+      "sql": "SELECT COUNT(*) FROM store_returns sr JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN date_dim d ON sr.sr_returned_date_sk = d.d_date_sk WHERE ca.ca_state = 'IL' AND d.d_year = 2002;"
+    },
+    {
+      "question": "Thống kê đơn hàng online bị trả lại theo lý do",
+      "sql": "SELECT r.r_reason_desc, COUNT(*) AS cnt FROM web_returns wr JOIN reason r ON wr.wr_reason_sk = r.r_reason_sk GROUP BY r.r_reason_desc ORDER BY cnt DESC;"
+    },
+    {
+      "question": "Doanh thu quý 1 năm 2001",
+      "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2001 AND d.d_qoy = 1;"
+    },
+    {
+      "question": "Thống kê khách hàng mua sắm vào thứ Hai theo giới tính",
+      "sql": "SELECT cd.cd_gender, COUNT(*) AS visit_count FROM store_sales ss JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_day_name = 'Monday' GROUP BY cd.cd_gender;"
+    },
+    {
+      "question": "Lượng tồn kho trung bình của Women vào cuối tuần tháng 12/2001",
+      "sql": "SELECT AVG(inv.inv_quantity_on_hand) FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk JOIN date_dim d ON inv.inv_date_sk = d.d_date_sk WHERE i.i_category = 'Women' AND d.d_weekend = 'Y' AND d.d_year = 2001 AND d.d_moy = 12;"
+    },
+    {
+      "question": "Kho nào có nhiều hàng tồn nhất?",
+      "sql": "SELECT w.w_warehouse_name, SUM(inv.inv_quantity_on_hand) AS total FROM inventory inv JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk GROUP BY w.w_warehouse_name ORDER BY total DESC LIMIT 5;"
+    },
+    {
+      "question": "Tổng tiền thuế từ khách hàng thu nhập dưới 50000",
+      "sql": "SELECT SUM(ss.ss_ext_tax) FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk JOIN income_band ib ON hd.hd_income_band_sk = ib.ib_income_band_sk WHERE ib.ib_upper_bound < 50000;"
+    },
+    {
+      "question": "Doanh số Shoes tại NC năm 1999 so với năm trước",
+      "sql": "WITH current_year AS (SELECT SUM(ss.ss_net_paid) as revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Shoes' AND ca.ca_state = 'NC' AND d.d_year = 1999), previous_year AS (SELECT SUM(ss.ss_net_paid) as revenue FROM store_sales ss JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Shoes' AND ca.ca_state = 'NC' AND d.d_year = 1998) SELECT cy.revenue - py.revenue as revenue_change FROM current_year cy, previous_year py;"
+    },
+    {
+      "question": "Khách hàng nào mua nhiều nhất trên web?",
+      "sql": "SELECT c.c_customer_id, c.c_first_name, SUM(ws.ws_net_paid) as total FROM web_sales ws JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk GROUP BY c.c_customer_id, c.c_first_name ORDER BY total DESC LIMIT 5;"
+    },
+    {
+      "question": "Tồn kho của sản phẩm váy màu xanh dương",
+      "sql": "SELECT SUM(inv.inv_quantity_on_hand) FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk WHERE i.i_color = 'blue' AND i.i_class = 'dresses';"
+    },
+    {
+      "question": "Top 5 áo sơ mi bán chạy nhất",
+      "sql": "SELECT i.i_product_name, SUM(ss.ss_quantity) AS total FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk WHERE i.i_class = 'shirts' GROUP BY i.i_product_name ORDER BY total DESC LIMIT 5;"
+    },
+    {
+      "question": "Doanh thu từ quần jeans năm 2001",
+      "sql": "SELECT SUM(ss.ss_net_paid) FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_class = 'jeans' AND d.d_year = 2001;"
+    },
+    {
+      "question": "Doanh thu từ trang số 5 trong catalog",
+      "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk WHERE cp.cp_catalog_page_number = 5;"
+    },
+    {
+      "question": "Sản phẩm Electronics bán qua trang catalog số 10",
+      "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk JOIN item i ON cs.cs_item_sk = i.i_item_sk WHERE cp.cp_catalog_page_number = 10 AND i.i_category = 'Electronics';"
+    },
+    {
+      "question": "Tổng giá bán (sales price) của catalog ở TX",
+      "sql": "SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX';"
+    },
+    {
+      "question": "Loại hàng nào bán chạy nhất trên web quý 1 năm 2000?",
+      "sql": "SELECT i.i_category, SUM(ws.ws_quantity) AS total_qty FROM web_sales ws JOIN item i ON ws.ws_item_sk = i.i_item_sk JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2000 AND d.d_qoy = 1 GROUP BY i.i_category ORDER BY total_qty DESC LIMIT 1;"
+    },
+    {
+      "question": "Sản phẩm nào bán chạy nhất năm 2001?",
+      "sql": "SELECT i.i_product_name, SUM(ss.ss_quantity) AS total_sold FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2001 GROUP BY i.i_product_name ORDER BY total_sold DESC LIMIT 1;"
+    },
+    {
+      "question": "Tìm khách hàng trả lại hàng nhiều nhất",
+      "sql": "SELECT c.c_first_name, c.c_last_name, SUM(sr.sr_return_amt) as total_return FROM store_returns sr JOIN customer c ON sr.sr_customer_sk = c.c_customer_sk GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name ORDER BY total_return DESC LIMIT 1;"
+    },
+    {
+      "question": "Tổng giá trị hàng bị trả lại",
+      "sql": "SELECT SUM(sr.sr_return_amt) FROM store_returns sr;"
+    },
+    {
+      "question": "Thống kê mua sắm theo giới tính vào thứ Hai",
+      "sql": "SELECT cd.cd_gender, COUNT(*) AS visit_count FROM store_sales ss JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_day_name = 'Monday' GROUP BY cd.cd_gender;"
+    }
+  ]
+}
