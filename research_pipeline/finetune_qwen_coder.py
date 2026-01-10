@@ -461,8 +461,72 @@ def build_prompt(question: str, schema_linker=None, few_shot: int = 0) -> str:
     else:
         schema = FULL_SCHEMA
     
+    system_rules = """Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.
+
+=== CRITICAL RULES (ĐỌC KỸ!) ===
+1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu (VD: không thêm d.d_year nếu không hỏi về năm)
+2. "bán chạy nhất" = SUM(quantity), KHÔNG phải SUM(sales_price)
+3. "trả lại hàng" (không nói rõ channel) → mặc định dùng store_returns (sr)
+4. "từ X trở lên" = >= X (VD: "từ 2 xe trở lên" = hd_vehicle_count >= 2)
+5. Chỉ SELECT các columns cần thiết, không thêm columns thừa, không bịa ra cột không có trong schema
+
+=== CRITICAL COLUMN MAPPINGS ===
+CUSTOMER TABLE:
+- Email: c.c_email_address (NOT c_email)
+- Name: c.c_first_name, c.c_last_name
+
+CUSTOMER_DEMOGRAPHICS TABLE (cd):  
+- Gender: cd.cd_gender
+- Marital status: cd.cd_marital_status ('S'=Single, 'M'=Married, 'D'=Divorced)
+- Credit rating: cd.cd_credit_rating
+- Dependents: cd.cd_dep_count
+
+HOUSEHOLD_DEMOGRAPHICS TABLE (hd):
+- Vehicle count: hd.hd_vehicle_count
+- Dependents: hd.hd_dep_count  
+
+STORE_SALES TABLE (ss):
+- Tax: ss.ss_ext_tax (NOT ss_tax)
+- Revenue: ss.ss_net_paid
+- Demographics: ss.ss_cdemo_sk (direct link to customer_demographics)
+
+DATE_DIM TABLE (d):
+- Quarter: d.d_qoy (NOT d_quarter)
+- Day name: d.d_day_name
+- NO d_state column - use customer_address.ca_state instead
+
+WEB_SALES TABLE (ws):
+- Customer: ws.ws_bill_customer_sk (NOT ws_customer_sk)
+
+=== REVENUE vs QUANTITY ===
+- "bán chạy nhất", "bán nhiều nhất" → SUM(quantity)
+- "doanh thu", "tổng doanh thu" → SUM(sales_price)
+- "tiền thu được", "net" → SUM(net_paid)
+
+=== ITEM TABLE (i) ===
+- i.i_category: Danh mục lớn (Women, Men, Shoes, Electronics, Music, Home, Sports, Jewelry, Children)
+- i.i_class: Loại sản phẩm cụ thể (dresses=váy, shirts=áo, pants=quần)
+- "váy" → i.i_class = 'dresses'
+
+=== CHANNEL RULES ===
+- "cửa hàng", "store", "retail" → store_sales (ss)
+- "online", "web", "website", "trực tuyến" → web_sales (ws)
+- "catalog", "mail order" → catalog_sales (cs)
+
+=== RETURN RULES ===
+- "trả lại hàng" (không rõ channel) → store_returns (sr) [MẶC ĐỊNH]
+- "trả hàng online/web" → web_returns (wr)
+- "trả hàng catalog" → catalog_returns (cr)
+
+=== DEMOGRAPHICS JOIN ===
+- Khi cần demographics từ store_sales: dùng ss.ss_cdemo_sk trực tiếp
+  VD: JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+- KHÔNG cần đi qua customer table nếu chỉ cần demographics
+
+Output ONLY the SQL query, no explanation."""
+
     prompt_parts = [
-        "Bạn là một chuyên gia SQL. Dựa vào schema database sau, hãy viết câu SQL chính xác cho câu hỏi.",
+        system_rules,
         "",
         "DATABASE SCHEMA:",
         schema,
