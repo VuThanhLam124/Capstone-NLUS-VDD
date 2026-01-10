@@ -484,6 +484,7 @@ def generate_sql(model, tokenizer, question: str, schema_linker=None, few_shot: 
             top_p=0.9,
             repetition_penalty=1.05,
             pad_token_id=tokenizer.eos_token_id,
+            use_cache=False,  # Required for DeepSeek compatibility
         )
     
     response = tokenizer.decode(outputs[0][len(inputs.input_ids[0]):], skip_special_tokens=True)
