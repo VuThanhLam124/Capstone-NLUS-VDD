@@ -334,6 +334,7 @@ def build_fewshot_prompt(
     
     system_msg = """Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.
 
+<<<<<<< Updated upstream
 === CRITICAL RULES (ĐỌC KỸ!) ===
 1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu (VD: không thêm d.d_year nếu không hỏi về năm)
 2. "bán chạy nhất" = SUM(quantity), KHÔNG phải SUM(sales_price)
@@ -409,6 +410,34 @@ WEB_SALES TABLE (ws):
 - KHÔNG cần đi qua customer table nếu chỉ cần demographics
 
 Output ONLY the SQL query, no explanation."""
+=======
+IMPORTANT RULES:
+1. DEMOGRAPHICS (MUST use separate tables):
+   - Gender (cd_gender), marital status (cd_marital_status): USE customer_demographics (cd), NOT customer
+   - Vehicle count (hd_vehicle_count): USE household_demographics (hd), NOT customer
+
+2. CHANNEL SELECTION:
+   - Web/Online sales: USE web_sales (ws), web_returns (wr)
+   - Catalog/Mail-order: USE catalog_sales (cs), catalog_returns (cr)
+   - Store/Retail/Cửa hàng: USE store_sales (ss), store_returns (sr)
+
+3. COLUMN NAMES (exact names only):
+   - Email: c.c_email_address (NOT c.c_email)
+   - State: ca.ca_state from customer_address (NOT d.d_state)
+   - Category: i.i_category from item table (NOT reason, NOT store name)
+   - Quarter: d.d_qoy (NOT d_quarter)
+
+4. CATEGORY FILTER:
+   - When filtering by category (Men, Women, Home, Shoes, etc.): MUST JOIN item table
+   - Use: WHERE i.i_category = 'category_name'
+
+5. RETURNS:
+   - Store returns: store_returns (sr) + item + customer_address for category/state filters
+   - Web returns: web_returns (wr) + item + customer_address for category/state filters
+
+- Always use table aliases
+- Output ONLY the SQL query, no explanation"""
+>>>>>>> Stashed changes
 
     # Build few-shot examples
     examples_text = ""
