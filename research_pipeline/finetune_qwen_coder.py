@@ -518,14 +518,18 @@ def benchmark_model(args, model, tokenizer):
     # Setup DB
     conn = setup_db(args.db)
     
+    # Detect column names
+    q_col = "Transcription" if "Transcription" in test_df.columns else "question"
+    sql_col = "SQL Ground Truth" if "SQL Ground Truth" in test_df.columns else "sql"
+    
     # Run benchmark
     results = []
     valid_count = 0
     exec_match_count = 0
     
     for idx, row in test_df.iterrows():
-        question = row['question']
-        ground_truth = row['sql']
+        question = row[q_col]
+        ground_truth = row[sql_col]
         
         print(f"\n[{idx+1}/{len(test_df)}] {question[:60]}...")
         

@@ -48,7 +48,7 @@ python research_pipeline/finetune_qwen_coder.py \
 ```bash
 python research_pipeline/benchmark_qwen_coder_fewshot.py \
     --model deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
-    --easy --shots 5 --use-vllm
+    --easy --schema-linking --shots 5 --use-vllm
 ```
 
 ### Benchmark (finetuned)
