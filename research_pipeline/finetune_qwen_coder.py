@@ -476,17 +476,31 @@ def generate_sql(model, tokenizer, question: str, schema_linker=None, few_shot: 
     inputs = tokenizer([text], return_tensors="pt").to(model.device)
     
     with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=512,
-            temperature=0.1,
-            do_sample=True,
-            top_p=0.9,
-            repetition_penalty=1.05,
-            pad_token_id=tokenizer.eos_token_id,
-            use_cache=True,
-            return_legacy_cache=True,  # Use legacy cache format for DeepSeek compatibility
-        )
+        # Try static cache for DeepSeek compatibility, fallback to no cache
+        try:
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=512,
+                temperature=0.1,
+                do_sample=True,
+                top_p=0.9,
+                repetition_penalty=1.05,
+                pad_token_id=tokenizer.eos_token_id,
+                use_cache=True,
+                cache_implementation="static",
+            )
+        except (AttributeError, TypeError):
+            # Fallback: disable cache for incompatible models
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=512,
+                temperature=0.1,
+                do_sample=True,
+                top_p=0.9,
+                repetition_penalty=1.05,
+                pad_token_id=tokenizer.eos_token_id,
+                use_cache=False,
+            )
     
     response = tokenizer.decode(outputs[0][len(inputs.input_ids[0]):], skip_special_tokens=True)
     return postprocess_sql(response)
