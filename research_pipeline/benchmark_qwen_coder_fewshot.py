@@ -409,8 +409,8 @@ WEB_SALES TABLE (ws):
   VD: JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
 - KHÔNG cần đi qua customer table nếu chỉ cần demographics
 
-Output ONLY the SQL query, no explanation."""
-=======
+Output ONLY the SQL query, no explanation.
+================
 IMPORTANT RULES:
 1. DEMOGRAPHICS (MUST use separate tables):
    - Gender (cd_gender), marital status (cd_marital_status): USE customer_demographics (cd), NOT customer
@@ -437,7 +437,7 @@ IMPORTANT RULES:
 
 - Always use table aliases
 - Output ONLY the SQL query, no explanation"""
->>>>>>> Stashed changes
+
 
     # Build few-shot examples
     examples_text = ""
