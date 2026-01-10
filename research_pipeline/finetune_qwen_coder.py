@@ -484,6 +484,7 @@ def generate_sql(model, tokenizer, question: str, schema_linker=None, few_shot: 
             top_p=0.9,
             repetition_penalty=1.05,
             pad_token_id=tokenizer.eos_token_id,
+            use_cache=False,  # Required for DeepSeek compatibility
         )
     
     response = tokenizer.decode(outputs[0][len(inputs.input_ids[0]):], skip_special_tokens=True)
@@ -518,14 +519,18 @@ def benchmark_model(args, model, tokenizer):
     # Setup DB
     conn = setup_db(args.db)
     
+    # Detect column names
+    q_col = "Transcription" if "Transcription" in test_df.columns else "question"
+    sql_col = "SQL Ground Truth" if "SQL Ground Truth" in test_df.columns else "sql"
+    
     # Run benchmark
     results = []
     valid_count = 0
     exec_match_count = 0
     
     for idx, row in test_df.iterrows():
-        question = row['question']
-        ground_truth = row['sql']
+        question = row[q_col]
+        ground_truth = row[sql_col]
         
         print(f"\n[{idx+1}/{len(test_df)}] {question[:60]}...")
         
