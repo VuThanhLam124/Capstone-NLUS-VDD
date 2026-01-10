@@ -334,7 +334,6 @@ def build_fewshot_prompt(
     
     system_msg = """Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.
 
-<<<<<<< Updated upstream
 === CRITICAL RULES (ĐỌC KỸ!) ===
 1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu (VD: không thêm d.d_year nếu không hỏi về năm)
 2. "bán chạy nhất" = SUM(quantity), KHÔNG phải SUM(sales_price)
