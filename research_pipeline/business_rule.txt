@@ -1,22 +1,22 @@
-# BUSINESS RULES FOR TPC-DS TEXT-TO-SQL
-# Admin co the update file nay. Noi dung se duoc chen vao system prompt.
+# QUY TẮC NGHIỆP VỤ CHO TPC-DS TEXT-TO-SQL
+# Admin có thể cập nhật file này. Nội dung sẽ được chèn vào system prompt.
 
-=== CRITICAL RULES ===
-1. KHONG them filter (WHERE) neu cau hoi KHONG yeu cau (vi du: khong them d.d_year neu khong hoi ve nam)
-2. "ban chay nhat" = SUM(quantity), KHONG phai SUM(sales_price)
-3. "tra lai hang" (khong ro channel) -> mac dinh dung store_returns (sr)
-4. "tu X tro len" = >= X (vi du: "tu 2 xe tro len" = hd_vehicle_count >= 2)
-5. Chi SELECT cac columns can thiet, khong them columns thua
-6. KHONG bia cot/bang khong co trong schema
-7. Luon dung table aliases
+=== QUY TẮC QUAN TRỌNG ===
+1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu (ví dụ: không thêm d.d_year nếu không hỏi về năm)
+2. "bán chạy nhất" = SUM(quantity), KHÔNG phải SUM(sales_price)
+3. "trả lại hàng" (không rõ kênh) -> mặc định dùng store_returns (sr)
+4. "từ X trở lên" = >= X (ví dụ: "từ 2 xe trở lên" = hd_vehicle_count >= 2)
+5. Chỉ SELECT các cột cần thiết, không thêm cột thừa
+6. KHÔNG bịa cột/bảng không có trong schema
+7. Luôn dùng alias cho bảng
 8. Output ONLY the SQL query, no explanation.
 
-=== COLUMN & TABLE MAPPINGS ===
+=== ÁNH XẠ CỘT & BẢNG ===
 CUSTOMER (c):
-- c.c_salutation: danh xung (Mr., Ms., Mrs., Dr.)
-- c.c_birth_day / c.c_birth_month / c.c_birth_year: ngay/thang/nam sinh (KHONG join date_dim)
-- c.c_birth_country: quoc gia sinh / quoc tich
-- c.c_preferred_cust_flag: khach hang uu tien (Y/N)
+- c.c_salutation: danh xưng (Mr., Ms., Mrs., Dr.)
+- c.c_birth_day / c.c_birth_month / c.c_birth_year: ngày/tháng/năm sinh (KHÔNG join date_dim)
+- c.c_birth_country: quốc gia sinh / quốc tịch
+- c.c_preferred_cust_flag: khách hàng ưu tiên (Y/N)
 - c.c_login, c.c_email_address
 
 CUSTOMER_DEMOGRAPHICS (cd):
@@ -27,40 +27,40 @@ HOUSEHOLD_DEMOGRAPHICS (hd):
 - hd.hd_vehicle_count, hd.hd_dep_count, hd.hd_income_band_sk
 
 CUSTOMER_ADDRESS (ca):
-- ca.ca_state, ca.ca_city, ca.ca_country (dia chi hien tai)
+- ca.ca_state, ca.ca_city, ca.ca_country (địa chỉ hiện tại)
 
 ITEM (i):
-- "ten san pham" -> i.i_product_name
-- "mo ta san pham" -> i.i_item_desc
-- "gia niem yet / gia hien tai" -> i.i_current_price (KHONG co i_list_price)
-- Danh muc lon -> i.i_category, Loai cu the -> i.i_class
-- "vay" -> i.i_class = 'dresses'
-- "ao so mi" -> i.i_class = 'shirts'
-- "ao kieu" -> i.i_class = 'blouses'
-- "quan" -> i.i_class = 'pants'
-- "quan jeans" -> i.i_class = 'jeans'
+- "tên sản phẩm" -> i.i_product_name
+- "mô tả sản phẩm" -> i.i_item_desc
+- "giá niêm yết / giá hiện tại" -> i.i_current_price (KHÔNG có i_list_price)
+- Danh mục lớn -> i.i_category, Loại cụ thể -> i.i_class
+- "váy" -> i.i_class = 'dresses'
+- "áo sơ mi" -> i.i_class = 'shirts'
+- "áo kiểu" -> i.i_class = 'blouses'
+- "quần" -> i.i_class = 'pants'
+- "quần jeans" -> i.i_class = 'jeans'
 
 CATALOG PAGE:
-- "trang so X trong catalog" -> JOIN catalog_page cp, dung cp.cp_catalog_page_number
+- "trang số X trong catalog" -> JOIN catalog_page cp, dùng cp.cp_catalog_page_number
 
 WEB_SITE (web):
-- web.web_rec_end_date (dang hoat dong = IS NULL)
-- web.web_rec_start_date (ngay bat dau)
+- web.web_rec_end_date (đang hoạt động = IS NULL)
+- web.web_rec_start_date (ngày bắt đầu)
 - web.web_tax_percentage
 
 SALES / ORDERS:
-- store_sales: order number = ss.ss_ticket_number (KHONG co ss_order_number)
+- store_sales: order number = ss.ss_ticket_number (KHÔNG có ss_order_number)
 - web_sales: order number = ws.ws_order_number
 - catalog_sales: order number = cs.cs_order_number
-- "giam gia" -> *_ext_discount_amt
-- "loi nhuan rong" -> *_net_profit
-- "ton that rong tra hang" -> *_net_loss
+- "giảm giá" -> *_ext_discount_amt
+- "lợi nhuận ròng" -> *_net_profit
+- "tổn thất ròng trả hàng" -> *_net_loss
 
 DATE_DIM (d):
 - Quarter: d.d_qoy (NOT d_quarter)
 - Day name: d.d_day_name
 - Weekend: d.d_weekend = 'Y'/'N'
-- Khong co d_state -> dung ca_state (customer_address)
+- Không có d_state -> dùng ca_state (customer_address)
 
 WEB_SALES (ws):
 - Customer: ws.ws_bill_customer_sk (NOT ws_customer_sk)
@@ -70,66 +70,66 @@ STORE_SALES (ss):
 - Revenue: ss.ss_net_paid
 - Demographics: ss.ss_cdemo_sk (direct link to customer_demographics)
 
-=== REVENUE vs QUANTITY ===
-- "ban chay nhat", "ban nhieu nhat" -> SUM(quantity)
-- "doanh thu", "tong doanh thu" -> SUM(sales_price)
-- "tien thu duoc", "net" -> SUM(net_paid)
+=== DOANH THU VS SỐ LƯỢNG ===
+- "bán chạy nhất", "bán nhiều nhất" -> SUM(quantity)
+- "doanh thu", "tổng doanh thu" -> SUM(sales_price)
+- "tiền thu được", "net" -> SUM(net_paid)
 
-=== CHANNEL RULES ===
-- "cua hang", "store", "retail" -> store_sales (ss)
-- "online", "web", "website", "truc tuyen" -> web_sales (ws)
+=== QUY TẮC KÊNH ===
+- "cửa hàng", "store", "retail" -> store_sales (ss)
+- "online", "web", "website", "trực tuyến" -> web_sales (ws)
 - "catalog", "mail order" -> catalog_sales (cs)
 
-=== RETURN RULES ===
-- "tra lai hang" (khong ro channel) -> store_returns (sr) [MAC DINH]
-- "tra hang online/web" -> web_returns (wr)
-- "tra hang catalog" -> catalog_returns (cr)
+=== QUY TẮC TRẢ HÀNG ===
+- "trả lại hàng" (không rõ kênh) -> store_returns (sr) [MẶC ĐỊNH]
+- "trả hàng online/web" -> web_returns (wr)
+- "trả hàng catalog" -> catalog_returns (cr)
 
 === DEMOGRAPHICS JOIN ===
-- Khi can demographics tu store_sales: dung ss.ss_cdemo_sk truc tiep
-  VD: JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
-- KHONG can di qua customer table neu chi can demographics
+- Khi cần demographics từ store_sales: dùng ss.ss_cdemo_sk trực tiếp
+  Ví dụ: JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+- KHÔNG cần đi qua customer table nếu chỉ cần demographics
 
-=== VALUE MAPPINGS ===
+=== ÁNH XẠ GIÁ TRỊ ===
 COUNTRY CODES (c_birth_country):
-- "Viet Nam"/"Vietnam" -> 'VN'
+- "Việt Nam"/"Vietnam" -> 'VN'
 - "Canada" -> 'CA'
-- "My"/"United States" -> 'UNITED STATES'
+- "Mỹ"/"United States" -> 'UNITED STATES'
 - "USA" -> 'USA'
-- "Vuong quoc Anh"/"UK"/"United Kingdom" -> 'UNITED KINGDOM'
-- "Nhat Ban"/"Japan" -> 'JAPAN'
+- "Vương quốc Anh"/"UK"/"United Kingdom" -> 'UNITED KINGDOM'
+- "Nhật Bản"/"Japan" -> 'JAPAN'
 
 GENDER (cd_gender):
-- Nam -> 'M', Nu -> 'F'
+- Nam -> 'M', Nữ -> 'F'
 
 MARITAL STATUS (cd_marital_status):
-- Doc than -> 'S', Ket hon -> 'M', Ly hon -> 'D', Goa -> 'W'
+- Độc thân -> 'S', Kết hôn -> 'M', Ly hôn -> 'D', Góa -> 'W'
 
 CREDIT RATING (cd_credit_rating):
-- "thap" -> 'Low'
-- "rui ro thap" -> 'Low Risk'
-- "tot" -> 'Good'
-- "uu tu"/"elite" -> 'Elite'
-- "rui ro cao" -> 'High Risk'
+- "thấp" -> 'Low'
+- "rủi ro thấp" -> 'Low Risk'
+- "tốt" -> 'Good'
+- "ưu tú"/"elite" -> 'Elite'
+- "rủi ro cao" -> 'High Risk'
 
 PREFERRED CUSTOMER (c_preferred_cust_flag):
-- "uu tien"/"than thiet"/"VIP" -> 'Y'
-- "khong uu tien" -> 'N'
+- "ưu tiên"/"thân thiết"/"VIP" -> 'Y'
+- "không ưu tiên" -> 'N'
 
 SALUTATION (c_salutation):
 - "Mr" -> 'Mr.' ; "Ms" -> 'Ms.' ; "Mrs" -> 'Mrs.' ; "Dr" -> 'Dr.'
 
-=== STATE / LOCATION ===
-- Bang khach hang: JOIN customer -> customer_address, dung ca.ca_state
-- Bang cua hang: JOIN store, dung s.s_state
+=== VỊ TRÍ / ĐỊA ĐIỂM ===
+- Bang khách hàng: JOIN customer -> customer_address, dùng ca.ca_state
+- Bang cửa hàng: JOIN store, dùng s.s_state
 
-=== CATEGORY FILTER ===
-- Khi loc theo danh muc (Men, Women, Home, Shoes, ...): BAT BUOC JOIN item
-- Dung: WHERE i.i_category = 'CategoryName'
+=== LỌC THEO DANH MỤC ===
+- Khi lọc theo danh mục (Men, Women, Home, Shoes, ...): BẮT BUỘC JOIN item
+- Dùng: WHERE i.i_category = 'CategoryName'
 
-=== QUERY PATTERNS ===
-- "ty le don hang co khuyen mai" (khong noi channel) -> store_sales:
+=== MẪU TRUY VẤN ===
+- "tỷ lệ đơn hàng có khuyến mãi" (không nói kênh) -> store_sales:
   SUM(CASE WHEN ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*)
-- "tre tuoi nhat" -> ORDER BY c_birth_year DESC, c_birth_month DESC, c_birth_day DESC
-- "dang song/sinh song" -> dung customer_address (ca_country/ca_state), khong dung c_birth_country
-- "quoc tich/sinh ra" -> dung c_birth_country
+- "trẻ tuổi nhất" -> ORDER BY c_birth_year DESC, c_birth_month DESC, c_birth_day DESC
+- "đang sống/sinh sống" -> dùng customer_address (ca_country/ca_state), không dùng c_birth_country
+- "quốc tịch/sinh ra" -> dùng c_birth_country
