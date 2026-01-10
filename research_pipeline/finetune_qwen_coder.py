@@ -48,12 +48,18 @@ from peft import (
 from trl import SFTTrainer, SFTConfig
 
 # Monkey-patch DynamicCache for DeepSeek-Coder-V2 compatibility
-# DeepSeek uses old .seen_tokens attribute, but new transformers uses get_seq_length()
+# DeepSeek uses old cache API, but new transformers changed method names
 try:
     from transformers.cache_utils import DynamicCache
+    _patched = False
     if not hasattr(DynamicCache, 'seen_tokens'):
         DynamicCache.seen_tokens = property(lambda self: self.get_seq_length())
-        print("Patched DynamicCache.seen_tokens for DeepSeek compatibility")
+        _patched = True
+    if not hasattr(DynamicCache, 'get_max_length'):
+        DynamicCache.get_max_length = lambda self: None  # No max length for dynamic cache
+        _patched = True
+    if _patched:
+        print("Patched DynamicCache for DeepSeek compatibility")
 except ImportError:
     pass
 
