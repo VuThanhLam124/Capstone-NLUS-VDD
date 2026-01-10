@@ -58,6 +58,9 @@ try:
     if not hasattr(DynamicCache, 'get_max_length'):
         DynamicCache.get_max_length = lambda self: None  # No max length for dynamic cache
         _patched = True
+    if not hasattr(DynamicCache, 'get_usable_length'):
+        DynamicCache.get_usable_length = lambda self, new_seq_len, layer_idx=0: self.get_seq_length()
+        _patched = True
     if _patched:
         print("Patched DynamicCache for DeepSeek compatibility")
 except ImportError:
