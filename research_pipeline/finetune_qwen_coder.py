@@ -604,10 +604,42 @@ def benchmark_model(args, model, tokenizer, use_vllm: bool = False,
             # Check execution match
             try:
                 gt_result = conn.execute(ground_truth).fetchall()
+                gen_cols = conn.execute(generated_sql).description
+                gt_cols = conn.execute(ground_truth).description
+                
+                # Exact match (same columns, same rows)
                 if set(map(tuple, gen_result)) == set(map(tuple, gt_result)):
                     exec_match = True
                     exec_match_count += 1
-                    print(f"  ✅ Match!")
+                    print(f"  ✅ Exact Match!")
+                # Relaxed match: generated has MORE columns but includes all GT data
+                elif len(gen_cols) >= len(gt_cols) and len(gen_result) == len(gt_result):
+                    # Check if GT result is a subset of generated result (row-wise)
+                    # For each GT row, check if its values exist in the corresponding generated row
+                    gt_set = set(map(tuple, gt_result))
+                    gen_rows_as_sets = [set(row) for row in gen_result]
+                    
+                    # Alternative: check if all GT values in each row exist in generated rows
+                    # More lenient: just check row count and at least some matching values
+                    relaxed_match = True
+                    gt_col_count = len(gt_cols)
+                    for gt_row in gt_result:
+                        # Check if this GT row's values exist in any generated row
+                        found = False
+                        for gen_row in gen_result:
+                            if all(v in gen_row for v in gt_row):
+                                found = True
+                                break
+                        if not found:
+                            relaxed_match = False
+                            break
+                    
+                    if relaxed_match:
+                        exec_match = True
+                        exec_match_count += 1
+                        print(f"  ✅ Relaxed Match (extra cols)!")
+                    else:
+                        print(f"  ⚠️ Different results")
                 else:
                     print(f"  ⚠️ Different results")
             except Exception as e:

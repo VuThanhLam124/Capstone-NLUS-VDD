@@ -1,54 +1,23 @@
-# QUY TẮC NGHIỆP VỤ TPC-DS - PRODUCTION READY
+# QUY TẮC NGHIỆP VỤ TPC-DS
 
-=== QUY TẮC SQL CƠ BẢN (QUAN TRỌNG!) ===
+=== QUY TẮC SQL CƠ BẢN ===
 1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu
-2. KHÔNG JOIN nếu KHÔNG cần dữ liệu từ bảng đó
-3. KHÔNG bịa cột/bảng không có trong schema
-4. CHỈ SELECT các cột trong ground truth, không thêm cột thừa
-5. Output ONLY the SQL query, no explanation.
-
-=== KHI NÀO DÙNG SELECT * ===
-- "liệt kê khách hàng..." → SELECT * FROM customer
-- "tìm khách hàng..." → SELECT * FROM customer
-- "tất cả thông tin..." → SELECT *
-- "những khách hàng nào..." → SELECT * FROM customer
-- "những người..." → SELECT *
-
-=== KHI NÀO KHÔNG CẦN JOIN ===
-- Chỉ hỏi về customer → KHÔNG cần join customer_demographics
-- Chỉ hỏi về gender/marital → chỉ JOIN customer_demographics, KHÔNG join address
-- Chỉ hỏi về inventory → KHÔNG cần join item/warehouse
-- Chỉ hỏi về item → KHÔNG cần join sales tables
-
-VÍ DỤ:
-- "mã SP và tồn kho của warehouse 1" → SELECT inv_item_sk, inv_quantity_on_hand FROM inventory WHERE inv_warehouse_sk = 1 (KHÔNG JOIN!)
-
-=== ITEM COLUMN MAPPING ===
-- "tên sản phẩm" → i.i_product_name
-- "mô tả sản phẩm" → i.i_item_desc (KHÔNG phải product_name!)
-- "giá niêm yết" → i.i_current_price
-
-=== CUSTOMER NAME MAPPING ===
-- "tên" (first name) → c_first_name (Ví dụ: tên Lan → c_first_name='Lan')
-- "họ" (last name) → c_last_name (Ví dụ: họ Nguyễn → c_last_name='Nguyen')
-- "tên bắt đầu bằng M" → c_first_name LIKE 'M%'
+2. KHÔNG bịa cột/bảng không có trong schema
+3. Luôn dùng alias cho bảng
+4. Output ONLY the SQL query, no explanation.
 
 === DOANH THU & SỐ LƯỢNG ===
-- "doanh thu" → SUM(net_paid) [KHÔNG phải sales_price!]
-- "bán chạy nhất" → SUM(quantity)
+- "doanh thu"/"tổng tiền" → SUM(net_paid) [KHÔNG phải sales_price!]
+- "bán chạy nhất"/"bán nhiều nhất" → SUM(quantity)
 
-=== KÊNH BÁN HÀNG (QUAN TRỌNG!) ===
+=== KÊNH BÁN HÀNG ===
 MẶC ĐỊNH = store_sales (ss) khi không nói rõ kênh
 
 - "cửa hàng/store" → store_sales
 - "online/web" → web_sales  
 - "catalog" → catalog_sales
-- "tỷ lệ đơn hàng có khuyến mãi" → LUÔN store_sales (ss)
+- "tỷ lệ đơn hàng có khuyến mãi" → store_sales (ss)
 - "trả hàng" (không rõ) → store_returns
-
-VÍ DỤ PROMOTION RATE:
-"tỷ lệ KM Electronics/Men/Home/Books" → store_sales, NOT catalog_sales/web_sales!
-Pattern: CAST(SUM(CASE WHEN ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
 
 === VALUE MAPPINGS ===
 QUỐC GIA (c_birth_country - UPPERCASE):
@@ -78,3 +47,7 @@ TÍN DỤNG (cd_credit_rating): Low | Good | High Risk | Elite
 - p_discount_amt → dùng ss_ext_discount_amt
 - d_quarter → dùng d_qoy
 - category table → dùng i.i_category
+
+=== PROMOTION RATE PATTERN ===
+CAST(SUM(CASE WHEN ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+KHÔNG dùng AVG(boolean)
