@@ -1,795 +1,175 @@
-================================================================================
-5-Shot Benchmark Detailed Log
-Model: Qwen/Qwen3-Coder-30B-A3B-Instruct
-Test: research_pipeline/datasets/test_easy.csv
-Timestamp: 20260108_130720
-================================================================================
-
-
-================================================================================
-[1/28]
-Question: Tính tổng doanh thu từ kênh Catalog cho những khách hàng sống ở bang 'Texas' (TX)
-Gold SQL: SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX';
+[1/100] Liệt kê 5 mặt hàng có giá niêm yết (current price) cao nhất ...
+  ⚠️ Different results
 
-Linked Tables: ['inventory', 'catalog_page', 'store_sales', 'customer', 'catalog_returns', 'customer_address']
-
-Predicted SQL: SELECT SUM(cs.cs_net_paid) 
-FROM catalog_sales cs 
-JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk 
-JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk 
-JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk 
-WHERE ca.ca_state = 'TX' 
-AND d.d_year = 2000;
-Generation time: 58.31s
-
-✗ WRONG: Mismatch (pred=1, gold=1)
-
-================================================================================
-[2/28]
-Question: Liệt kê khách hàng có từ 2 xe ô tô trở lên (Vehicle count).
-Gold SQL: SELECT c.c_first_name, hd.hd_vehicle_count  FROM customer c  JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk  WHERE hd.hd_vehicle_count > 2;
-
-Linked Tables: ['inventory', 'catalog_page', 'household_demographics', 'store_sales', 'store', 'customer']
-
-Predicted SQL: SELECT c.c_customer_sk, c.c_first_name, c.c_last_name, hd.hd_vehicle_count
-FROM customer c
-JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
-WHERE hd.hd_vehicle_count >= 2;
-Generation time: 41.18s
-
-✗ WRONG: Mismatch (pred=48300, gold=32223)
-
-================================================================================
-[3/28]
-Question: Bạn hãy liệt kê danh sách tên các nhà sản xuất có mặt hàng thuộc danh mục Music hiện đang có sẵn trong kho tại bang Kansas để chuẩn bị cho đợt kiểm hàng tới
-Gold SQL: SELECT DISTINCT i.i_manufact FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk WHERE i.i_category = 'Music' AND w.w_state = 'KS' AND inv.inv_quantity_on_hand > 0;
-
-Linked Tables: ['inventory', 'store_sales', 'store', 'item', 'customer_address', 'catalog_sales']
-
-Predicted SQL: SELECT DISTINCT i.i_manufact
-FROM item i
-JOIN inventory inv ON i.i_item_sk = inv.inv_item_sk
-JOIN customer_address ca ON inv.inv_warehouse_sk = ca.ca_address_sk
-WHERE i.i_category = 'Music'
-  AND ca.ca_state = 'KS';
-Generation time: 43.04s
-
-✓ CORRECT
-
-================================================================================
-[4/28]
-Question: Check giùm tôi tồn kho của Music ở chi nhánh KS.
-Gold SQL: SELECT      w.w_warehouse_name,     w.w_state,     i.i_category,     SUM(inv.inv_quantity_on_hand) as total_inventory FROM inventory inv JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk JOIN item i ON inv.inv_item_sk = i.i_item_sk WHERE i.i_category = 'Music'   AND w.w_state = 'KS' GROUP BY w.w_warehouse_name, w.w_state, i.i_category ORDER BY total_inventory DESC;
-
-Linked Tables: ['inventory', 'store_sales', 'store', 'customer_address', 'warehouse', 'catalog_sales']
-
-Predicted SQL: SELECT inv.inv_quantity_on_hand
-FROM inventory inv
-JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
-JOIN item i ON inv.inv_item_sk = i.i_item_sk
-WHERE w.w_warehouse_name = 'KS'
-AND i.i_category = 'Music';
-Generation time: 42.66s
-
-✓ CORRECT
-
-================================================================================
-[5/28]
-Question: Tính trung bình số lượng sản phẩm mỗi đơn hàng trên các trang web có URL chứa từ 'sales'
-Gold SQL: SELECT AVG(ws_quantity) FROM web_sales ws JOIN web_page wp ON ws.ws_web_page_sk = wp.wp_web_page_sk WHERE wp.wp_url LIKE '%sales%';
-
-Linked Tables: ['store_sales', 'item', 'web_sales', 'web_site', 'catalog_sales', 'promotion']
-
-Predicted SQL: SELECT AVG(ws.ws_quantity) 
-FROM web_sales ws 
-JOIN web_site web ON ws.ws_web_site_sk = web.web_site_sk 
-WHERE web.web_name LIKE '%sales%';
-Generation time: 28.93s
-
-✓ CORRECT
-
-================================================================================
-[6/28]
-Question: Năm 2001 thì kênh Store mang về bao nhiêu tiền?
-Gold SQL: SELECT      d.d_year,     'Store' as channel,     SUM(ss.ss_net_paid) as total_revenue,     COUNT(*) as total_transactions FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2001 GROUP BY d.d_year;
-
-Linked Tables: ['inventory', 'date_dim', 'store_sales', 'store', 'web_site', 'warehouse']
-
-Predicted SQL: SELECT SUM(ss.ss_net_paid) AS revenue
-FROM store_sales ss
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-WHERE d.d_year = 2001;
-Generation time: 32.52s
-
-✗ WRONG: Mismatch (pred=1, gold=1)
-
-================================================================================
-[7/28]
-Question: Trong quý 1 năm 2000, loại hàng (category) nào bán chạy nhất trên trang web?
-Gold SQL: SELECT i.i_category, SUM(ws.ws_quantity) AS total_qty FROM web_sales ws JOIN item i ON ws.ws_item_sk = i.i_item_sk JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2000 AND d.d_qoy = 1 GROUP BY i.i_category ORDER BY total_qty DESC LIMIT 1;
-
-Linked Tables: ['date_dim', 'store', 'item', 'web_sales', 'web_site', 'catalog_sales']
-
-Predicted SQL: SELECT i.i_category, SUM(ws.ws_sales_price) AS total_revenue
-FROM web_sales ws
-JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
-JOIN item i ON ws.ws_item_sk = i.i_item_sk
-WHERE d.d_year = 2000 AND d.d_qoy = 1
-GROUP BY i.i_category
-ORDER BY total_revenue DESC
-LIMIT 1;
-Generation time: 61.33s
-
-✗ WRONG: Mismatch (pred=1, gold=1)
-
-================================================================================
-[8/28]
-Question: Mấy món đồ nào bị trả lại nhiều nhất vì lý do 'không giống mô tả' (not as described)?
-Gold SQL: SELECT i.i_item_desc, COUNT(*) AS return_times FROM store_returns sr JOIN item i ON sr.sr_item_sk = i.i_item_sk JOIN reason r ON sr.sr_reason_sk = r.r_reason_sk WHERE r.r_reason_desc ILIKE '%not as described%' GROUP BY i.i_item_desc ORDER BY return_times DESC;
-
-Linked Tables: ['reason', 'store', 'catalog_returns', 'catalog_sales', 'store_returns', 'web_returns']
-
-Predicted SQL: SELECT 
-    i.i_item_id,
-    COUNT(*) AS return_count
-FROM 
-    catalog_returns cr
-JOIN 
-    reason r ON cr.cr_reason_sk = r.r_reason_sk
-JOIN 
-    item i ON cr.cr_item_sk = i.i_item_sk
-WHERE 
-    r.r_reason_desc = 'not as described'
-GROUP BY 
-    i.i_item_id
-ORDER BY 
-    return_count DESC
-LIMIT 10;
-Generation time: 62.21s
-
-✓ CORRECT
-
-================================================================================
-[9/28]
-Question: Trong năm 2001, thương hiệu (brand) nào của mặt hàng 'Men' bán chạy nhất tại cửa hàng?
-Gold SQL: SELECT i.i_brand, SUM(ss.ss_quantity) AS total_sold FROM store_sales ss JOIN item i ON ss.ss_item_sk = i.i_item_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE i.i_category = 'Men' AND d.d_year = 2001 GROUP BY i.i_brand ORDER BY total_sold DESC LIMIT 1;
-
-Linked Tables: ['date_dim', 'store_sales', 'store', 'customer', 'item', 'web_site']
-
-Predicted SQL: SELECT i.i_brand, SUM(ss.ss_quantity) AS total_quantity
-FROM store_sales ss
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-JOIN item i ON ss.ss_item_sk = i.i_item_sk
-WHERE d.d_year = 2001
-  AND i.i_category = 'Men'
-GROUP BY i.i_brand
-ORDER BY total_quantity DESC
-LIMIT 1;
-Generation time: 59.76s
-
-✓ CORRECT
-
-================================================================================
-[10/28]
-Question: Liệt kê danh sách năm khách hàng có xếp hạng tín dụng thấp nhất nhưng lại thực hiện nhiều giao dịch trả hàng nhất tại các trung tâm hỗ trợ trực tuyến.
-Gold SQL: SELECT c.c_first_name, c.c_last_name, COUNT(wr.wr_item_sk) AS return_count FROM web_returns wr JOIN customer c ON wr.wr_refunded_customer_sk = c.c_customer_sk JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk WHERE cd.cd_credit_rating = 'Low Risk' GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name ORDER BY return_count DESC LIMIT 5;
-
-Linked Tables: ['date_dim', 'customer', 'store', 'catalog_returns', 'web_sales', 'call_center']
-
-Predicted SQL: SELECT 
-    c.c_customer_sk,
-    cd.cd_credit_rating,
-    COUNT(cr.cr_item_sk) AS return_count
-FROM 
-    catalog_returns cr
-JOIN 
-    date_dim d ON cr.cr_returned_date_sk = d.d_date_sk
-JOIN 
-    call_center cc ON cr.cr_call_center_sk = cc.cc_call_center_sk
-JOIN 
-    customer c ON cr.cr_refunded_customer_sk = c.c_customer_sk
-JOIN 
-    customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
-WHERE 
-    d.d_year = 2002
-    AND cc.cc_class = 'online support'
-GROUP BY 
-    c.c_customer_sk, cd.cd_credit_rating
-HAVING 
-    cd.cd_credit_rating = (
-        SELECT MIN(cd2.cd_credit_rating)
-        FROM customer c2
-        JOIN customer_demographics cd2 ON c2.c_current_cdemo_sk = cd2.cd_demo_sk
-        JOIN catalog_returns cr2 ON c2.c_customer_sk = cr2.cr_refunded_customer_sk
-        JOIN date_dim d2 ON cr2.cr_returned_date_sk = d2.d_date_sk
-        JOIN call_center cc2 ON cr2.cr_call_center_sk = cc2.cc_call_center_sk
-        WHERE d2.d_year = 2002
-          AND cc2.cc_class = 'online support'
-    )
-ORDER BY 
-    return_count DESC
-LIMIT 10;
-Generation time: 193.43s
-
-✓ CORRECT
-
-================================================================================
-[11/28]
-Question: Hãy cho tôi biết lượng tồn kho trung bình của các mặt hàng thời trang 'Women' vào những ngày cuối tuần trong tháng mười hai năm 2001
-Gold SQL: SELECT AVG(inv.inv_quantity_on_hand) FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk JOIN date_dim d ON inv.inv_date_sk = d.d_date_sk WHERE i.i_category = 'Women' AND d.d_weekend = 'Y'    AND d.d_year = 2001 AND d.d_moy = 12;
-
-Linked Tables: ['inventory', 'date_dim', 'store_sales', 'store', 'item', 'warehouse']
-
-Predicted SQL: SELECT AVG(inv.inv_quantity_on_hand) AS avg_inventory
-FROM inventory inv
-JOIN date_dim d ON inv.inv_date_sk = d.d_date_sk
-JOIN item i ON inv.inv_item_sk = i.i_item_sk
-WHERE d.d_year = 2001
-  AND d.d_moy = 12
-  AND d.d_weekend = 'Y'
-  AND i.i_category = 'Women';
-Generation time: 62.21s
-
-✓ CORRECT
-
-================================================================================
-[12/28]
-Question: Thống kê xem khách hàng nam và nữ, nhóm nào hay đi mua sắm ở cửa hàng hơn vào ngày Thứ Hai?
-Gold SQL: SELECT cd.cd_gender, COUNT(*) AS visit_count FROM store_sales ss JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_day_name = 'Monday' GROUP BY cd.cd_gender;
-
-Linked Tables: ['inventory', 'date_dim', 'household_demographics', 'store_sales', 'store', 'customer']
-
-Predicted SQL: SELECT 
-    cd.cd_gender,
-    COUNT(*) AS shopping_frequency
-FROM store_sales ss
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
-JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
-WHERE d.d_day_name = 'Monday'
-GROUP BY cd.cd_gender;
-Generation time: 58.35s
-
-✗ WRONG: Mismatch (pred=2, gold=2)
-
-================================================================================
-[13/28]
-Question: Hiển thị thông tin tên đăng nhập của những khách hàng đã ly hôn và đang có từ ba người phụ thuộc trở lên trong gia đình.
-Gold SQL: SELECT c_login FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_marital_status = 'D' AND cd_dep_count >= 3;
-
-Linked Tables: ['household_demographics', 'customer', 'customer_address', 'customer_demographics', 'web_page', 'web_returns']
-
-Predicted SQL: SELECT c.c_login
-FROM customer c
-JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
-WHERE cd.cd_marital_status = 'D' AND cd.cd_dep_count >= 3;
-Generation time: 35.54s
-
-✓ CORRECT
-
-================================================================================
-[14/28]
-Question: Tính giúp tôi tổng số lượng hàng tồn kho của các sản phẩm có màu sắc là xanh dương và thuộc sản phẩm váy
-Gold SQL: SELECT SUM(inv.inv_quantity_on_hand) FROM inventory inv JOIN item i ON inv.inv_item_sk = i.i_item_sk WHERE i.i_color = 'blue' AND i.i_class = 'dresses';
-
-Linked Tables: ['inventory', 'store_sales', 'store', 'item', 'warehouse', 'catalog_sales']
-
-Predicted SQL: SELECT SUM(inv.inv_quantity_on_hand) 
-FROM inventory inv
-JOIN item i ON inv.inv_item_sk = i.i_item_sk
-WHERE i.i_color = 'blue' AND i.i_class = 'dresses';
-Generation time: 34.19s
-
-✓ CORRECT
-
-================================================================================
-[15/28]
-Question: Hãy tính tổng lợi nhuận từ các cửa hàng do quản lý có tên bắt đầu bằng chữ 'W' điều hành trong suốt cả năm 2001
-Gold SQL: SELECT SUM(ss.ss_net_profit) FROM store_sales ss JOIN store s ON ss.ss_store_sk = s.s_store_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE s.s_manager LIKE 'W%' AND d.d_year = 2001;
-
-Linked Tables: ['inventory', 'date_dim', 'store_sales', 'store', 'customer_address', 'warehouse']
-
-Predicted SQL: SELECT SUM(ss.ss_net_profit) 
-FROM store_sales ss
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-JOIN store s ON ss.ss_store_sk = s.s_store_sk
-WHERE d.d_year = 2001
-AND s.s_manager LIKE 'W%';
-Generation time: 46.24s
-
-✓ CORRECT
-
-================================================================================
-[16/28]
-Question: Bạn hãy xác định xem nhà sản xuất nào có nhiều sản phẩm được liệt kê trên các trang Catalog nhất và tổng số lượng đơn hàng tương ứng của họ là bao nhiêu.
-Gold SQL: SELECT i.i_manufact, COUNT(cs.cs_order_number) AS order_count FROM catalog_sales cs JOIN item i ON cs.cs_item_sk = i.i_item_sk GROUP BY i.i_manufact ORDER BY COUNT(DISTINCT i.i_item_sk) DESC LIMIT 1;
-
-Linked Tables: ['inventory', 'catalog_page', 'household_demographics', 'item', 'catalog_returns', 'web_site']
-
-Predicted SQL: SELECT 
-    i.i_manufact,
-    COUNT(cp.cp_catalog_page_sk) AS catalog_page_count,
-    SUM(inv.inv_quantity_on_hand) AS total_quantity
-FROM 
-    item i
-JOIN 
-    catalog_page cp ON i.i_item_sk = cp.cp_catalog_page_sk
-JOIN 
-    inventory inv ON i.i_item_sk = inv.inv_item_sk
-GROUP BY 
-    i.i_manufact
-ORDER BY 
-    catalog_page_count DESC
-LIMIT 1;
-Generation time: 66.96s
-
-✗ WRONG: Mismatch (pred=1, gold=1)
-
-================================================================================
-[17/28]
-Question: Check giùm tôi tồn kho của Jewelry ở chi nhánh IL.
-Gold SQL: SELECT      w.w_warehouse_name,     w.w_state,     i.i_category,     SUM(inv.inv_quantity_on_hand) as total_inventory FROM inventory inv JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk JOIN item i ON inv.inv_item_sk = i.i_item_sk WHERE i.i_category = 'Jewelry'   AND w.w_state = 'IL' GROUP BY w.w_warehouse_name, w.w_state, i.i_category ORDER BY total_inventory DESC;
-
-Linked Tables: ['inventory', 'store_sales', 'store', 'customer_address', 'warehouse', 'catalog_sales']
-
-Predicted SQL: SELECT SUM(inv.inv_quantity_on_hand) AS inventory_count
-FROM inventory inv
-JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
-JOIN item i ON inv.inv_item_sk = i.i_item_sk
-WHERE i.i_category = 'Jewelry' AND w.w_state = 'IL';
-Generation time: 46.36s
-
-✓ CORRECT
-
-================================================================================
-[18/28]
-Question: Check giùm tôi tồn kho của Home ở chi nhánh GA.
-Gold SQL: SELECT    w.w_warehouse_name,   w.w_state,   i.i_category,   SUM(inv.inv_quantity_on_hand) as total_inventory  FROM inventory inv  JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk  JOIN item i ON inv.inv_item_sk = i.i_item_sk  WHERE i.i_category = 'Home'   AND w.w_state = 'GA'  GROUP BY w.w_warehouse_name, w.w_state, i.i_category  ORDER BY total_inventory DESC;
-
-Linked Tables: ['inventory', 'store_sales', 'store', 'customer_address', 'web_site', 'warehouse']
-
-Predicted SQL: SELECT inv.inv_quantity_on_hand
-FROM inventory inv
-JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
-JOIN item i ON inv.inv_item_sk = i.i_item_sk
-WHERE w.w_state = 'GA' AND i.i_category = 'Home';
-Generation time: 42.21s
-
-✓ CORRECT
-
-================================================================================
-[19/28]
-Question: Năm 2002 thì kênh Web mang về bao nhiêu tiền?
-Gold SQL: SELECT      d.d_year,     'Web' as channel,     SUM(ws.ws_net_paid) as total_revenue,     COUNT(*) as total_transactions FROM web_sales ws JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002 GROUP BY d.d_year;
-
-Linked Tables: ['date_dim', 'household_demographics', 'web_sales', 'web_site', 'income_band', 'web_page']
-
-Predicted SQL: SELECT SUM(ws.ws_net_paid) AS revenue
-FROM web_sales ws
-JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
-WHERE d.d_year = 2002;
-Generation time: 32.88s
-
-✗ WRONG: Mismatch (pred=1, gold=1)
-
-================================================================================
-[20/28]
-Question: Hãy tìm giúp tôi tổng mức tổn thất ròng từ việc trả hàng qua Catalog đối với mặt hàng có mã số sản phẩm là một trăm năm mươi tư
-Gold SQL: SELECT SUM(cr_net_loss) FROM catalog_returns WHERE cr_item_sk = 154;
-
-Linked Tables: ['inventory', 'date_dim', 'catalog_page', 'store_sales', 'item', 'catalog_returns']
-
-Predicted SQL: SELECT SUM(cr.cr_net_loss) 
-FROM catalog_returns cr
-JOIN item i ON cr.cr_item_sk = i.i_item_sk
-WHERE i.i_item_sk = 154;
-Generation time: 30.49s
-
-✓ CORRECT
-
-================================================================================
-[21/28]
-Question: So sánh tổng số lượng sản phẩm bán ra trong các ngày lễ so với các ngày bình thường để đánh giá sức mua của khách hàng
-Gold SQL: SELECT d.d_holiday, SUM(ss.ss_quantity) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk GROUP BY d.d_holiday;
-
-Linked Tables: ['date_dim', 'store_sales', 'store', 'customer', 'item', 'web_sales']
-
-Predicted SQL: SELECT 
-    CASE WHEN d.d_holiday = 'Y' THEN 'Ngày lễ' ELSE 'Ngày thường' END AS loai_ngay,
-    SUM(ss.ss_quantity) AS tong_so_luong_ban_ra
-FROM store_sales ss
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-GROUP BY loai_ngay
-ORDER BY loai_ngay;
-Generation time: 57.58s
-
-✗ WRONG: Mismatch (pred=2, gold=2)
-
-================================================================================
-[22/28]
-Question: Trung tâm hỗ trợ (Call Center) nào ở bang 'NY' đã xử lý doanh thu cao nhất cho kênh Catalog?
-Gold SQL: SELECT cc.cc_name, SUM(cs.cs_sales_price) AS revenue FROM catalog_sales cs JOIN call_center cc ON cs.cs_call_center_sk = cc.cc_call_center_sk WHERE cc.cc_state = 'NY' GROUP BY cc.cc_name ORDER BY revenue DESC LIMIT 1;
-
-Linked Tables: ['catalog_page', 'reason', 'customer', 'store', 'store_sales', 'catalog_returns']
-
-Predicted SQL: SELECT 
-    cc.cc_call_center_id,
-    SUM(cs.cs_net_paid) AS total_revenue
-FROM catalog_sales cs
-JOIN call_center cc ON cs.cs_call_center_sk = cc.cc_call_center_sk
-JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
-JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
-WHERE ca.ca_state = 'NY'
-GROUP BY cc.cc_call_center_id
-ORDER BY total_revenue DESC
-LIMIT 1;
-Generation time: 69.81s
-
-✓ CORRECT
-
-================================================================================
-[23/28]
-Question: Tìm tên các sản phẩm thuộc danh mục Fashion có giá bán hiện tại lớn hơn một trăm đô la trong bảng hàng hóa
-Gold SQL: SELECT i_product_name, i_current_price  FROM item  WHERE i_category = 'Fashion' AND i_current_price > 100;
-
-Linked Tables: ['inventory', 'store_sales', 'store', 'item', 'web_site', 'catalog_sales']
-
-Predicted SQL: SELECT i.i_item_id, i.i_item_desc
-FROM item i
-WHERE i.i_category = 'Fashion'
-  AND i.i_current_price > 100;
-Generation time: 28.53s
-
-✓ CORRECT
-
-================================================================================
-[24/28]
-Question: Tìm khách hàng sống ở bang Texas (TX) mà có gia đình đông người (trên 4 người phụ thuộc).
-Gold SQL: SELECT c.c_first_name, c.c_last_name FROM customer c JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk WHERE ca.ca_state = 'TX' AND hd.hd_dep_count > 4;
-
-Linked Tables: ['household_demographics', 'store_sales', 'customer', 'customer_address', 'call_center', 'customer_demographics']
-
-Predicted SQL: SELECT c.c_customer_sk, c.c_first_name, c.c_last_name, c.c_email_address, c.c_login
-FROM customer c
-JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
-JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
-WHERE ca.ca_state = 'TX' AND hd.hd_dep_count > 4;
-Generation time: 57.04s
-
-✗ WRONG: Mismatch (pred=3838, gold=3838)
-
-================================================================================
-[25/28]
-Question: Liệt kê các khách hàng có danh xưng là tiến sĩ và đến từ Việt Nam 
-Gold SQL: SELECT * FROM customer WHERE c_salutation = 'Dr.' AND c_birth_country = 'VN';
-
-Linked Tables: ['customer', 'store', 'customer_address', 'catalog_sales', 'call_center', 'customer_demographics']
-
-Predicted SQL: SELECT c.c_customer_sk, c.c_first_name, c.c_last_name, c.c_email_address, c.c_login
-FROM customer c
-JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
-JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
-WHERE cd.cd_education_status = 'Advanced Degree'
-AND ca.ca_country = 'Vietnam';
-Generation time: 58.99s
-
-✓ CORRECT
-
-================================================================================
-[26/28]
-Question: Liệt kê thông tin các khách hàng nữ có mức ước tính mua sắm đạt mức tám điểm và có xếp hạng tín dụng ở mức ưu tú
-Gold SQL: SELECT * FROM customer_demographics  WHERE cd_gender = 'F' AND cd_purchase_estimate = 8 AND cd_credit_rating = 'Elite';
-
-Linked Tables: ['customer', 'store', 'item', 'customer_address', 'catalog_sales', 'customer_demographics']
-
-Predicted SQL: SELECT 
-    c.c_first_name,
-    c.c_last_name,
-    c.c_email_address,
-    cd.cd_gender,
-    cd.cd_purchase_estimate,
-    cd.cd_credit_rating
-FROM customer c
-JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
-WHERE cd.cd_gender = 'F'
-  AND cd.cd_purchase_estimate = 8
-  AND cd.cd_credit_rating = 'Excellent';
-Generation time: 61.81s
-
-✓ CORRECT
-
-================================================================================
-[27/28]
-Question: Hãy cho tôi biết tổng doanh thu thu được từ các sản phẩm thuộc danh mục đồ điện tử đã được bán thông qua trang số năm trong cuốn danh mục Catalog
-Gold SQL: SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk JOIN item i ON cs.cs_item_sk = i.i_item_sk WHERE cp.cp_catalog_page_number = 5 AND i.i_category = 'Electronics';
-
-Linked Tables: ['inventory', 'date_dim', 'catalog_page', 'store_sales', 'item', 'catalog_returns']
-
-Predicted SQL: SELECT SUM(cs.cs_net_paid) 
-FROM catalog_sales cs
-JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk
-JOIN item i ON cs.cs_item_sk = i.i_item_sk
-JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk
-WHERE i.i_category = 'Electronics'
-AND cp.cp_catalog_page_number = 5
-AND d.d_year = 2000;
-Generation time: 63.69s
-
-✗ WRONG: Mismatch (pred=1, gold=1)
-
-================================================================================
-[28/28]
-Question: Tìm tên khách hàng đã trả lại hàng với tổng giá trị hoàn lại lớn nhất.
-Gold SQL: SELECT c.c_first_name, c.c_last_name, SUM(sr.sr_return_amt) as total_returned_value FROM customer c JOIN store_returns sr ON c.c_customer_sk = sr.sr_customer_sk GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name ORDER BY total_returned_value DESC LIMIT 1;
-
-Linked Tables: ['reason', 'customer', 'catalog_returns', 'catalog_sales', 'store_returns', 'web_returns']
-
-Predicted SQL: SELECT c.c_first_name, c.c_last_name
-FROM web_returns wr
-JOIN customer c ON wr.wr_refunded_customer_sk = c.c_customer_sk
-GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name
-ORDER BY SUM(wr.wr_return_amt) DESC
-LIMIT 1;
-Generation time: 47.01s
-
-✗ WRONG: Mismatch (pred=1, gold=1)
-
-======================================================================
-SUMMARY (5-shot)
-======================================================================
-Total samples: 28
-Execution success: 28/28 = 100.0%
-Result match: 17/28 = 60.7%
-
-ERROR STATISTICS:
-- Channel mistakes: 1
-- Demographics mistakes: 0
-- Table mistakes: 2
-- JOIN mistakes: 4
-- Execution errors: 0
-======================================================================
-ERROR ANALYSIS LOG (5-shot)
-================================================================================
-
-
-================================================================================
-[1] Tính tổng doanh thu từ kênh Catalog cho những khách hàng sống ở bang 'Texas' (TX)
-
-Gold SQL:
-SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk WHERE ca.ca_state = 'TX';
-
-Pred SQL:
-SELECT SUM(cs.cs_net_paid) 
-FROM catalog_sales cs 
-JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk 
-JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk 
-JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk 
-WHERE ca.ca_state = 'TX' 
-AND d.d_year = 2000;
-
-Error Analysis:
-  - join_mistake: JOIN count: pred=3, gold=2
-
-Execution: OK (1 rows)
-Match: Mismatch (pred=1, gold=1)
-
-================================================================================
-[2] Liệt kê khách hàng có từ 2 xe ô tô trở lên (Vehicle count).
-
-Gold SQL:
-SELECT c.c_first_name, hd.hd_vehicle_count  FROM customer c  JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk  WHERE hd.hd_vehicle_count > 2;
-
-Pred SQL:
-SELECT c.c_customer_sk, c.c_first_name, c.c_last_name, hd.hd_vehicle_count
-FROM customer c
-JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
-WHERE hd.hd_vehicle_count >= 2;
-
-Error Analysis:
-
-Execution: OK (48300 rows)
-Match: Mismatch (pred=48300, gold=32223)
-
-================================================================================
-[6] Năm 2001 thì kênh Store mang về bao nhiêu tiền?
-
-Gold SQL:
-SELECT      d.d_year,     'Store' as channel,     SUM(ss.ss_net_paid) as total_revenue,     COUNT(*) as total_transactions FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_year = 2001 GROUP BY d.d_year;
-
-Pred SQL:
-SELECT SUM(ss.ss_net_paid) AS revenue
-FROM store_sales ss
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-WHERE d.d_year = 2001;
-
-Error Analysis:
-
-Execution: OK (1 rows)
-Match: Mismatch (pred=1, gold=1)
-
-================================================================================
-[7] Trong quý 1 năm 2000, loại hàng (category) nào bán chạy nhất trên trang web?
-
-Gold SQL:
-SELECT i.i_category, SUM(ws.ws_quantity) AS total_qty FROM web_sales ws JOIN item i ON ws.ws_item_sk = i.i_item_sk JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2000 AND d.d_qoy = 1 GROUP BY i.i_category ORDER BY total_qty DESC LIMIT 1;
-
-Pred SQL:
-SELECT i.i_category, SUM(ws.ws_sales_price) AS total_revenue
-FROM web_sales ws
-JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
-JOIN item i ON ws.ws_item_sk = i.i_item_sk
-WHERE d.d_year = 2000 AND d.d_qoy = 1
-GROUP BY i.i_category
-ORDER BY total_revenue DESC
-LIMIT 1;
-
-Error Analysis:
-
-Execution: OK (1 rows)
-Match: Mismatch (pred=1, gold=1)
-
-================================================================================
-[12] Thống kê xem khách hàng nam và nữ, nhóm nào hay đi mua sắm ở cửa hàng hơn vào ngày Thứ Hai?
-
-Gold SQL:
-SELECT cd.cd_gender, COUNT(*) AS visit_count FROM store_sales ss JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk WHERE d.d_day_name = 'Monday' GROUP BY cd.cd_gender;
-
-Pred SQL:
-SELECT 
-    cd.cd_gender,
-    COUNT(*) AS shopping_frequency
-FROM store_sales ss
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-JOIN customer c ON ss.ss_customer_sk = c.c_customer_sk
-JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
-WHERE d.d_day_name = 'Monday'
-GROUP BY cd.cd_gender;
-
-Error Analysis:
-  - join_mistake: JOIN count: pred=3, gold=2
-
-Execution: OK (2 rows)
-Match: Mismatch (pred=2, gold=2)
-
-================================================================================
-[16] Bạn hãy xác định xem nhà sản xuất nào có nhiều sản phẩm được liệt kê trên các trang Catalog nhất và tổng số lượng đơn hàng tương ứng của họ là bao nhiêu.
-
-Gold SQL:
-SELECT i.i_manufact, COUNT(cs.cs_order_number) AS order_count FROM catalog_sales cs JOIN item i ON cs.cs_item_sk = i.i_item_sk GROUP BY i.i_manufact ORDER BY COUNT(DISTINCT i.i_item_sk) DESC LIMIT 1;
-
-Pred SQL:
-SELECT 
-    i.i_manufact,
-    COUNT(cp.cp_catalog_page_sk) AS catalog_page_count,
-    SUM(inv.inv_quantity_on_hand) AS total_quantity
-FROM 
-    item i
-JOIN 
-    catalog_page cp ON i.i_item_sk = cp.cp_catalog_page_sk
-JOIN 
-    inventory inv ON i.i_item_sk = inv.inv_item_sk
-GROUP BY 
-    i.i_manufact
-ORDER BY 
-    catalog_page_count DESC
-LIMIT 1;
-
-Error Analysis:
-  - channel_mistake: Expected catalog_sales
-  - table_mistake: Missing tables: {'catalog_sales'}
-  - join_mistake: JOIN count: pred=2, gold=1
-
-Execution: OK (1 rows)
-Match: Mismatch (pred=1, gold=1)
-
-================================================================================
-[19] Năm 2002 thì kênh Web mang về bao nhiêu tiền?
-
-Gold SQL:
-SELECT      d.d_year,     'Web' as channel,     SUM(ws.ws_net_paid) as total_revenue,     COUNT(*) as total_transactions FROM web_sales ws JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk WHERE d.d_year = 2002 GROUP BY d.d_year;
-
-Pred SQL:
-SELECT SUM(ws.ws_net_paid) AS revenue
-FROM web_sales ws
-JOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk
-WHERE d.d_year = 2002;
-
-Error Analysis:
-
-Execution: OK (1 rows)
-Match: Mismatch (pred=1, gold=1)
-
-================================================================================
-[21] So sánh tổng số lượng sản phẩm bán ra trong các ngày lễ so với các ngày bình thường để đánh giá sức mua của khách hàng
-
-Gold SQL:
-SELECT d.d_holiday, SUM(ss.ss_quantity) FROM store_sales ss JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk GROUP BY d.d_holiday;
-
-Pred SQL:
-SELECT 
-    CASE WHEN d.d_holiday = 'Y' THEN 'Ngày lễ' ELSE 'Ngày thường' END AS loai_ngay,
-    SUM(ss.ss_quantity) AS tong_so_luong_ban_ra
-FROM store_sales ss
-JOIN date_dim d ON ss.ss_sold_date_sk = d.d_date_sk
-GROUP BY loai_ngay
-ORDER BY loai_ngay;
-
-Error Analysis:
-
-Execution: OK (2 rows)
-Match: Mismatch (pred=2, gold=2)
-
-================================================================================
-[24] Tìm khách hàng sống ở bang Texas (TX) mà có gia đình đông người (trên 4 người phụ thuộc).
-
-Gold SQL:
-SELECT c.c_first_name, c.c_last_name FROM customer c JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk WHERE ca.ca_state = 'TX' AND hd.hd_dep_count > 4;
-
-Pred SQL:
-SELECT c.c_customer_sk, c.c_first_name, c.c_last_name, c.c_email_address, c.c_login
-FROM customer c
-JOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk
-JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
-WHERE ca.ca_state = 'TX' AND hd.hd_dep_count > 4;
-
-Error Analysis:
-
-Execution: OK (3838 rows)
-Match: Mismatch (pred=3838, gold=3838)
-
-================================================================================
-[27] Hãy cho tôi biết tổng doanh thu thu được từ các sản phẩm thuộc danh mục đồ điện tử đã được bán thông qua trang số năm trong cuốn danh mục Catalog
-
-Gold SQL:
-SELECT SUM(cs.cs_sales_price) FROM catalog_sales cs JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk JOIN item i ON cs.cs_item_sk = i.i_item_sk WHERE cp.cp_catalog_page_number = 5 AND i.i_category = 'Electronics';
-
-Pred SQL:
-SELECT SUM(cs.cs_net_paid) 
-FROM catalog_sales cs
-JOIN catalog_page cp ON cs.cs_catalog_page_sk = cp.cp_catalog_page_sk
-JOIN item i ON cs.cs_item_sk = i.i_item_sk
-JOIN date_dim d ON cs.cs_sold_date_sk = d.d_date_sk
-WHERE i.i_category = 'Electronics'
-AND cp.cp_catalog_page_number = 5
-AND d.d_year = 2000;
-
-Error Analysis:
-  - join_mistake: JOIN count: pred=3, gold=2
-
-Execution: OK (1 rows)
-Match: Mismatch (pred=1, gold=1)
-
-================================================================================
-[28] Tìm tên khách hàng đã trả lại hàng với tổng giá trị hoàn lại lớn nhất.
-
-Gold SQL:
-SELECT c.c_first_name, c.c_last_name, SUM(sr.sr_return_amt) as total_returned_value FROM customer c JOIN store_returns sr ON c.c_customer_sk = sr.sr_customer_sk GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name ORDER BY total_returned_value DESC LIMIT 1;
-
-Pred SQL:
-SELECT c.c_first_name, c.c_last_name
-FROM web_returns wr
-JOIN customer c ON wr.wr_refunded_customer_sk = c.c_customer_sk
-GROUP BY c.c_customer_sk, c.c_first_name, c.c_last_name
-ORDER BY SUM(wr.wr_return_amt) DESC
-LIMIT 1;
-
-Error Analysis:
-  - table_mistake: Missing tables: {'store_returns'}
-
-Execution: OK (1 rows)
-Match: Mismatch (pred=1, gold=1)
-
-======================================================================
-SUMMARY (5-shot)
-======================================================================
-Total samples: 28
-Execution success: 28/28 = 100.0%
-Result match: 17/28 = 60.7%
-
-ERROR STATISTICS:
-- Channel mistakes: 1
-- Demographics mistakes: 0
-- Table mistakes: 2
-- JOIN mistakes: 4
-- Execution errors: 0
-======================================================================
+[2/100] Tôi cần tìm các khách hàng nam có danh xưng là Mr và hiện đa...
+  ✅ Match!
+
+[3/100] Lấy thông tin định danh và họ tên khách hàng...
+  ⚠️ Different results
+
+[4/100] Tìm các cửa hàng ở bang California có giờ mở cửa vào lúc 8 g...
+  ✅ Match!
+
+[5/100] Bạn có thể giúp tôi lọc ra và hiển thị toàn bộ danh sách nhữ...
+  ✅ Match!
+
+[6/100] Website nào có tỷ lệ thuế (web_tax_percentage) cao nhất tron...
+  ⚠️ Different results
+
+[7/100] Liệt kê 5 Website đang hoạt động (không có ngày kết thúc web...
+  ⚠️ Different results
+
+[8/100] Sắp xếp lại toàn bộ danh sách khách hàng trong hệ thống theo...
+  ✅ Match!
+
+[9/100] Cho tôi xem 10 khách hàng trẻ tuổi nhất ...
+  ⚠️ GT error: Parser Error: syntax error at or near "10"
+
+LINE 1: SELECT TOP 10 * FROM customer ORDER BY c_birth_year DESC;
+                   ^
+
+[10/100] Liệt kê tất cả những khách hàng nào đã có trình độ học vấn l...
+  ✅ Match!
+
+[11/100] Lấy ra danh sách các khách hàng hiện tại không nằm trong nhó...
+  ⚠️ Different results
+
+[12/100] Lấy địa chỉ email của những khách hàng nào đang có tên là La...
+  ⚠️ Different results
+
+[13/100] Lọc ra tất cả những khách hàng là nam giới và hiện tại đang ...
+  ✅ Match!
+
+[14/100] Tìm khách hàng có tên bắt đầu bằng chữ 'M'...
+  ✅ Match!
+
+[15/100] Những khách hàng nào có danh xưng là Tiến sĩ?...
+  ⚠️ Different results
+
+[16/100] Tìm những người sinh vào năm 2002...
+  ✅ Match!
+
+[17/100] Liệt kê những khách hàng sinh ra ở Vương quốc Anh (UK)...
+  ⚠️ Different results
+
+[18/100] Tìm tất cả khách hàng đến từ Việt Nam...
+  ✅ Match!
+
+[19/100] Hãy liệt kê danh sách các mã sản phẩm và số lượng tồn kho tư...
+  ✅ Match!
+
+[20/100] Tìm các quốc gia khác nhau có trong dữ liệu...
+  ⚠️ Different results
+
+[21/100] Tìm tất cả các khách hàng mà hiện nay thông tin tên đăng nhậ...
+  ⚠️ Different results
+
+[22/100] Tìm thông tin những người hiện tại đang có tình trạng hôn nh...
+  ⚠️ Different results
+
+[23/100] Bạn hãy liệt kê các giao dịch tại cửa hàng đang gây ra mức t...
+  ❌ SQL Error: Binder Error: Referenced table "亏损最大" not found!
+Candidate tables: "AS亏损最大"
+
+LINE 8: ) AS亏损最大 ON ss.
+
+[24/100] Sắp xếp khách hàng theo năm sinh giảm dần...
+  ✅ Match!
+
+[25/100] Liệt kê danh sách những khách hàng đang ở trạng thái góa vợ ...
+  ⚠️ Different results
+
+[26/100] Liệt kê các khách hàng có danh xưng là 'Ms.'...
+  ⚠️ Different results
+
+[27/100] Lọc ra danh sách những khách hàng hiện tại vẫn còn đang độc ...
+  ⚠️ Different results
+
+[28/100] Tìm tất cả những khách hàng mà tên của họ bắt đầu bằng chữ "...
+  ⚠️ Different results
+
+[29/100] Hiển thị danh sách các thương hiệu sản phẩm thuộc danh mục h...
+  ✅ Match!
+
+[30/100] Tìm các khách hàng sinh vào tháng 12...
+  ⚠️ Different results
+
+[31/100] Hiển thị chi tiết thông tin của người dùng hiện đang sử dụng...
+  ✅ Match!
+
+[32/100] Tìm các khách hàng đến từ Nhật Bản (JP)...
+  ⚠️ Different results
+
+[33/100] Trong loại hàng 'Electronics' (Điện tử), món đồ nào có giá n...
+  ⚠️ Different results
+
+[34/100] Tìm tên các sản phẩm thuộc danh mục Fashion có giá bán hiện ...
+  ✅ Match!
+
+[35/100] Lọc danh sách khách hàng thân thiết...
+  ⚠️ Different results
+
+[36/100] Liệt kê thông tin các khách hàng nữ có mức ước tính mua sắm ...
+  ✅ Match!
+
+[37/100] Truy vấn thông tin của những khách hàng có ngày sinh là ngày...
+  ❌ SQL Error: Binder Error: Referenced column "cd_demo_sk" not found in FROM clause!
+Candidate bindings: "d_date_s
+
+[38/100] Liệt kê các khách hàng có danh xưng là tiến sĩ và đến từ Việ...
+  ✅ Match!
+
+[39/100] Thống kê xem có bao nhiêu khách hàng trong hệ thống của chún...
+  ⚠️ Different results
+
+[40/100] Hãy cho tôi biết mặt hàng có mã số sản phẩm là một trăm bốn ...
+  ⚠️ Different results
+
+[41/100] Có bao nhiêu khách hàng chưa cập nhật địa chỉ email?...
+  ❌ SQL Error: Binder Error: Table "ca" does not have a column named "ca_email_address"
+
+Candidate bindings: : "ca_
+
+[42/100] Hãy tìm giúp tôi tổng mức tổn thất ròng từ việc trả hàng qua...
+  ❌ SQL Error: Binder Error: Table "cs" does not have a column named "cs_net_loss"
+
+Candidate bindings: : "cs_net_p
+
+[43/100] Đếm tổng số lượng khách hàng trong bảng...
+  ✅ Match!
+
+[44/100] Có bao nhiêu khách hàng đang phải nuôi từ ba người phụ thuộc...
+  ⚠️ Different results
+
+[45/100] Đếm xem có bao nhiêu sản phẩm thuộc danh mục Beauty mà tên t...
+  ✅ Match!
+
+[46/100] Đếm tổng tất cả khách hàng đến từ Mỹ...
+  ⚠️ Different results
+
+[47/100] Bạn hãy liệt kê mười món đồ có giá vốn nhập hàng thấp nhất n...
+  ⚠️ Different results
+
+[48/100] Liệt kê họ và tên của tất cả những khách hàng nào có trình đ...
+  ✅ Match!
+
+[49/100] Liệt kê khách hàng có từ 2 xe ô tô trở lên (Vehicle count)....
+  ⚠️ Different results
+
+[50/100] Cho biết tên của những khách hàng góa vợ hoặc góa chồng sinh...
+  ⚠️ Different results
+
+[51/100] Hiển thị thông tin tên đăng nhập của những khách hàng đã ly ...
+  ✅ Match!
+
+[52/100] Hiển thị tên và email của các khách hàng nữ đã ly hôn và sin...
+  ✅ Match!
+
+[53/100] Tìm những khách hàng mua đồ qua Web mà có địa chỉ nhận hàng ...
+  ⚠️ Different results
+
+[54/100] Tìm email của các khách hàng nam sinh ra tại nước Anh và có ...
+  ✅ Match!
+
+[55/100] Bạn hãy thực hiện phân chia danh sách khách hàng thành bốn n...
+.....

@@ -17,6 +17,9 @@ Usage:
 
     # With schema linking
     python finetune_qwen_coder.py --skip-train --adapter ./qwen_coder_finetuned --easy --schema-linking --few-shot 3
+    
+    # Fast benchmark with vLLM (10-20x faster)
+    python finetune_qwen_coder.py --skip-train --use-vllm --easy --schema-linking --few-shot 3
 """
 
 import os
@@ -125,6 +128,10 @@ def parse_args():
     # Quantization
     parser.add_argument("--8bit", dest="use_8bit", action="store_true", 
                         help="Use 8-bit quantization (slower but more accurate)")
+    
+    # vLLM for fast inference
+    parser.add_argument("--use-vllm", action="store_true",
+                        help="Use vLLM for fast inference (10-20x faster, benchmark only)")
     
     return parser.parse_args()
 
@@ -245,6 +252,43 @@ def load_model_and_tokenizer(args):
         model = PeftModel.from_pretrained(model, args.adapter, is_trainable=not args.skip_train)
     
     return model, tokenizer
+
+
+def load_vllm_model(args):
+    """Load model with vLLM for fast inference"""
+    from vllm import LLM, SamplingParams
+    
+    print(f"\n{'='*60}")
+    print(f"Loading Model with vLLM: {args.model}")
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+    print(f"Memory: {get_gpu_memory()}")
+    print(f"{'='*60}")
+    
+    # vLLM config
+    vllm_kwargs = {
+        "model": args.model,
+        "trust_remote_code": True,
+        "gpu_memory_utilization": 0.9,
+        "max_model_len": 4096,
+        "dtype": "bfloat16",
+    }
+    
+    # Add LoRA adapter if specified
+    if args.adapter and Path(args.adapter).exists():
+        print(f"Loading with LoRA adapter: {args.adapter}")
+        vllm_kwargs["enable_lora"] = True
+        vllm_kwargs["max_lora_rank"] = 64
+    
+    llm = LLM(**vllm_kwargs)
+    
+    # Load tokenizer separately for chat template
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    
+    print(f"vLLM loaded! Memory: {get_gpu_memory()}")
+    
+    return llm, tokenizer
 
 
 # ========== TRAINING ==========
@@ -466,10 +510,39 @@ def generate_sql(model, tokenizer, question: str, schema_linker=None, few_shot: 
     return postprocess_sql(response)
 
 
-def benchmark_model(args, model, tokenizer):
+def generate_sql_vllm(llm, tokenizer, question: str, schema_linker=None, few_shot: int = 0, 
+                       adapter_path: str = None) -> str:
+    """Generate SQL using vLLM for fast inference"""
+    from vllm import SamplingParams
+    from vllm.lora.request import LoRARequest
+    
+    prompt = build_prompt(question, schema_linker, few_shot)
+    
+    messages = [{"role": "user", "content": prompt}]
+    text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    
+    sampling_params = SamplingParams(
+        temperature=0.1,
+        top_p=0.9,
+        max_tokens=512,
+        repetition_penalty=1.05,
+    )
+    
+    # Use LoRA adapter if specified
+    lora_request = None
+    if adapter_path and Path(adapter_path).exists():
+        lora_request = LoRARequest("finetuned", 1, adapter_path)
+    
+    outputs = llm.generate([text], sampling_params, lora_request=lora_request)
+    response = outputs[0].outputs[0].text
+    
+    return postprocess_sql(response)
+
+
+def benchmark_model(args, model, tokenizer, use_vllm: bool = False):
     """Run benchmark on test set"""
     print(f"\n{'='*60}")
-    print("PHASE 2: BENCHMARKING")
+    print(f"PHASE 2: BENCHMARKING {'(vLLM)' if use_vllm else '(HuggingFace)'}")
     print(f"{'='*60}")
     
     # Load test data
@@ -510,7 +583,11 @@ def benchmark_model(args, model, tokenizer):
         print(f"\n[{idx+1}/{len(test_df)}] {question[:60]}...")
         
         start_time = time.time()
-        generated_sql = generate_sql(model, tokenizer, question, schema_linker, args.few_shot)
+        if use_vllm:
+            generated_sql = generate_sql_vllm(model, tokenizer, question, schema_linker, 
+                                               args.few_shot, args.adapter)
+        else:
+            generated_sql = generate_sql(model, tokenizer, question, schema_linker, args.few_shot)
         gen_time = (time.time() - start_time) * 1000
         
         # Validate SQL
@@ -589,23 +666,38 @@ def main():
     print("Qwen3-Coder-30B-A3B Text-to-SQL Finetuning")
     print(f"{'='*60}")
     print(f"Model: {args.model}")
-    print(f"Training data: {args.train_data}")
-    print(f"Epochs: {args.epochs}")
-    print(f"Batch size: {args.batch_size} x {args.grad_accum} grad accum")
-    print(f"LoRA: r={args.lora_r}, alpha={args.lora_alpha}")
+    print(f"Backend: {'vLLM (fast)' if args.use_vllm else 'HuggingFace'}")
     
-    # Load model
-    model, tokenizer = load_model_and_tokenizer(args)
-    
-    # Phase 1: Training
-    if not args.skip_train and not args.adapter:
-        model = train_model(args, model, tokenizer)
-        args.adapter = args.output
-    elif args.skip_train:
-        print("\nSkipping training (--skip-train)")
-    
-    # Phase 2: Benchmark
-    accuracy = benchmark_model(args, model, tokenizer)
+    # vLLM path: benchmark only
+    if args.use_vllm:
+        if not args.skip_train:
+            print("WARNING: --use-vllm only supports benchmarking, adding --skip-train")
+            args.skip_train = True
+        
+        # Load with vLLM
+        model, tokenizer = load_vllm_model(args)
+        
+        # Benchmark
+        accuracy = benchmark_model(args, model, tokenizer, use_vllm=True)
+    else:
+        # HuggingFace path: finetune + benchmark
+        print(f"Training data: {args.train_data}")
+        print(f"Epochs: {args.epochs}")
+        print(f"Batch size: {args.batch_size} x {args.grad_accum} grad accum")
+        print(f"LoRA: r={args.lora_r}, alpha={args.lora_alpha}")
+        
+        # Load model
+        model, tokenizer = load_model_and_tokenizer(args)
+        
+        # Phase 1: Training
+        if not args.skip_train and not args.adapter:
+            model = train_model(args, model, tokenizer)
+            args.adapter = args.output
+        elif args.skip_train:
+            print("\nSkipping training (--skip-train)")
+        
+        # Phase 2: Benchmark
+        accuracy = benchmark_model(args, model, tokenizer, use_vllm=False)
     
     print(f"\n{'='*60}")
     print("PIPELINE COMPLETE")

@@ -12,6 +12,7 @@ trl>=0.8.0
 bitsandbytes>=0.42.0
 accelerate>=0.27.0
 flash-attn>=2.5.0  # pip install flash-attn --no-build-isolation
+vllm>=0.4.0  # Fast inference engine
 
 # Database
 duckdb>=0.10.0

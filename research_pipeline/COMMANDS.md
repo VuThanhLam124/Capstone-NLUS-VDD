@@ -13,18 +13,19 @@ python research_pipeline/finetune_qwen_coder.py \
     --output ./qwen_coder_finetuned
 ```
 
-### Benchmark (base model)
-```bash
-python research_pipeline/benchmark_qwen_coder_fewshot.py \
-    --model Qwen/Qwen3-Coder-30B-A3B-Instruct \
-    --easy --shots 5 --use-vllm
-```
-
-### Benchmark (finetuned)
+### Benchmark (base model - vLLM, fast)
 ```bash
 python research_pipeline/finetune_qwen_coder.py \
     --model Qwen/Qwen3-Coder-30B-A3B-Instruct \
-    --skip-train \
+    --skip-train --use-vllm \
+    --easy --schema-linking --few-shot 3
+```
+
+### Benchmark (finetuned - vLLM)
+```bash
+python research_pipeline/finetune_qwen_coder.py \
+    --model Qwen/Qwen3-Coder-30B-A3B-Instruct \
+    --skip-train --use-vllm \
     --adapter ./qwen_coder_finetuned \
     --easy --schema-linking --few-shot 3
 ```
@@ -44,18 +45,19 @@ python research_pipeline/finetune_qwen_coder.py \
     --output ./deepseek_coder_finetuned
 ```
 
-### Benchmark (base model)
-```bash
-python research_pipeline/benchmark_qwen_coder_fewshot.py \
-    --model deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
-    --easy --schema-linking --shots 5 --use-vllm
-```
-
-### Benchmark (finetuned)
+### Benchmark (base model - vLLM, fast)
 ```bash
 python research_pipeline/finetune_qwen_coder.py \
     --model deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
-    --skip-train \
+    --skip-train --use-vllm \
+    --easy --schema-linking --few-shot 3
+```
+
+### Benchmark (finetuned - vLLM)
+```bash
+python research_pipeline/finetune_qwen_coder.py \
+    --model deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
+    --skip-train --use-vllm \
     --adapter ./deepseek_coder_finetuned \
     --easy --schema-linking --few-shot 3
 ```
