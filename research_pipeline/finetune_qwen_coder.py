@@ -539,7 +539,8 @@ def generate_sql_vllm(llm, tokenizer, question: str, schema_linker=None, few_sho
     return postprocess_sql(response)
 
 
-def benchmark_model(args, model, tokenizer, use_vllm: bool = False):
+def benchmark_model(args, model, tokenizer, use_vllm: bool = False, 
+                     preloaded_schema_linker=None):
     """Run benchmark on test set"""
     print(f"\n{'='*60}")
     print(f"PHASE 2: BENCHMARKING {'(vLLM)' if use_vllm else '(HuggingFace)'}")
@@ -558,9 +559,9 @@ def benchmark_model(args, model, tokenizer, use_vllm: bool = False):
         test_df = test_df.head(args.max_test_samples)
         print(f"Using first {len(test_df)} samples")
     
-    # Setup schema linker
-    schema_linker = None
-    if args.schema_linking and HAS_SCHEMA_LINKING:
+    # Use preloaded schema linker or load new one
+    schema_linker = preloaded_schema_linker
+    if schema_linker is None and args.schema_linking and HAS_SCHEMA_LINKING:
         print("Loading schema linker...")
         schema_linker = SchemaLinker()
     
@@ -674,11 +675,19 @@ def main():
             print("WARNING: --use-vllm only supports benchmarking, adding --skip-train")
             args.skip_train = True
         
+        # Pre-load schema linker BEFORE vLLM to avoid memory issues
+        # SchemaLinker uses ~1GB, must load before vLLM takes all VRAM
+        schema_linker = None
+        if args.schema_linking and HAS_SCHEMA_LINKING:
+            print("Pre-loading schema linker (before vLLM)...")
+            schema_linker = SchemaLinker()
+        
         # Load with vLLM
         model, tokenizer = load_vllm_model(args)
         
-        # Benchmark
-        accuracy = benchmark_model(args, model, tokenizer, use_vllm=True)
+        # Benchmark (pass pre-loaded schema_linker)
+        accuracy = benchmark_model(args, model, tokenizer, use_vllm=True, 
+                                    preloaded_schema_linker=schema_linker)
     else:
         # HuggingFace path: finetune + benchmark
         print(f"Training data: {args.train_data}")
