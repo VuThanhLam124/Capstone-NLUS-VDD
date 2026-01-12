@@ -1,0 +1,190 @@
+# TPC-DS Column Descriptions - Chi Tiết Ngữ Nghĩa
+# File này được inject vào prompt để model hiểu rõ ý nghĩa từng cột
+
+=== FACT TABLES ===
+
+## store_sales (ss) - Giao dịch bán hàng tại cửa hàng vật lý
+| Column | Type | Mô tả |
+|--------|------|-------|
+| ss_sold_date_sk | BIGINT | FK → date_dim. Ngày bán hàng |
+| ss_item_sk | BIGINT | FK → item. Mã sản phẩm |
+| ss_customer_sk | BIGINT | FK → customer. Mã khách hàng |
+| ss_store_sk | BIGINT | FK → store. Mã cửa hàng |
+| ss_promo_sk | BIGINT | FK → promotion. Mã khuyến mãi (NULL = không KM) |
+| ss_ticket_number | BIGINT | Mã đơn hàng (KHÔNG có ss_order_number!) |
+| ss_quantity | INT | Số lượng mua |
+| ss_sales_price | DECIMAL | Giá bán đơn vị |
+| ss_ext_discount_amt | DECIMAL | "Giảm giá" - Tổng tiền giảm giá |
+| ss_net_paid | DECIMAL | "Doanh thu" - Tiền thực thu (sau giảm giá) |
+| ss_net_profit | DECIMAL | Lợi nhuận ròng |
+
+## web_sales (ws) - Giao dịch bán hàng trực tuyến
+| Column | Type | Mô tả |
+|--------|------|-------|
+| ws_bill_customer_sk | BIGINT | FK → customer. Khách thanh toán (KHÔNG có ws_customer_sk!) |
+| ws_ship_addr_sk | BIGINT | FK → customer_address. Địa chỉ giao hàng |
+| ws_bill_addr_sk | BIGINT | FK → customer_address. Địa chỉ thanh toán |
+| ws_order_number | BIGINT | Mã đơn hàng web |
+| ws_net_paid | DECIMAL | "Doanh thu web" - Tiền thực thu |
+| ws_sales_price | DECIMAL | Giá bán (KHÁC với net_paid!) |
+
+## catalog_sales (cs) - Giao dịch qua catalog/mail order
+| Column | Type | Mô tả |
+|--------|------|-------|
+| cs_bill_customer_sk | BIGINT | FK → customer. Khách thanh toán |
+| cs_order_number | BIGINT | Mã đơn hàng catalog |
+| cs_net_paid | DECIMAL | "Doanh thu catalog" - Tiền thực thu |
+
+## store_returns (sr) - Trả hàng tại cửa hàng [MẶC ĐỊNH cho "trả hàng"]
+| Column | Type | Mô tả |
+|--------|------|-------|
+| sr_ticket_number | BIGINT | Mã đơn trả (KHÔNG có sr_order_number!) |
+| sr_return_quantity | INT | Số lượng trả |
+| sr_net_loss | DECIMAL | "Tổn thất ròng" từ trả hàng |
+
+## web_returns (wr) - Trả hàng online
+| wr_net_loss | DECIMAL | Tổn thất ròng từ trả hàng web |
+
+## catalog_returns (cr) - Trả hàng catalog
+| cr_net_loss | DECIMAL | Tổn thất ròng từ trả hàng catalog |
+
+## inventory (inv) - Tồn kho
+| inv_quantity_on_hand | INT | "Số lượng tồn kho" hiện tại |
+| inv_warehouse_sk | BIGINT | FK → warehouse. Mã kho |
+
+---
+
+=== DIMENSION TABLES ===
+
+## customer (c) - Thông tin khách hàng
+| Column | Type | Mô tả | Lưu ý |
+|--------|------|-------|-------|
+| c_customer_sk | BIGINT | PK. Surrogate key | Dùng cho JOIN |
+| c_customer_id | VARCHAR | Mã định danh khách | Human-readable ID |
+| c_salutation | VARCHAR | "Danh xưng" - Mr./Ms./Mrs./Dr. | Dr. = Tiến sĩ (danh xưng) |
+| c_first_name | VARCHAR | Tên |  |
+| c_last_name | VARCHAR | Họ |  |
+| c_preferred_cust_flag | CHAR(1) | "Khách ưu tiên/thân thiết" | Y/N |
+| c_birth_day | INT | Ngày sinh | KHÔNG cần join date_dim! |
+| c_birth_month | INT | Tháng sinh | KHÔNG cần join date_dim! |
+| c_birth_year | INT | Năm sinh | KHÔNG cần join date_dim! |
+| c_birth_country | VARCHAR | "Quốc tịch/Quốc gia sinh" | VN, UNITED STATES, JAPAN... |
+| c_login | VARCHAR | Tên đăng nhập |  |
+| c_email_address | VARCHAR | Email |  |
+
+⚠️ KHÔNG CÓ: c_gender, c_marital_status, c_credit_rating → dùng customer_demographics!
+⚠️ KHÔNG CÓ: c_birth_date_sk → dùng c_birth_year/month/day!
+
+## customer_demographics (cd) - Thông tin nhân khẩu học
+| Column | Type | Mô tả | Giá trị |
+|--------|------|-------|---------|
+| cd_gender | CHAR(1) | "Giới tính" | M=Nam, F=Nữ |
+| cd_marital_status | CHAR(1) | "Tình trạng hôn nhân" | S=Độc thân, M=Kết hôn, D=Ly hôn, W=Góa |
+| cd_education_status | VARCHAR | "Trình độ học vấn" | Primary, College, PhD, MBA... |
+| cd_credit_rating | VARCHAR | "Xếp hạng tín dụng" | Low, Good, High Risk, Elite |
+| cd_purchase_estimate | INT | "Ước tính mua sắm" | Điểm 1-10 |
+| cd_dep_count | INT | "Người phụ thuộc" | Số người |
+| cd_dep_college_count | INT | Người phụ thuộc đang học đại học |
+
+JOIN: customer c JOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk
+
+## household_demographics (hd) - Thông tin hộ gia đình
+| Column | Type | Mô tả |
+|--------|------|-------|
+| hd_vehicle_count | INT | "Số xe ô tô" trong gia đình |
+| hd_dep_count | INT | Người phụ thuộc trong hộ |
+| hd_buy_potential | VARCHAR | Tiềm năng mua sắm |
+
+JOIN: customer c JOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk
+
+## customer_address (ca) - Địa chỉ khách hàng (Địa chỉ HIỆN TẠI)
+| Column | Type | Mô tả | Lưu ý |
+|--------|------|-------|-------|
+| ca_state | VARCHAR | "Bang" | CA, TX, NY... |
+| ca_city | VARCHAR | "Thành phố" |  |
+| ca_country | VARCHAR | "Quốc gia sinh sống" | KHÁC với c_birth_country! |
+| ca_zip | VARCHAR | Mã bưu điện |  |
+
+⚠️ KHÔNG CÓ: ca_birth_country, ca_last_name, ca_birth_month → Không tồn tại!
+"đang sống tại" → ca_country
+"sinh ra tại/quốc tịch" → c_birth_country
+
+## item (i) - Thông tin sản phẩm
+| Column | Type | Mô tả | Lưu ý |
+|--------|------|-------|-------|
+| i_item_sk | BIGINT | PK |  |
+| i_item_id | VARCHAR | Mã sản phẩm |  |
+| i_product_name | VARCHAR | "Tên sản phẩm" |  |
+| i_item_desc | VARCHAR | "Mô tả sản phẩm" |  |
+| i_current_price | DECIMAL | "Giá niêm yết/giá hiện tại" | KHÔNG có i_list_price! |
+| i_wholesale_cost | DECIMAL | Giá vốn nhập |  |
+| i_brand | VARCHAR | "Thương hiệu" |  |
+| i_category | VARCHAR | "Danh mục" | Books, Electronics, Shoes... |
+| i_class | VARCHAR | "Loại" | dresses, shirts, pants... |
+
+⚠️ KHÔNG CÓ bảng category riêng! Dùng i.i_category
+
+## date_dim (d) - Dimension thời gian
+| Column | Type | Mô tả | Lưu ý |
+|--------|------|-------|-------|
+| d_date_sk | BIGINT | PK |  |
+| d_year | INT | Năm |  |
+| d_moy | INT | Tháng (Month of Year) |  |
+| d_qoy | INT | "Quý" (Quarter of Year, 1-4) | KHÔNG có d_quarter! |
+| d_dom | INT | Ngày trong tháng |  |
+| d_day_name | VARCHAR | Tên ngày (Monday, Tuesday...) |  |
+| d_weekend | CHAR(1) | Cuối tuần? | Y/N |
+
+## store (s) - Thông tin cửa hàng
+| Column | Type | Mô tả | Lưu ý |
+|--------|------|-------|-------|
+| s_store_sk | BIGINT | PK |  |
+| s_store_name | VARCHAR | Tên cửa hàng |  |
+| s_state | VARCHAR | "Bang cửa hàng" | Dùng trực tiếp, KHÔNG join ca! |
+| s_hours | VARCHAR | Giờ mở cửa | "8AM-10PM" format |
+| s_manager | VARCHAR | Tên quản lý |  |
+
+⚠️ KHÔNG CÓ: s_addr_sk → Không tồn tại!
+
+## promotion (p) - Khuyến mãi
+| Column | Type | Mô tả |
+|--------|------|-------|
+| p_promo_sk | BIGINT | PK |
+| p_promo_name | VARCHAR | Tên chương trình KM |
+| p_discount_active | CHAR(1) | KM đang hoạt động? |
+
+⚠️ KHÔNG CÓ: p_discount_amt → Dùng ss_ext_discount_amt thay thế!
+
+## web_site (web) - Thông tin website
+| Column | Type | Mô tả |
+|--------|------|-------|
+| web_name | VARCHAR | Tên website |
+| web_rec_end_date | DATE | Ngày kết thúc (NULL = đang hoạt động) |
+| web_rec_start_date | DATE | Ngày bắt đầu |
+| web_tax_percentage | DECIMAL | Tỷ lệ thuế |
+
+---
+
+=== MAPPING QUAN TRỌNG ===
+
+## Kênh bán hàng (CHỌN ĐÚNG!)
+| Từ khóa | Bảng |
+|---------|------|
+| "cửa hàng", "store", "retail" | store_sales (ss) |
+| "online", "web", "trực tuyến" | web_sales (ws) |
+| "catalog", "mail order", "danh mục" | catalog_sales (cs) |
+| (không nói rõ) | store_sales (mặc định) |
+
+## Doanh thu (DÙNG net_paid, KHÔNG PHẢI sales_price!)
+| Từ khóa | Cột |
+|---------|-----|
+| "doanh thu store" | ss.ss_net_paid |
+| "doanh thu web" | ws.ws_net_paid |
+| "doanh thu catalog" | cs.cs_net_paid |
+
+## Trả hàng
+| Từ khóa | Bảng |
+|---------|------|
+| "trả hàng" (không rõ) | store_returns (mặc định) |
+| "trả hàng web/online" | web_returns |
+| "trả hàng catalog" | catalog_returns |

@@ -1,6 +1,3 @@
-# QUY TẮC NGHIỆP VỤ CHO TPC-DS TEXT-TO-SQL
-# Admin có thể cập nhật file này. Nội dung sẽ được chèn vào system prompt.
-
 === QUY TẮC QUAN TRỌNG ===
 1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu (ví dụ: không thêm d.d_year nếu không hỏi về năm)
 2. "bán chạy nhất" = SUM(quantity), KHÔNG phải SUM(sales_price)
@@ -72,13 +69,17 @@ STORE_SALES (ss):
 
 === DOANH THU VS SỐ LƯỢNG ===
 - "bán chạy nhất", "bán nhiều nhất" -> SUM(quantity)
-- "doanh thu", "tổng doanh thu" -> SUM(sales_price)
+- "doanh thu", "tổng doanh thu" -> SUM(net_paid) [KHÔNG PHẢI sales_price]
+  + web_sales: ws.ws_net_paid
+  + store_sales: ss.ss_net_paid  
+  + catalog_sales: cs.cs_net_paid
 - "tiền thu được", "net" -> SUM(net_paid)
 
 === QUY TẮC KÊNH ===
 - "cửa hàng", "store", "retail" -> store_sales (ss)
 - "online", "web", "website", "trực tuyến" -> web_sales (ws)
 - "catalog", "mail order" -> catalog_sales (cs)
+- "tỷ lệ đơn hàng có khuyến mãi" (không nói kênh) -> store_sales [MẶC ĐỊNH]
 
 === QUY TẮC TRẢ HÀNG ===
 - "trả lại hàng" (không rõ kênh) -> store_returns (sr) [MẶC ĐỊNH]
@@ -117,11 +118,14 @@ PREFERRED CUSTOMER (c_preferred_cust_flag):
 - "không ưu tiên" -> 'N'
 
 SALUTATION (c_salutation):
-- "Mr" -> 'Mr.' ; "Ms" -> 'Ms.' ; "Mrs" -> 'Mrs.' ; "Dr" -> 'Dr.'
+- "Mr" -> 'Mr.' ; "Ms" -> 'Ms.' ; "Mrs" -> 'Mrs.' ; "Dr"/"Tiến sĩ" (danh xưng) -> 'Dr.'
+- LƯU Ý: "Tiến sĩ PhD" (học vấn) -> cd_education_status = 'PhD'
 
 === VỊ TRÍ / ĐỊA ĐIỂM ===
 - Bang khách hàng: JOIN customer -> customer_address, dùng ca.ca_state
-- Bang cửa hàng: JOIN store, dùng s.s_state
+- Bang cửa hàng: dùng s.s_state trực tiếp (KHÔNG join customer_address)
+- "quốc gia sinh"/"quốc tịch" -> c.c_birth_country
+- "đang sống"/"sinh sống" -> ca.ca_country (customer_address)
 
 === LỌC THEO DANH MỤC ===
 - Khi lọc theo danh mục (Men, Women, Home, Shoes, ...): BẮT BUỘC JOIN item
@@ -129,7 +133,16 @@ SALUTATION (c_salutation):
 
 === MẪU TRUY VẤN ===
 - "tỷ lệ đơn hàng có khuyến mãi" (không nói kênh) -> store_sales:
-  SUM(CASE WHEN ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*)
+  CAST(SUM(CASE WHEN ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
 - "trẻ tuổi nhất" -> ORDER BY c_birth_year DESC, c_birth_month DESC, c_birth_day DESC
-- "đang sống/sinh sống" -> dùng customer_address (ca_country/ca_state), không dùng c_birth_country
-- "quốc tịch/sinh ra" -> dùng c_birth_country
+- "giảm giá" -> ss.ss_ext_discount_amt (KHÔNG dùng promotion.p_discount_amt)
+
+=== CỘT KHÔNG TỒN TẠI - TUYỆT ĐỐI KHÔNG DÙNG ===
+- customer_address: KHÔNG có ca_birth_country, ca_last_name, ca_birth_month
+- customer: KHÔNG có c_birth_date_sk (dùng c_birth_year/month/day)
+- store: KHÔNG có s_addr_sk (dùng s_state trực tiếp)
+- item: KHÔNG có i_list_price (dùng i_current_price)
+- store_sales: KHÔNG có ss_order_number (dùng ss_ticket_number)
+- promotion: KHÔNG có p_discount_amt (dùng ss_ext_discount_amt)
+- category: BẢNG NÀY KHÔNG TỒN TẠI (dùng i.i_category)
+

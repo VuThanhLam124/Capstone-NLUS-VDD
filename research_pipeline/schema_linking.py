@@ -278,6 +278,75 @@ COLUMN_SEMANTICS = {
     "net loss": ["sr_net_loss", "wr_net_loss", "cr_net_loss"],
 }
 
+# Detailed column descriptions for prompt injection
+COLUMN_DESCRIPTIONS = {
+    # === SALES COLUMNS (CRITICAL!) ===
+    "ss_net_paid": "Doanh thu store - tiền thực thu sau giảm giá",
+    "ws_net_paid": "Doanh thu web - tiền thực thu sau giảm giá", 
+    "cs_net_paid": "Doanh thu catalog - tiền thực thu sau giảm giá",
+    "ss_sales_price": "Giá bán đơn vị (KHÁC với doanh thu net_paid!)",
+    "ws_sales_price": "Giá bán đơn vị web (KHÁC với doanh thu!)",
+    "ss_ticket_number": "Mã đơn hàng store (KHÔNG có ss_order_number!)",
+    "ws_order_number": "Mã đơn hàng web",
+    "cs_order_number": "Mã đơn hàng catalog",
+    "ss_ext_discount_amt": "Tổng tiền giảm giá trong giao dịch",
+    "ss_promo_sk": "FK→promotion (NULL = không có khuyến mãi)",
+    
+    # === CUSTOMER COLUMNS ===
+    "c_salutation": "Danh xưng: Mr./Ms./Mrs./Dr. (Dr.=Tiến sĩ danh xưng)",
+    "c_preferred_cust_flag": "Khách hàng ưu tiên/thân thiết: Y/N",
+    "c_birth_country": "Quốc tịch/Quốc gia sinh: VN, JAPAN, UNITED STATES...",
+    "c_birth_year": "Năm sinh (dùng trực tiếp, KHÔNG join date_dim!)",
+    "c_birth_month": "Tháng sinh (dùng trực tiếp)",
+    "c_birth_day": "Ngày sinh (dùng trực tiếp)",
+    
+    # === CUSTOMER_DEMOGRAPHICS COLUMNS (NOT IN CUSTOMER!) ===
+    "cd_gender": "Giới tính: M=Nam, F=Nữ (ở customer_demographics!)",
+    "cd_marital_status": "Hôn nhân: S=Độc thân, M=Kết hôn, D=Ly hôn, W=Góa",
+    "cd_education_status": "Học vấn: Primary, College, PhD, MBA...",
+    "cd_credit_rating": "Xếp hạng tín dụng: Low, Good, High Risk, Elite",
+    "cd_purchase_estimate": "Ước tính mua sắm: 1-10 điểm",
+    "cd_dep_count": "Số người phụ thuộc",
+    
+    # === HOUSEHOLD_DEMOGRAPHICS COLUMNS ===
+    "hd_vehicle_count": "Số xe ô tô trong hộ gia đình",
+    
+    # === CUSTOMER_ADDRESS COLUMNS ===
+    "ca_country": "Quốc gia ĐANG SỐNG (khác c_birth_country!)",
+    "ca_state": "Bang đang sống",
+    
+    # === ITEM COLUMNS ===
+    "i_current_price": "Giá niêm yết/giá hiện tại (KHÔNG có i_list_price!)",
+    "i_category": "Danh mục: Books, Electronics, Shoes... (KHÔNG có bảng category!)",
+    
+    # === DATE_DIM COLUMNS ===
+    "d_qoy": "Quarter of Year (Quý 1-4, KHÔNG có d_quarter!)",
+    "d_moy": "Month of Year (Tháng 1-12)",
+    
+    # === STORE COLUMNS ===
+    "s_state": "Bang cửa hàng (dùng trực tiếp, KHÔNG join customer_address!)",
+    
+    # === RETURNS COLUMNS ===
+    "sr_net_loss": "Tổn thất ròng từ trả hàng store",
+    "wr_net_loss": "Tổn thất ròng từ trả hàng web",
+    "cr_net_loss": "Tổn thất ròng từ trả hàng catalog",
+}
+
+# Columns that DO NOT EXIST (common model hallucinations)
+NON_EXISTENT_COLUMNS = [
+    "ca_birth_country",  # Dùng c_birth_country
+    "ca_last_name",      # Không tồn tại
+    "ca_birth_month",    # Không tồn tại
+    "c_birth_date_sk",   # Dùng c_birth_year/month/day
+    "c_gender",          # Dùng cd_gender
+    "c_marital_status",  # Dùng cd_marital_status
+    "s_addr_sk",         # Không tồn tại, dùng s_state trực tiếp
+    "i_list_price",      # Dùng i_current_price
+    "ss_order_number",   # Dùng ss_ticket_number
+    "p_discount_amt",    # Dùng ss_ext_discount_amt
+    "d_quarter",         # Dùng d_qoy
+]
+
 # JOIN paths (ALL key relationships)
 JOIN_RELATIONSHIPS = {
     # Store Sales
@@ -471,6 +540,7 @@ class SchemaLinker:
         """
         Build dynamic schema context for question
         Returns schema in SAME FORMAT as training data (multi-line with types)
+        Now includes COLUMN_DESCRIPTIONS for semantic understanding
         """
         linking_result = self.link_schema(question, top_k_tables=max_tables, top_k_columns=15)
         
@@ -482,6 +552,9 @@ class SchemaLinker:
                 alias = TPCDS_TABLES[table_name]["alias"]
                 schema_lines.append(f"  {table_name} = {alias}")
         schema_lines.append("")
+        
+        # Collect linked columns for description injection
+        linked_cols = set(linking_result["columns"])
         
         # Build schema in TRAINING DATA FORMAT (multi-line with types + FK comments)
         for table_name in linking_result["tables"]:
@@ -498,8 +571,17 @@ class SchemaLinker:
             for col in table_info["columns"]:
                 col_type = self._get_column_type(col)
                 fk_comment = self._get_fk_comment(table_name, col)
-                if fk_comment:
+                
+                # Add semantic description if column is linked or has description
+                col_desc = COLUMN_DESCRIPTIONS.get(col, "")
+                
+                if fk_comment and col_desc:
+                    schema_lines.append(f"  {col} {col_type}   -- {fk_comment} | {col_desc}")
+                elif fk_comment:
                     schema_lines.append(f"  {col} {col_type}   -- {fk_comment}")
+                elif col_desc and col in linked_cols:
+                    # Only add description for linked columns to keep prompt concise
+                    schema_lines.append(f"  {col} {col_type}   -- {col_desc}")
                 else:
                     schema_lines.append(f"  {col} {col_type}")
             
@@ -511,6 +593,20 @@ class SchemaLinker:
             schema_lines.extend([f"  {j}" for j in linking_result["joins"][:3]])
             schema_lines.append("")
         
+        # Add COLUMN SEMANTIC DESCRIPTIONS for most relevant columns
+        relevant_descriptions = self._get_relevant_column_descriptions(question, linked_cols)
+        if relevant_descriptions:
+            schema_lines.append("COLUMN MEANINGS:")
+            schema_lines.extend([f"  {desc}" for desc in relevant_descriptions])
+            schema_lines.append("")
+        
+        # Add NON-EXISTENT COLUMNS warning if question might trigger hallucination
+        hallucination_warnings = self._get_hallucination_warnings(question)
+        if hallucination_warnings:
+            schema_lines.append("DO NOT USE (columns do not exist!):")
+            schema_lines.extend([f"  - {w}" for w in hallucination_warnings])
+            schema_lines.append("")
+        
         # Add COLUMN WARNINGS based on question
         warnings = self._get_column_warnings(question)
         if warnings:
@@ -518,6 +614,93 @@ class SchemaLinker:
             schema_lines.extend([f"  - {w}" for w in warnings])
         
         return "\n".join(schema_lines)
+    
+    def _get_relevant_column_descriptions(self, question: str, linked_cols: set) -> List[str]:
+        """Get column descriptions relevant to the question."""
+        question_lower = question.lower()
+        descriptions = []
+        
+        # Priority columns based on common error patterns
+        priority_mappings = {
+            "doanh thu": ["ss_net_paid", "ws_net_paid", "cs_net_paid", "ss_sales_price"],
+            "revenue": ["ss_net_paid", "ws_net_paid", "cs_net_paid"],
+            "giảm giá": ["ss_ext_discount_amt"],
+            "discount": ["ss_ext_discount_amt"],
+            "quốc tịch": ["c_birth_country", "ca_country"],
+            "quốc gia": ["c_birth_country", "ca_country"],
+            "sinh ra": ["c_birth_country"],
+            "đang sống": ["ca_country"],
+            "giới tính": ["cd_gender"],
+            "gender": ["cd_gender"],
+            "hôn nhân": ["cd_marital_status"],
+            "marital": ["cd_marital_status"],
+            "tín dụng": ["cd_credit_rating"],
+            "credit": ["cd_credit_rating"],
+            "xe": ["hd_vehicle_count"],
+            "vehicle": ["hd_vehicle_count"],
+            "ưu tiên": ["c_preferred_cust_flag"],
+            "thân thiết": ["c_preferred_cust_flag"],
+            "danh xưng": ["c_salutation"],
+            "tiến sĩ": ["c_salutation", "cd_education_status"],
+            "năm sinh": ["c_birth_year"],
+            "birth": ["c_birth_year", "c_birth_month", "c_birth_day"],
+            "giá": ["i_current_price"],
+            "price": ["i_current_price"],
+            "quý": ["d_qoy"],
+            "quarter": ["d_qoy"],
+            "khuyến mãi": ["ss_promo_sk"],
+            "promotion": ["ss_promo_sk"],
+            "đơn hàng": ["ss_ticket_number", "ws_order_number"],
+            "order": ["ss_ticket_number", "ws_order_number"],
+        }
+        
+        # Find relevant columns based on question keywords
+        relevant_cols = set()
+        for keyword, cols in priority_mappings.items():
+            if keyword in question_lower:
+                relevant_cols.update(cols)
+        
+        # Add linked columns
+        relevant_cols.update(linked_cols)
+        
+        # Get descriptions for relevant columns (limit to avoid too long prompt)
+        for col in list(relevant_cols)[:10]:
+            if col in COLUMN_DESCRIPTIONS:
+                descriptions.append(f"{col}: {COLUMN_DESCRIPTIONS[col]}")
+        
+        return descriptions
+    
+    def _get_hallucination_warnings(self, question: str) -> List[str]:
+        """Get warnings about non-existent columns that model might hallucinate."""
+        question_lower = question.lower()
+        warnings = []
+        
+        # Map question patterns to common hallucinations
+        if "quốc gia" in question_lower or "sinh ra" in question_lower:
+            warnings.append("ca_birth_country → dùng c_birth_country")
+        
+        if "năm sinh" in question_lower or "sinh năm" in question_lower:
+            warnings.append("c_birth_date_sk → dùng c_birth_year")
+        
+        if "giới tính" in question_lower or "gender" in question_lower:
+            warnings.append("c_gender → dùng cd_gender (customer_demographics)")
+        
+        if "giảm giá" in question_lower or "discount" in question_lower:
+            warnings.append("p_discount_amt → dùng ss_ext_discount_amt")
+        
+        if "đơn hàng" in question_lower and "store" in question_lower:
+            warnings.append("ss_order_number → dùng ss_ticket_number")
+        
+        if "giá" in question_lower and "niêm yết" in question_lower:
+            warnings.append("i_list_price → dùng i_current_price")
+        
+        if "cửa hàng" in question_lower and "bang" in question_lower:
+            warnings.append("s_addr_sk → dùng s_state trực tiếp")
+        
+        if "danh mục" in question_lower or "category" in question_lower:
+            warnings.append("category table → dùng i.i_category")
+        
+        return warnings
     
     def _get_column_type(self, col_name: str) -> str:
         """Get column data type based on naming convention."""
