@@ -269,7 +269,7 @@ def load_vllm_model(args):
         "model": args.model,
         "trust_remote_code": True,
         "gpu_memory_utilization": 0.9,
-        "max_model_len": 4096,
+        "max_model_len": 8192,  # Increased for schema + few-shot prompts
         "dtype": "bfloat16",
     }
     
