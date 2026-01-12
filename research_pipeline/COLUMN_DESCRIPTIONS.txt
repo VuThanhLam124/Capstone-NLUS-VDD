@@ -1,0 +1,311 @@
+# TPC-DS COLUMN DESCRIPTIONS (Chỉ chứa MÔ TẢ CỘT, không chứa quy tắc logic)
+# Format: column_name|TYPE|Description
+
+# ================================================================
+# STORE_SALES (ss) - Giao dịch cửa hàng vật lý
+# ================================================================
+ss_sold_date_sk|BIGINT|FK→date_dim - Ngày bán
+ss_sold_time_sk|BIGINT|FK→time_dim - Thời điểm bán
+ss_item_sk|BIGINT|FK→item - Sản phẩm
+ss_customer_sk|BIGINT|FK→customer - Khách hàng
+ss_cdemo_sk|BIGINT|FK→customer_demographics - Link trực tiếp (không cần qua customer)
+ss_hdemo_sk|BIGINT|FK→household_demographics - Hộ gia đình
+ss_addr_sk|BIGINT|FK→customer_address - Địa chỉ
+ss_store_sk|BIGINT|FK→store - Cửa hàng
+ss_promo_sk|BIGINT|FK→promotion - Khuyến mãi (NULL=không KM)
+ss_ticket_number|BIGINT|Mã đơn hàng store
+ss_quantity|INT|Số lượng
+ss_wholesale_cost|DECIMAL|Giá vốn nhập
+ss_list_price|DECIMAL|Giá niêm yết gốc
+ss_sales_price|DECIMAL|Giá bán đơn vị
+ss_ext_discount_amt|DECIMAL|Tổng tiền giảm giá
+ss_ext_sales_price|DECIMAL|Tổng giá bán = quantity × sales_price
+ss_ext_tax|DECIMAL|Thuế giao dịch
+ss_coupon_amt|DECIMAL|Tiền coupon sử dụng
+ss_net_paid|DECIMAL|DOANH THU - Tiền thực thu
+ss_net_paid_inc_tax|DECIMAL|Tiền thực thu bao gồm thuế
+ss_net_profit|DECIMAL|Lợi nhuận ròng
+
+# ================================================================
+# WEB_SALES (ws) - Giao dịch trực tuyến
+# ================================================================
+ws_sold_date_sk|BIGINT|FK→date_dim - Ngày bán
+ws_sold_time_sk|BIGINT|FK→time_dim - Thời điểm bán
+ws_ship_date_sk|BIGINT|FK→date_dim - Ngày giao hàng
+ws_item_sk|BIGINT|FK→item - Sản phẩm
+ws_bill_customer_sk|BIGINT|FK→customer - Khách thanh toán
+ws_ship_customer_sk|BIGINT|FK→customer - Khách nhận hàng
+ws_bill_cdemo_sk|BIGINT|FK→customer_demographics - Demographics người thanh toán
+ws_bill_addr_sk|BIGINT|FK→customer_address - Địa chỉ thanh toán
+ws_ship_addr_sk|BIGINT|FK→customer_address - Địa chỉ giao hàng
+ws_web_page_sk|BIGINT|FK→web_page - Trang web
+ws_web_site_sk|BIGINT|FK→web_site - Website
+ws_ship_mode_sk|BIGINT|FK→ship_mode - Phương thức ship
+ws_warehouse_sk|BIGINT|FK→warehouse - Kho xuất hàng
+ws_promo_sk|BIGINT|FK→promotion - Khuyến mãi
+ws_order_number|BIGINT|Mã đơn hàng web
+ws_quantity|INT|Số lượng
+ws_wholesale_cost|DECIMAL|Giá vốn
+ws_list_price|DECIMAL|Giá niêm yết
+ws_sales_price|DECIMAL|Giá bán đơn vị
+ws_ext_discount_amt|DECIMAL|Tổng tiền giảm giá
+ws_ext_sales_price|DECIMAL|Tổng giá bán
+ws_ext_tax|DECIMAL|Thuế giao dịch
+ws_coupon_amt|DECIMAL|Tiền coupon
+ws_ext_ship_cost|DECIMAL|Phí vận chuyển
+ws_net_paid|DECIMAL|DOANH THU WEB - Tiền thực thu
+ws_net_paid_inc_tax|DECIMAL|Tiền thực thu bao gồm thuế
+ws_net_paid_inc_ship|DECIMAL|Tiền thực thu bao gồm ship
+ws_net_profit|DECIMAL|Lợi nhuận ròng
+
+# ================================================================
+# CATALOG_SALES (cs) - Giao dịch catalog/mail order
+# ================================================================
+cs_sold_date_sk|BIGINT|FK→date_dim - Ngày bán
+cs_sold_time_sk|BIGINT|FK→time_dim - Thời điểm bán
+cs_ship_date_sk|BIGINT|FK→date_dim - Ngày giao hàng
+cs_bill_customer_sk|BIGINT|FK→customer - Khách thanh toán
+cs_ship_customer_sk|BIGINT|FK→customer - Khách nhận hàng
+cs_bill_cdemo_sk|BIGINT|FK→customer_demographics - Demographics người thanh toán
+cs_bill_addr_sk|BIGINT|FK→customer_address - Địa chỉ thanh toán
+cs_ship_addr_sk|BIGINT|FK→customer_address - Địa chỉ giao hàng
+cs_call_center_sk|BIGINT|FK→call_center - Tổng đài
+cs_catalog_page_sk|BIGINT|FK→catalog_page - Trang catalog
+cs_ship_mode_sk|BIGINT|FK→ship_mode - Phương thức ship
+cs_warehouse_sk|BIGINT|FK→warehouse - Kho xuất hàng
+cs_item_sk|BIGINT|FK→item - Sản phẩm
+cs_promo_sk|BIGINT|FK→promotion - Khuyến mãi
+cs_order_number|BIGINT|Mã đơn hàng catalog
+cs_quantity|INT|Số lượng
+cs_wholesale_cost|DECIMAL|Giá vốn
+cs_list_price|DECIMAL|Giá niêm yết
+cs_sales_price|DECIMAL|Giá bán đơn vị
+cs_ext_discount_amt|DECIMAL|Tổng tiền giảm giá
+cs_ext_sales_price|DECIMAL|Tổng giá bán
+cs_ext_tax|DECIMAL|Thuế giao dịch
+cs_coupon_amt|DECIMAL|Tiền coupon
+cs_ext_ship_cost|DECIMAL|Phí vận chuyển
+cs_net_paid|DECIMAL|DOANH THU CATALOG - Tiền thực thu
+cs_net_paid_inc_tax|DECIMAL|Tiền thực thu bao gồm thuế
+cs_net_paid_inc_ship|DECIMAL|Tiền thực thu bao gồm ship
+cs_net_profit|DECIMAL|Lợi nhuận ròng
+
+# ================================================================
+# RETURNS
+# ================================================================
+# STORE_RETURNS (sr)
+sr_returned_date_sk|BIGINT|FK→date_dim - Ngày trả
+sr_item_sk|BIGINT|FK→item - Sản phẩm trả
+sr_customer_sk|BIGINT|FK→customer - Khách trả hàng
+sr_store_sk|BIGINT|FK→store - Cửa hàng nhận trả
+sr_reason_sk|BIGINT|FK→reason - Lý do trả hàng
+sr_ticket_number|BIGINT|Mã đơn trả hàng store
+sr_return_quantity|INT|Số lượng trả
+sr_return_amt|DECIMAL|Số tiền hoàn trả
+sr_return_tax|DECIMAL|Thuế hoàn trả
+sr_fee|DECIMAL|Phí trả hàng
+sr_refunded_cash|DECIMAL|Tiền mặt hoàn
+sr_net_loss|DECIMAL|Tổn thất ròng store
+# WEB_RETURNS (wr)
+wr_returned_date_sk|BIGINT|FK→date_dim - Ngày trả
+wr_item_sk|BIGINT|FK→item - Sản phẩm trả
+wr_refunded_customer_sk|BIGINT|FK→customer - Khách được hoàn
+wr_reason_sk|BIGINT|FK→reason - Lý do trả
+wr_order_number|BIGINT|Mã đơn trả hàng web
+wr_return_quantity|INT|Số lượng trả
+wr_return_amt|DECIMAL|Số tiền hoàn
+wr_fee|DECIMAL|Phí trả hàng
+wr_net_loss|DECIMAL|Tổn thất ròng web
+# CATALOG_RETURNS (cr)
+cr_returned_date_sk|BIGINT|FK→date_dim - Ngày trả
+cr_item_sk|BIGINT|FK→item - Sản phẩm trả
+cr_refunded_customer_sk|BIGINT|FK→customer - Khách được hoàn
+cr_reason_sk|BIGINT|FK→reason - Lý do trả
+cr_order_number|BIGINT|Mã đơn trả hàng catalog
+cr_return_quantity|INT|Số lượng trả
+cr_return_amount|DECIMAL|Số tiền hoàn (LƯU Ý: amount không phải amt)
+cr_fee|DECIMAL|Phí trả hàng
+cr_net_loss|DECIMAL|Tổn thất ròng catalog
+
+# ================================================================
+# INVENTORY (inv) - Tồn kho
+# ================================================================
+inv_item_sk|BIGINT|FK→item - Sản phẩm
+inv_warehouse_sk|BIGINT|FK→warehouse - Kho
+inv_quantity_on_hand|INT|Số lượng tồn kho
+
+# ================================================================
+# CUSTOMER (c) - Khách hàng
+# ================================================================
+c_customer_sk|BIGINT|PK - Surrogate key
+c_customer_id|VARCHAR|Mã định danh (human-readable)
+c_current_cdemo_sk|BIGINT|FK→customer_demographics
+c_current_hdemo_sk|BIGINT|FK→household_demographics
+c_current_addr_sk|BIGINT|FK→customer_address
+c_salutation|VARCHAR|Danh xưng: Mr./Ms./Mrs./Dr.
+c_first_name|VARCHAR|Tên
+c_last_name|VARCHAR|Họ
+c_preferred_cust_flag|CHAR(1)|Khách ưu tiên: Y/N
+c_birth_day|INT|Ngày sinh (1-31)
+c_birth_month|INT|Tháng sinh (1-12)
+c_birth_year|INT|Năm sinh
+c_birth_country|VARCHAR|Quốc tịch/Quốc gia sinh
+c_login|VARCHAR|Tên đăng nhập
+c_email_address|VARCHAR|Email
+
+# ================================================================
+# CUSTOMER_DEMOGRAPHICS (cd) - Nhân khẩu học
+# ================================================================
+cd_demo_sk|BIGINT|PK
+cd_gender|CHAR(1)|Giới tính: M/F
+cd_marital_status|CHAR(1)|Hôn nhân: S/M/D/W
+cd_education_status|VARCHAR|Học vấn: College, PhD, MBA...
+cd_purchase_estimate|INT|Ước tính mua sắm (1-10)
+cd_credit_rating|VARCHAR|Tín dụng: Low, Good, Elite...
+cd_dep_count|INT|Số người phụ thuộc
+cd_dep_college_count|INT|Số người phụ thuộc học đại học
+
+# ================================================================
+# HOUSEHOLD_DEMOGRAPHICS (hd) - Hộ gia đình
+# ================================================================
+hd_demo_sk|BIGINT|PK
+hd_vehicle_count|INT|Số xe ô tô
+hd_dep_count|INT|Số người phụ thuộc trong hộ
+
+# ================================================================
+# CUSTOMER_ADDRESS (ca) - Địa chỉ hiện tại
+# ================================================================
+ca_address_sk|BIGINT|PK
+ca_city|VARCHAR|Thành phố
+ca_state|VARCHAR|Bang: CA, TX, NY...
+ca_country|VARCHAR|Quốc gia đang sống
+ca_zip|VARCHAR|Mã bưu điện
+
+# ================================================================
+# ITEM (i) - Sản phẩm
+# ================================================================
+i_item_sk|BIGINT|PK
+i_item_id|VARCHAR|Mã sản phẩm
+i_product_name|VARCHAR|Tên sản phẩm
+i_item_desc|VARCHAR|Mô tả sản phẩm
+i_current_price|DECIMAL|Giá niêm yết/giá hiện tại
+i_wholesale_cost|DECIMAL|Giá vốn
+i_brand|VARCHAR|Thương hiệu
+i_category|VARCHAR|Danh mục: Books, Electronics, Shoes...
+i_class|VARCHAR|Loại: dresses, shirts, pants...
+
+# ================================================================
+# DATE_DIM (d) - Thời gian
+# ================================================================
+d_date_sk|BIGINT|PK
+d_year|INT|Năm
+d_moy|INT|Tháng (1-12)
+d_qoy|INT|Quý (1-4)
+d_dom|INT|Ngày trong tháng
+d_day_name|VARCHAR|Tên ngày: Monday, Tuesday...
+d_weekend|CHAR(1)|Cuối tuần: Y/N
+
+# ================================================================
+# STORE (s) - Cửa hàng
+# ================================================================
+s_store_sk|BIGINT|PK
+s_store_name|VARCHAR|Tên cửa hàng
+s_state|VARCHAR|Bang cửa hàng
+s_hours|VARCHAR|Giờ mở cửa
+s_manager|VARCHAR|Quản lý
+
+# ================================================================
+# PROMOTION (p) - Khuyến mãi
+# ================================================================
+p_promo_sk|BIGINT|PK
+p_promo_name|VARCHAR|Tên chương trình KM
+p_discount_active|CHAR(1)|KM đang hoạt động: Y/N
+
+# ================================================================
+# WEB_SITE (web) - Website
+# ================================================================
+web_site_sk|BIGINT|PK
+web_name|VARCHAR|Tên website
+web_rec_end_date|DATE|Ngày kết thúc (NULL=đang hoạt động)
+web_tax_percentage|DECIMAL|Tỷ lệ thuế
+
+# ================================================================
+# TIME_DIM (t) - Thời điểm trong ngày
+# ================================================================
+t_time_sk|BIGINT|PK
+t_time|INT|Thời gian (giây từ 0:00)
+t_hour|INT|Giờ (0-23)
+t_minute|INT|Phút (0-59)
+t_am_pm|CHAR(2)|AM hoặc PM
+t_shift|VARCHAR|Ca làm việc: third, second, first
+t_meal_time|VARCHAR|Bữa ăn: breakfast, lunch, dinner
+
+# ================================================================
+# WAREHOUSE (w) - Kho hàng
+# ================================================================
+w_warehouse_sk|BIGINT|PK
+w_warehouse_id|VARCHAR|Mã kho
+w_warehouse_name|VARCHAR|Tên kho
+w_warehouse_sq_ft|INT|Diện tích kho (sq ft)
+w_city|VARCHAR|Thành phố
+w_state|VARCHAR|Bang
+w_country|VARCHAR|Quốc gia
+
+# ================================================================
+# WEB_PAGE (wp) - Trang web
+# ================================================================
+wp_web_page_sk|BIGINT|PK
+wp_web_page_id|VARCHAR|Mã trang
+wp_url|VARCHAR|URL trang
+wp_type|VARCHAR|Loại trang
+wp_char_count|INT|Số ký tự
+wp_link_count|INT|Số link
+wp_image_count|INT|Số hình ảnh
+
+# ================================================================
+# CALL_CENTER (cc) - Tổng đài
+# ================================================================
+cc_call_center_sk|BIGINT|PK
+cc_call_center_id|VARCHAR|Mã tổng đài
+cc_name|VARCHAR|Tên tổng đài
+cc_employees|INT|Số nhân viên
+cc_hours|VARCHAR|Giờ làm việc
+cc_manager|VARCHAR|Quản lý
+cc_city|VARCHAR|Thành phố
+cc_state|VARCHAR|Bang
+cc_country|VARCHAR|Quốc gia
+
+# ================================================================
+# CATALOG_PAGE (cp) - Trang catalog
+# ================================================================
+cp_catalog_page_sk|BIGINT|PK
+cp_catalog_page_id|VARCHAR|Mã trang
+cp_catalog_page_number|INT|Số trang trong catalog
+cp_catalog_number|INT|Số hiệu catalog
+cp_department|VARCHAR|Phòng ban
+cp_description|VARCHAR|Mô tả trang
+
+# ================================================================
+# INCOME_BAND (ib) - Mức thu nhập
+# ================================================================
+ib_income_band_sk|BIGINT|PK
+ib_lower_bound|INT|Thu nhập tối thiểu
+ib_upper_bound|INT|Thu nhập tối đa
+
+# ================================================================
+# REASON (r) - Lý do trả hàng
+# ================================================================
+r_reason_sk|BIGINT|PK
+r_reason_id|VARCHAR|Mã lý do
+r_reason_desc|VARCHAR|Mô tả lý do trả hàng
+
+# ================================================================
+# SHIP_MODE (sm) - Phương thức vận chuyển
+# ================================================================
+sm_ship_mode_sk|BIGINT|PK
+sm_ship_mode_id|VARCHAR|Mã phương thức
+sm_type|VARCHAR|Loại: EXPRESS, REGULAR, LIBRARY
+sm_code|VARCHAR|Mã code: AIR, SURFACE, SEA
+sm_carrier|VARCHAR|Hãng vận chuyển: FEDEX, UPS, DHL...
+sm_contract|VARCHAR|Hợp đồng
+

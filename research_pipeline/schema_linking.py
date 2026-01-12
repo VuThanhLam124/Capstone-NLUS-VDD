@@ -278,59 +278,41 @@ COLUMN_SEMANTICS = {
     "net loss": ["sr_net_loss", "wr_net_loss", "cr_net_loss"],
 }
 
-# Detailed column descriptions for prompt injection
-COLUMN_DESCRIPTIONS = {
-    # === SALES COLUMNS (CRITICAL!) ===
-    "ss_net_paid": "Doanh thu store - tiền thực thu sau giảm giá",
-    "ws_net_paid": "Doanh thu web - tiền thực thu sau giảm giá", 
-    "cs_net_paid": "Doanh thu catalog - tiền thực thu sau giảm giá",
-    "ss_sales_price": "Giá bán đơn vị (KHÁC với doanh thu net_paid!)",
-    "ws_sales_price": "Giá bán đơn vị web (KHÁC với doanh thu!)",
-    "ss_ticket_number": "Mã đơn hàng store (KHÔNG có ss_order_number!)",
-    "ws_order_number": "Mã đơn hàng web",
-    "cs_order_number": "Mã đơn hàng catalog",
-    "ss_ext_discount_amt": "Tổng tiền giảm giá trong giao dịch",
-    "ss_promo_sk": "FK→promotion (NULL = không có khuyến mãi)",
+# Load column descriptions from file
+def _load_column_descriptions() -> Dict[str, str]:
+    """
+    Load column descriptions from COLUMN_DESCRIPTIONS.txt file.
+    Format: column_name|TYPE|description
+    Returns: {column_name: description}
+    """
+    descriptions = {}
+    desc_file = Path(__file__).parent / "COLUMN_DESCRIPTIONS.txt"
     
-    # === CUSTOMER COLUMNS ===
-    "c_salutation": "Danh xưng: Mr./Ms./Mrs./Dr. (Dr.=Tiến sĩ danh xưng)",
-    "c_preferred_cust_flag": "Khách hàng ưu tiên/thân thiết: Y/N",
-    "c_birth_country": "Quốc tịch/Quốc gia sinh: VN, JAPAN, UNITED STATES...",
-    "c_birth_year": "Năm sinh (dùng trực tiếp, KHÔNG join date_dim!)",
-    "c_birth_month": "Tháng sinh (dùng trực tiếp)",
-    "c_birth_day": "Ngày sinh (dùng trực tiếp)",
+    if not desc_file.exists():
+        print(f"WARNING: COLUMN_DESCRIPTIONS.txt not found at {desc_file}")
+        return descriptions
     
-    # === CUSTOMER_DEMOGRAPHICS COLUMNS (NOT IN CUSTOMER!) ===
-    "cd_gender": "Giới tính: M=Nam, F=Nữ (ở customer_demographics!)",
-    "cd_marital_status": "Hôn nhân: S=Độc thân, M=Kết hôn, D=Ly hôn, W=Góa",
-    "cd_education_status": "Học vấn: Primary, College, PhD, MBA...",
-    "cd_credit_rating": "Xếp hạng tín dụng: Low, Good, High Risk, Elite",
-    "cd_purchase_estimate": "Ước tính mua sắm: 1-10 điểm",
-    "cd_dep_count": "Số người phụ thuộc",
+    try:
+        with open(desc_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                # Skip comments and empty lines
+                if not line or line.startswith('#'):
+                    continue
+                
+                # Parse format: column_name|TYPE|description
+                parts = line.split('|')
+                if len(parts) >= 3:
+                    col_name = parts[0].strip()
+                    col_desc = parts[2].strip()
+                    descriptions[col_name] = col_desc
+    except Exception as e:
+        print(f"WARNING: Error loading COLUMN_DESCRIPTIONS.txt: {e}")
     
-    # === HOUSEHOLD_DEMOGRAPHICS COLUMNS ===
-    "hd_vehicle_count": "Số xe ô tô trong hộ gia đình",
-    
-    # === CUSTOMER_ADDRESS COLUMNS ===
-    "ca_country": "Quốc gia ĐANG SỐNG (khác c_birth_country!)",
-    "ca_state": "Bang đang sống",
-    
-    # === ITEM COLUMNS ===
-    "i_current_price": "Giá niêm yết/giá hiện tại (KHÔNG có i_list_price!)",
-    "i_category": "Danh mục: Books, Electronics, Shoes... (KHÔNG có bảng category!)",
-    
-    # === DATE_DIM COLUMNS ===
-    "d_qoy": "Quarter of Year (Quý 1-4, KHÔNG có d_quarter!)",
-    "d_moy": "Month of Year (Tháng 1-12)",
-    
-    # === STORE COLUMNS ===
-    "s_state": "Bang cửa hàng (dùng trực tiếp, KHÔNG join customer_address!)",
-    
-    # === RETURNS COLUMNS ===
-    "sr_net_loss": "Tổn thất ròng từ trả hàng store",
-    "wr_net_loss": "Tổn thất ròng từ trả hàng web",
-    "cr_net_loss": "Tổn thất ròng từ trả hàng catalog",
-}
+    return descriptions
+
+# Load descriptions at module import
+COLUMN_DESCRIPTIONS = _load_column_descriptions()
 
 # Columns that DO NOT EXIST (common model hallucinations)
 NON_EXISTENT_COLUMNS = [
@@ -593,11 +575,11 @@ class SchemaLinker:
             schema_lines.extend([f"  {j}" for j in linking_result["joins"][:3]])
             schema_lines.append("")
         
-        # Add COLUMN SEMANTIC DESCRIPTIONS for most relevant columns
-        relevant_descriptions = self._get_relevant_column_descriptions(question, linked_cols)
-        if relevant_descriptions:
+        # Add COLUMN DESCRIPTIONS for all columns of linked tables
+        table_column_descriptions = self._get_column_descriptions_for_tables(linking_result["tables"])
+        if table_column_descriptions:
             schema_lines.append("COLUMN MEANINGS:")
-            schema_lines.extend([f"  {desc}" for desc in relevant_descriptions])
+            schema_lines.extend([f"  {desc}" for desc in table_column_descriptions])
             schema_lines.append("")
         
         # Add NON-EXISTENT COLUMNS warning if question might trigger hallucination
@@ -615,58 +597,23 @@ class SchemaLinker:
         
         return "\n".join(schema_lines)
     
-    def _get_relevant_column_descriptions(self, question: str, linked_cols: set) -> List[str]:
-        """Get column descriptions relevant to the question."""
-        question_lower = question.lower()
+    def _get_column_descriptions_for_tables(self, linked_tables: List[str]) -> List[str]:
+        """
+        Get COLUMN_DESCRIPTIONS for all columns of linked tables.
+        Simple approach: schema_linking identifies tables -> get all column descriptions for those tables.
+        """
         descriptions = []
         
-        # Priority columns based on common error patterns
-        priority_mappings = {
-            "doanh thu": ["ss_net_paid", "ws_net_paid", "cs_net_paid", "ss_sales_price"],
-            "revenue": ["ss_net_paid", "ws_net_paid", "cs_net_paid"],
-            "giảm giá": ["ss_ext_discount_amt"],
-            "discount": ["ss_ext_discount_amt"],
-            "quốc tịch": ["c_birth_country", "ca_country"],
-            "quốc gia": ["c_birth_country", "ca_country"],
-            "sinh ra": ["c_birth_country"],
-            "đang sống": ["ca_country"],
-            "giới tính": ["cd_gender"],
-            "gender": ["cd_gender"],
-            "hôn nhân": ["cd_marital_status"],
-            "marital": ["cd_marital_status"],
-            "tín dụng": ["cd_credit_rating"],
-            "credit": ["cd_credit_rating"],
-            "xe": ["hd_vehicle_count"],
-            "vehicle": ["hd_vehicle_count"],
-            "ưu tiên": ["c_preferred_cust_flag"],
-            "thân thiết": ["c_preferred_cust_flag"],
-            "danh xưng": ["c_salutation"],
-            "tiến sĩ": ["c_salutation", "cd_education_status"],
-            "năm sinh": ["c_birth_year"],
-            "birth": ["c_birth_year", "c_birth_month", "c_birth_day"],
-            "giá": ["i_current_price"],
-            "price": ["i_current_price"],
-            "quý": ["d_qoy"],
-            "quarter": ["d_qoy"],
-            "khuyến mãi": ["ss_promo_sk"],
-            "promotion": ["ss_promo_sk"],
-            "đơn hàng": ["ss_ticket_number", "ws_order_number"],
-            "order": ["ss_ticket_number", "ws_order_number"],
-        }
-        
-        # Find relevant columns based on question keywords
-        relevant_cols = set()
-        for keyword, cols in priority_mappings.items():
-            if keyword in question_lower:
-                relevant_cols.update(cols)
-        
-        # Add linked columns
-        relevant_cols.update(linked_cols)
-        
-        # Get descriptions for relevant columns (limit to avoid too long prompt)
-        for col in list(relevant_cols)[:10]:
-            if col in COLUMN_DESCRIPTIONS:
-                descriptions.append(f"{col}: {COLUMN_DESCRIPTIONS[col]}")
+        for table_name in linked_tables:
+            if table_name not in TPCDS_TABLES:
+                continue
+                
+            table_info = TPCDS_TABLES[table_name]
+            
+            # Get descriptions for all columns of this table that have descriptions
+            for col in table_info["columns"]:
+                if col in COLUMN_DESCRIPTIONS:
+                    descriptions.append(f"{col}: {COLUMN_DESCRIPTIONS[col]}")
         
         return descriptions
     
