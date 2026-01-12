@@ -1,26 +1,34 @@
-# QUY TẮC NGHIỆP VỤ TPC-DS (Chỉ chứa LOGIC, không chứa mô tả cột)
+# QUY TẮC NGHIỆP VỤ TPC-DS
 
-=== QUY TẮC SQL ===
+=== QUY TẮC SQL CƠ BẢN ===
 1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu
-2. Chỉ SELECT các cột cần thiết, không thêm cột thừa
+2. KHÔNG thêm JOIN nếu không cần dữ liệu từ bảng khác
 3. KHÔNG bịa cột/bảng không có trong schema
 4. Luôn dùng alias cho bảng
 5. Output ONLY the SQL query, no explanation.
 
-=== SEMANTIC MAPPING (Từ khóa → Cột/Giá trị) ===
-DOANH THU:
-- "doanh thu" → SUM(net_paid) [KHÔNG phải sales_price!]
-- "bán chạy nhất" → SUM(quantity)
+=== SELECT COLUMNS ===
+- "tất cả thông tin"/"toàn bộ"/"liệt kê khách hàng" → SELECT *
+- "tìm khách hàng..." → SELECT * FROM customer...
+- Nếu chỉ hỏi về một thông tin cụ thể → SELECT cột đó
 
-KÊNH MẶC ĐỊNH:
-- "cửa hàng/store" → store_sales (ss)
-- "online/web" → web_sales (ws)
-- "catalog" → catalog_sales (cs)
-- (không nói rõ kênh) → store_sales [MẶC ĐỊNH]
-- "trả hàng" (không rõ) → store_returns [MẶC ĐỊNH]
+=== DOANH THU & SỐ LƯỢNG ===
+- "doanh thu"/"tổng tiền" → SUM(net_paid) [KHÔNG phải sales_price!]
+- "bán chạy nhất"/"bán nhiều nhất" → SUM(quantity)
 
-OPERATORS:
-- "từ X trở lên" = >= X
+=== KÊNH BÁN HÀNG (QUAN TRỌNG!) ===
+MẶC ĐỊNH = store_sales (ss) khi không nói rõ kênh
+
+- "cửa hàng/store/retail" → store_sales
+- "online/web/trực tuyến" → web_sales  
+- "catalog/mail order" → catalog_sales
+- "tỷ lệ đơn hàng có khuyến mãi" → LUÔN store_sales (dù category là gì)
+- "trả hàng" (không rõ) → store_returns
+
+VÍ DỤ:
+- "tỷ lệ đơn hàng Electronics có KM" → store_sales, JOIN item
+- "tỷ lệ đơn hàng Home có KM" → store_sales, JOIN item
+- "tỷ lệ đơn hàng Men có KM" → store_sales, JOIN item
 
 === VALUE MAPPINGS ===
 QUỐC GIA (c_birth_country - UPPERCASE):
@@ -35,14 +43,31 @@ HÔN NHÂN (cd_marital_status):
 TÍN DỤNG (cd_credit_rating):
 Low | Good | High Risk | Elite
 
+TÊN (c_first_name vs c_last_name):
+- "tên Lan" → c_first_name = 'Lan'
+- "họ Nguyễn" → c_last_name = 'Nguyen'
+
 === COLUMN DISAMBIGUATION ===
-"quốc tịch/sinh ra" → c_birth_country
-"đang sống" → ca_country
-"Tiến sĩ" danh xưng → c_salutation='Dr.'
+"quốc tịch/sinh ra/đến từ" → c_birth_country (trong customer)
+"đang sống/sinh sống tại" → ca_country (trong customer_address)
+"Tiến sĩ" danh xưng → c_salutation='Dr.' (trong customer!)
 "Tiến sĩ PhD" học vấn → cd_education_status='PhD'
 "giảm giá" → ss_ext_discount_amt (NOT p_discount_amt)
+"năm sinh" → c_birth_year (dùng trực tiếp, KHÔNG qua date_dim!)
 
-=== CỘT KHÔNG TỒN TẠI ===
-ca_birth_country | c_birth_date_sk | c_gender | s_addr_sk
-i_list_price | ss_order_number | p_discount_amt | d_quarter
-category table (dùng i.i_category)
+=== CỘT KHÔNG TỒN TẠI (TUYỆT ĐỐI KHÔNG DÙNG!) ===
+- c_birth_date_sk → dùng c_birth_year/c_birth_month/c_birth_day
+- c_gender → dùng cd_gender (trong customer_demographics)
+- cd_salutation → dùng c_salutation (trong customer)
+- ca_birth_country → dùng c_birth_country
+- s_addr_sk → dùng s_state trực tiếp
+- i_list_price → dùng i_current_price
+- ss_order_number → dùng ss_ticket_number
+- p_discount_amt → dùng ss_ext_discount_amt
+- d_quarter → dùng d_qoy
+- category table → dùng i.i_category
+
+=== PROMOTION RATE PATTERN ===
+Khi tính "tỷ lệ đơn hàng có khuyến mãi":
+CAST(SUM(CASE WHEN ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+KHÔNG dùng AVG(boolean) hoặc AVG(p.p_discount_active = 'Y')
