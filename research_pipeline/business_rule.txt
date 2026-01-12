@@ -6,6 +6,14 @@
 3. Luôn dùng alias cho bảng
 4. Output ONLY the SQL query, no explanation.
 
+=== SELECT COLUMN RULES (QUAN TRỌNG!) ===
+- "liệt kê mặt hàng/sản phẩm" → SELECT i_item_desc, i_current_price
+- "tên sản phẩm" → i_item_desc (ƯU TIÊN HƠN i_product_name)
+- "khách hàng" (chung chung) → SELECT c_first_name, c_last_name
+- "tên khách hàng" → SELECT c_first_name, c_last_name (lấy cả họ tên)
+- "địa chỉ email" → SELECT c_email_address
+- "thông tin" → SELECT *
+
 === DOANH THU & SỐ LƯỢNG ===
 - "doanh thu"/"tổng tiền" → SUM(net_paid) [KHÔNG phải sales_price!]
 - "bán chạy nhất"/"bán nhiều nhất" → SUM(quantity)
