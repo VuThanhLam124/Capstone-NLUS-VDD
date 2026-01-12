@@ -444,6 +444,12 @@ def generate_sql(model, tokenizer, question: str, schema_linker=None, few_shot: 
     
     inputs = tokenizer([text], return_tensors="pt").to(model.device)
     
+    # DeepSeek-Coder-V2 has KV cache issues with eager attention
+    # Disable use_cache for DeepSeek models when FlashAttention is not available
+    model_name = getattr(model.config, '_name_or_path', '') or ''
+    is_deepseek = 'deepseek' in model_name.lower()
+    use_cache = not is_deepseek  # Disable for DeepSeek due to attention size mismatch
+    
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
@@ -453,7 +459,7 @@ def generate_sql(model, tokenizer, question: str, schema_linker=None, few_shot: 
             top_p=0.9,
             repetition_penalty=1.05,
             pad_token_id=tokenizer.eos_token_id,
-            use_cache=True,  # KV cache enabled with DynamicCache patch
+            use_cache=use_cache,
         )
     
     response = tokenizer.decode(outputs[0][len(inputs.input_ids[0]):], skip_special_tokens=True)
