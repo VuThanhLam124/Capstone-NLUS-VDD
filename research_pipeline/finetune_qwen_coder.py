@@ -664,7 +664,7 @@ def main():
     args = parse_args()
     
     print(f"\n{'='*60}")
-    print("Qwen3-Coder-30B-A3B Text-to-SQL Finetuning")
+    print(f"{args.model} Text-to-SQL Finetuning")
     print(f"{'='*60}")
     print(f"Model: {args.model}")
     print(f"Backend: {'vLLM (fast)' if args.use_vllm else 'HuggingFace'}")
