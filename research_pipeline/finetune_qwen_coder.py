@@ -604,44 +604,44 @@ def benchmark_model(args, model, tokenizer, use_vllm: bool = False,
             # Check execution match
             try:
                 gt_result = conn.execute(ground_truth).fetchall()
-                gen_cols = conn.execute(generated_sql).description
-                gt_cols = conn.execute(ground_truth).description
+                gen_desc = conn.execute(generated_sql).description
+                gt_desc = conn.execute(ground_truth).description
+                
+                # Get column names
+                gen_col_names = [col[0].lower() for col in gen_desc] if gen_desc else []
+                gt_col_names = [col[0].lower() for col in gt_desc] if gt_desc else []
                 
                 # Exact match (same columns, same rows)
                 if set(map(tuple, gen_result)) == set(map(tuple, gt_result)):
                     exec_match = True
                     exec_match_count += 1
                     print(f"  ✅ Exact Match!")
-                # Relaxed match: generated has MORE columns but includes all GT data
-                elif len(gen_cols) >= len(gt_cols) and len(gen_result) == len(gt_result):
-                    # Check if GT result is a subset of generated result (row-wise)
-                    # For each GT row, check if its values exist in the corresponding generated row
-                    gt_set = set(map(tuple, gt_result))
-                    gen_rows_as_sets = [set(row) for row in gen_result]
-                    
-                    # Alternative: check if all GT values in each row exist in generated rows
-                    # More lenient: just check row count and at least some matching values
-                    relaxed_match = True
-                    gt_col_count = len(gt_cols)
-                    for gt_row in gt_result:
-                        # Check if this GT row's values exist in any generated row
-                        found = False
-                        for gen_row in gen_result:
-                            if all(v in gen_row for v in gt_row):
-                                found = True
-                                break
-                        if not found:
-                            relaxed_match = False
+                
+                # Smart relaxed match: Gen contains all GT columns by NAME
+                elif len(gen_result) == len(gt_result) and len(gen_result) > 0:
+                    # Find indices of GT columns in Gen result
+                    gt_col_indices = []
+                    all_cols_found = True
+                    for gt_col in gt_col_names:
+                        if gt_col in gen_col_names:
+                            gt_col_indices.append(gen_col_names.index(gt_col))
+                        else:
+                            all_cols_found = False
                             break
                     
-                    if relaxed_match:
-                        exec_match = True
-                        exec_match_count += 1
-                        print(f"  ✅ Relaxed Match (extra cols)!")
+                    if all_cols_found and len(gt_col_indices) == len(gt_col_names):
+                        # Extract only GT columns from Gen result and compare
+                        gen_subset = [tuple(row[i] for i in gt_col_indices) for row in gen_result]
+                        if set(gen_subset) == set(map(tuple, gt_result)):
+                            exec_match = True
+                            exec_match_count += 1
+                            print(f"  ✅ Subset Match (Gen has extra cols: {len(gen_col_names)} vs {len(gt_col_names)})!")
+                        else:
+                            print(f"  ⚠️ Column values differ")
                     else:
-                        print(f"  ⚠️ Different results")
+                        print(f"  ⚠️ Missing columns in generated result")
                 else:
-                    print(f"  ⚠️ Different results")
+                    print(f"  ⚠️ Different row count ({len(gen_result)} vs {len(gt_result)})")
             except Exception as e:
                 print(f"  ⚠️ GT error: {e}")
                 
