@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers - VoiceQuery AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#3B82F6',
+                        accent: '#0EA5E9',
+                        dark: '#0F172A',
+                        darker: '#020617',
+                        surface: '#1E293B',
+                        border: '#334155',
+                        textPrimary: '#F8FAFC',
+                        textSecondary: '#94A3B8',
+                    },
+                    fontFamily: {
+                        heading: ['Space Grotesk', 'sans-serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .table-row:hover {
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+    </style>
+</head>
+
+<body class="bg-darker text-textPrimary min-h-screen">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-dark border-r border-border flex flex-col">
+            <div class="p-6 border-b border-border">
+                <a href="index.html" class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                    </div>
+                    <span class="text-lg font-heading font-bold">VoiceQuery<span class="text-primary">AI</span></span>
+                </a>
+            </div>
+            <nav class="flex-1 p-4">
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Main Menu</p>
+                    <ul class="space-y-1">
+                        <li><a href="sales-dashboard.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg><span>Voice Query</span></a></li>
+                        <li><a href="query-history.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg><span>Query History</span></a></li>
+                        <li><a href="saved-queries.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg><span>Saved Queries</span></a></li>
+                    </ul>
+                </div>
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Sales Workflow
+                    </p>
+                    <ul class="space-y-1">
+                        <li><a href="customers.html"
+                                class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-xl cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg><span class="font-medium">Customers</span></a></li>
+                        <li><a href="orders.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg><span>Orders</span></a></li>
+                        <li><a href="products.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg><span>Products</span></a></li>
+                        <li><a href="reports.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg><span>Reports</span></a></li>
+                        <li><a href="revenue.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg><span>Revenue</span></a></li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Quick Actions
+                    </p>
+                    <ul class="space-y-1">
+                        <li><a href="export-data.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg><span>Export Data</span></a></li>
+                        <li><a href="help.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg><span>Help & Support</span></a></li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="p-4 border-t border-border">
+                <div class="flex items-center gap-3 px-3 py-2.5 bg-surface/50 rounded-xl">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
+                        JD</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-textPrimary truncate">John Doe</p>
+                        <p class="text-xs text-textSecondary">Sales Representative</p>
+                    </div>
+                    <a href="login.html" class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                        title="Logout">
+                        <svg class="w-5 h-5 text-textSecondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col">
+            <header class="h-16 bg-dark border-b border-border flex items-center justify-between px-6">
+                <div>
+                    <h1 class="text-xl font-heading font-bold">Customers</h1>
+                    <p class="text-sm text-textSecondary">Manage your customer database</p>
+                </div>
+                <button
+                    class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl font-medium transition-colors cursor-pointer flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Customer
+                </button>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="max-w-7xl mx-auto space-y-6">
+                    <!-- Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-textSecondary">Total Customers</span>
+                                <div class="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-heading font-bold text-textPrimary">1,284</p>
+                        </div>
+                        <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-textSecondary">New This Month</span>
+                                <div class="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-heading font-bold text-textPrimary">147</p>
+                            <p class="text-xs text-green-400 mt-1">+12% from last month</p>
+                        </div>
+                        <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-textSecondary">Active</span>
+                                <div class="w-10 h-10 bg-accent/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-heading font-bold text-textPrimary">1,156</p>
+                        </div>
+                        <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-textSecondary">Churned</span>
+                                <div class="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-heading font-bold text-textPrimary">128</p>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="flex flex-col md:flex-row md:items-center gap-4">
+                        <div class="flex-1 relative">
+                            <svg class="w-4 h-4 text-textSecondary absolute left-3 top-1/2 -translate-y-1/2" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input type="text" placeholder="Search customers..."
+                                class="w-full md:max-w-md pl-10 pr-4 py-2.5 bg-surface/50 border border-border rounded-xl text-sm text-textPrimary placeholder-textSecondary focus:border-primary outline-none">
+                        </div>
+                        <select
+                            class="bg-dark border border-border rounded-xl px-4 py-2.5 text-sm text-textSecondary focus:border-primary outline-none cursor-pointer">
+                            <option>All Status</option>
+                            <option>Active</option>
+                            <option>Inactive</option>
+                        </select>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6">
+                        <div class="overflow-x-auto rounded-xl border border-border">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="bg-dark">
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Customer</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Email</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Phone</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Orders</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Revenue</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Status</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border/50">
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    AC</div><span class="font-medium text-textPrimary">Alice Chen</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-accent">alice.chen@email.com</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">+1 (555) 123-4567</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">24</td>
+                                        <td class="py-4 px-4 text-sm font-medium text-textPrimary">$4,280</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Active</span>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2"><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="Edit"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg></button><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="View"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg></button></div>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    BW</div><span class="font-medium text-textPrimary">Bob
+                                                    Williams</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-accent">bob.williams@email.com</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">+1 (555) 234-5678</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">18</td>
+                                        <td class="py-4 px-4 text-sm font-medium text-textPrimary">$3,150</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Active</span>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2"><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="Edit"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg></button><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="View"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg></button></div>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    CJ</div><span class="font-medium text-textPrimary">Carol
+                                                    Johnson</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-accent">carol.j@email.com</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">+1 (555) 345-6789</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">32</td>
+                                        <td class="py-4 px-4 text-sm font-medium text-textPrimary">$6,890</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Active</span>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2"><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="Edit"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg></button><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="View"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg></button></div>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    DL</div><span class="font-medium text-textPrimary">David Lee</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-accent">david.lee@email.com</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">+1 (555) 456-7890</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">8</td>
+                                        <td class="py-4 px-4 text-sm font-medium text-textPrimary">$1,240</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-medium">Inactive</span>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2"><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="Edit"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg></button><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="View"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg></button></div>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-8 h-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    EM</div><span class="font-medium text-textPrimary">Emma
+                                                    Martinez</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-accent">emma.m@email.com</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">+1 (555) 567-8901</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">45</td>
+                                        <td class="py-4 px-4 text-sm font-medium text-textPrimary">$9,450</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Active</span>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2"><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="Edit"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg></button><button
+                                                    class="p-2 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                                    title="View"><svg class="w-4 h-4 text-textSecondary" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg></button></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex items-center justify-between mt-6">
+                            <p class="text-sm text-textSecondary">Showing 1-5 of 1,284 customers</p>
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="px-3 py-2 bg-dark border border-border rounded-lg text-sm text-textSecondary cursor-pointer disabled:opacity-50"
+                                    disabled>Previous</button>
+                                <button
+                                    class="px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium cursor-pointer">1</button>
+                                <button
+                                    class="px-3 py-2 bg-dark border border-border rounded-lg text-sm text-textSecondary cursor-pointer">2</button>
+                                <button
+                                    class="px-3 py-2 bg-dark border border-border rounded-lg text-sm text-textSecondary cursor-pointer">3</button>
+                                <span class="text-textSecondary">...</span>
+                                <button
+                                    class="px-3 py-2 bg-dark border border-border rounded-lg text-sm text-textSecondary cursor-pointer">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

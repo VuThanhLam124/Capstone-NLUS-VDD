@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Query Logs - VoiceQuery AI Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#3B82F6',
+                        accent: '#0EA5E9',
+                        dark: '#0F172A',
+                        darker: '#020617',
+                        surface: '#1E293B',
+                        border: '#334155',
+                        textPrimary: '#F8FAFC',
+                        textSecondary: '#94A3B8',
+                    },
+                    fontFamily: {
+                        heading: ['Space Grotesk', 'sans-serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .table-row:hover {
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+    </style>
+</head>
+
+<body class="bg-darker text-textPrimary min-h-screen">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-dark border-r border-border flex flex-col">
+            <div class="p-6 border-b border-border">
+                <a href="index.html" class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                    </div>
+                    <span class="text-lg font-heading font-bold">VoiceQuery<span class="text-primary">AI</span></span>
+                </a>
+            </div>
+            <nav class="flex-1 p-4">
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Overview</p>
+                    <ul class="space-y-1">
+                        <li><a href="admin-dashboard.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                <span>Dashboard</span>
+                            </a></li>
+                        <li><a href="admin-analytics.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span>Analytics</span>
+                            </a></li>
+                    </ul>
+                </div>
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Management</p>
+                    <ul class="space-y-1">
+                        <li><a href="admin-users.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                <span>Users</span>
+                                <span
+                                    class="ml-auto bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">24</span>
+                            </a></li>
+                        <li><a href="admin-databases.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                </svg>
+                                <span>Databases</span>
+                            </a></li>
+                        <li><a href="admin-permissions.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                <span>Permissions</span>
+                            </a></li>
+                        <li><a href="admin-query-logs.html"
+                                class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-xl cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="font-medium">Query Logs</span>
+                            </a></li>
+                    </ul>
+                </div>
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">System</p>
+                    <ul class="space-y-1">
+                        <li><a href="admin-settings.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span>Settings</span>
+                            </a></li>
+                        <li><a href="admin-ai-config.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                                <span>AI Configuration</span>
+                            </a></li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="p-4 border-t border-border">
+                <div class="flex items-center gap-3 px-3 py-2.5 bg-surface/50 rounded-xl">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center text-white font-semibold">
+                        AD</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-textPrimary truncate">Admin User</p>
+                        <p class="text-xs text-accent">Administrator</p>
+                    </div>
+                    <a href="login.html" class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                        title="Logout">
+                        <svg class="w-5 h-5 text-textSecondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col">
+            <header class="h-16 bg-dark border-b border-border flex items-center justify-between px-6">
+                <div>
+                    <h1 class="text-xl font-heading font-bold">Query Logs</h1>
+                    <p class="text-sm text-textSecondary">Audit trail of all system queries</p>
+                </div>
+                <button
+                    class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl font-medium transition-colors cursor-pointer flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export Logs
+                </button>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="max-w-7xl mx-auto space-y-6">
+                    <!-- Filters -->
+                    <div class="flex flex-col md:flex-row md:items-center gap-4">
+                        <div class="flex-1 relative">
+                            <svg class="w-4 h-4 text-textSecondary absolute left-3 top-1/2 -translate-y-1/2" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input type="text" placeholder="Search by user, query, or ID..."
+                                class="w-full md:max-w-md pl-10 pr-4 py-2.5 bg-surface/50 border border-border rounded-xl text-sm text-textPrimary placeholder-textSecondary focus:border-primary outline-none">
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="date"
+                                class="bg-dark border border-border rounded-xl px-4 py-2.5 text-sm text-textSecondary focus:border-primary outline-none cursor-pointer">
+                            <span class="text-textSecondary">to</span>
+                            <input type="date"
+                                class="bg-dark border border-border rounded-xl px-4 py-2.5 text-sm text-textSecondary focus:border-primary outline-none cursor-pointer">
+                        </div>
+                        <select
+                            class="bg-dark border border-border rounded-xl px-4 py-2.5 text-sm text-textSecondary focus:border-primary outline-none cursor-pointer">
+                            <option>All Status</option>
+                            <option>Success</option>
+                            <option>Failed</option>
+                            <option>Processing</option>
+                        </select>
+                    </div>
+
+                    <!-- Logs Table -->
+                    <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6">
+                        <div class="overflow-x-auto rounded-xl border border-border">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="bg-dark">
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            ID</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            User</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Query</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Database</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Status</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Duration</th>
+                                        <th
+                                            class="text-left py-4 px-4 text-sm font-semibold text-textSecondary border-b border-border">
+                                            Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border/50">
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4 text-sm font-mono text-textSecondary">#QRY-8421</td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2">
+                                                <div
+                                                    class="w-7 h-7 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    SM</div>
+                                                <span class="text-sm text-textPrimary">Sarah Miller</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Show me top
+                                            10 customers by revenue"</td>
+                                        <td class="py-4 px-4 text-sm text-accent">PostgreSQL</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Success</span>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">0.23s</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">Jan 13, 2026 14:32:15</td>
+                                    </tr>
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4 text-sm font-mono text-textSecondary">#QRY-8420</td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2">
+                                                <div
+                                                    class="w-7 h-7 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    JD</div>
+                                                <span class="text-sm text-textPrimary">John Doe</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Total
+                                            revenue by product category Q4"</td>
+                                        <td class="py-4 px-4 text-sm text-accent">MySQL</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Success</span>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">0.45s</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">Jan 13, 2026 14:28:42</td>
+                                    </tr>
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4 text-sm font-mono text-textSecondary">#QRY-8419</td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2">
+                                                <div
+                                                    class="w-7 h-7 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    EW</div>
+                                                <span class="text-sm text-textPrimary">Emma Wilson</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"List all
+                                            pending orders over $500"</td>
+                                        <td class="py-4 px-4 text-sm text-accent">PostgreSQL</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-medium">Failed</span>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">1.2s</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">Jan 13, 2026 14:25:18</td>
+                                    </tr>
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4 text-sm font-mono text-textSecondary">#QRY-8418</td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2">
+                                                <div
+                                                    class="w-7 h-7 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    MK</div>
+                                                <span class="text-sm text-textPrimary">Mike Kim</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Compare
+                                            sales between last month and this month"</td>
+                                        <td class="py-4 px-4 text-sm text-accent">PostgreSQL</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Success</span>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">0.67s</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">Jan 13, 2026 14:22:05</td>
+                                    </tr>
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4 text-sm font-mono text-textSecondary">#QRY-8417</td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2">
+                                                <div
+                                                    class="w-7 h-7 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    SM</div>
+                                                <span class="text-sm text-textPrimary">Sarah Miller</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"What
+                                            products are running low on stock"</td>
+                                        <td class="py-4 px-4 text-sm text-accent">MySQL</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Success</span>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">0.31s</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">Jan 13, 2026 14:18:33</td>
+                                    </tr>
+                                    <tr class="table-row transition-colors cursor-pointer">
+                                        <td class="py-4 px-4 text-sm font-mono text-textSecondary">#QRY-8416</td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-2">
+                                                <div
+                                                    class="w-7 h-7 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    AB</div>
+                                                <span class="text-sm text-textPrimary">Alex Brown</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Show
+                                            customer acquisition trends for Q3"</td>
+                                        <td class="py-4 px-4 text-sm text-accent">PostgreSQL</td>
+                                        <td class="py-4 px-4"><span
+                                                class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Success</span>
+                                        </td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">0.89s</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary">Jan 13, 2026 14:15:21</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex items-center justify-between mt-6">
+                            <p class="text-sm text-textSecondary">Showing 1-6 of 58,247 logs</p>
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="px-3 py-2 bg-dark border border-border rounded-lg text-sm text-textSecondary cursor-pointer disabled:opacity-50"
+                                    disabled>Previous</button>
+                                <button
+                                    class="px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium cursor-pointer">1</button>
+                                <button
+                                    class="px-3 py-2 bg-dark border border-border rounded-lg text-sm text-textSecondary cursor-pointer">2</button>
+                                <button
+                                    class="px-3 py-2 bg-dark border border-border rounded-lg text-sm text-textSecondary cursor-pointer">3</button>
+                                <span class="text-textSecondary">...</span>
+                                <button
+                                    class="px-3 py-2 bg-dark border border-border rounded-lg text-sm text-textSecondary cursor-pointer">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

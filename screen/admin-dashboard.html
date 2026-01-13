@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -35,20 +38,29 @@
         body {
             font-family: 'DM Sans', sans-serif;
         }
-        h1, h2, h3, h4, h5, h6 {
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
             font-family: 'Space Grotesk', sans-serif;
         }
+
         .gradient-text {
             background: linear-gradient(135deg, #2563EB 0%, #0EA5E9 50%, #3B82F6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+
         .glow-blue {
             box-shadow: 0 0 30px rgba(37, 99, 235, 0.15);
         }
     </style>
 </head>
+
 <body class="bg-darker text-textPrimary min-h-screen">
     <div class="flex min-h-screen">
         <!-- Sidebar -->
@@ -56,9 +68,11 @@
             <!-- Logo -->
             <div class="p-6 border-b border-border">
                 <a href="index.html" class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                         </svg>
                     </div>
                     <span class="text-lg font-heading font-bold">VoiceQuery<span class="text-primary">AI</span></span>
@@ -71,17 +85,21 @@
                     <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Overview</p>
                     <ul class="space-y-1">
                         <li>
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-xl cursor-pointer">
+                            <a href="admin-dashboard.html"
+                                class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-xl cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                 </svg>
                                 <span class="font-medium">Dashboard</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                            <a href="admin-analytics.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                 </svg>
                                 <span>Analytics</span>
                             </a>
@@ -93,34 +111,43 @@
                     <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Management</p>
                     <ul class="space-y-1">
                         <li>
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                            <a href="admin-users.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
                                 <span>Users</span>
-                                <span class="ml-auto bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">24</span>
+                                <span
+                                    class="ml-auto bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">24</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                            <a href="admin-databases.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                                 </svg>
                                 <span>Databases</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                            <a href="admin-permissions.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                 </svg>
                                 <span>Permissions</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                            <a href="admin-query-logs.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span>Query Logs</span>
                             </a>
@@ -132,18 +159,23 @@
                     <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">System</p>
                     <ul class="space-y-1">
                         <li>
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                            <a href="admin-settings.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                                 <span>Settings</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                            <a href="admin-ai-config.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                 </svg>
                                 <span>AI Configuration</span>
                             </a>
@@ -155,16 +187,19 @@
             <!-- User Profile -->
             <div class="p-4 border-t border-border">
                 <div class="flex items-center gap-3 px-3 py-2.5 bg-surface/50 rounded-xl">
-                    <div class="w-10 h-10 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center text-white font-semibold">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center text-white font-semibold">
                         AD
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="font-medium text-textPrimary truncate">Admin User</p>
                         <p class="text-xs text-accent">Administrator</p>
                     </div>
-                    <a href="login.html" class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer" title="Logout">
+                    <a href="login.html" class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                        title="Logout">
                         <svg class="w-5 h-5 text-textSecondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
                     </a>
                 </div>
@@ -180,9 +215,11 @@
                     <p class="text-sm text-textSecondary">System overview and management</p>
                 </div>
                 <div class="flex items-center gap-4">
-                    <button class="p-2 hover:bg-surface rounded-xl transition-colors cursor-pointer relative" aria-label="Notifications">
+                    <button class="p-2 hover:bg-surface rounded-xl transition-colors cursor-pointer relative"
+                        aria-label="Notifications">
                         <svg class="w-5 h-5 text-textSecondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
                         <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                     </button>
@@ -196,76 +233,92 @@
             <!-- Dashboard Content -->
             <div class="flex-1 overflow-y-auto p-6">
                 <div class="max-w-7xl mx-auto space-y-6">
-                    
+
                     <!-- Stats Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6 glow-blue">
                             <div class="flex items-center justify-between mb-4">
                                 <span class="text-sm text-textSecondary">Total Users</span>
                                 <div class="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                     </svg>
                                 </div>
                             </div>
                             <p class="text-3xl font-heading font-bold text-textPrimary">2,547</p>
                             <div class="flex items-center gap-1 mt-2">
-                                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 10l7-7m0 0l7 7m-7-7v18" />
                                 </svg>
                                 <span class="text-sm text-green-400">+12% from last month</span>
                             </div>
                         </div>
-                        
+
                         <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6">
                             <div class="flex items-center justify-between mb-4">
                                 <span class="text-sm text-textSecondary">Queries Today</span>
                                 <div class="w-10 h-10 bg-accent/20 rounded-xl flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                                     </svg>
                                 </div>
                             </div>
                             <p class="text-3xl font-heading font-bold text-textPrimary">8,421</p>
                             <div class="flex items-center gap-1 mt-2">
-                                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 10l7-7m0 0l7 7m-7-7v18" />
                                 </svg>
                                 <span class="text-sm text-green-400">+8% from yesterday</span>
                             </div>
                         </div>
-                        
+
                         <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6">
                             <div class="flex items-center justify-between mb-4">
                                 <span class="text-sm text-textSecondary">Avg Response Time</span>
                                 <div class="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                 </div>
                             </div>
                             <p class="text-3xl font-heading font-bold text-textPrimary">0.34s</p>
                             <div class="flex items-center gap-1 mt-2">
-                                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                                 </svg>
                                 <span class="text-sm text-green-400">-15% improvement</span>
                             </div>
                         </div>
-                        
+
                         <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6">
                             <div class="flex items-center justify-between mb-4">
                                 <span class="text-sm text-textSecondary">Success Rate</span>
                                 <div class="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
                             </div>
                             <p class="text-3xl font-heading font-bold text-textPrimary">99.2%</p>
                             <div class="flex items-center gap-1 mt-2">
-                                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 10l7-7m0 0l7 7m-7-7v18" />
                                 </svg>
                                 <span class="text-sm text-green-400">+0.3% this week</span>
                             </div>
@@ -278,20 +331,28 @@
                         <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6">
                             <div class="flex items-center justify-between mb-6">
                                 <h3 class="font-heading font-semibold text-lg">Query Volume</h3>
-                                <select class="bg-dark border border-border rounded-lg px-3 py-1.5 text-sm text-textSecondary focus:border-primary outline-none">
+                                <select
+                                    class="bg-dark border border-border rounded-lg px-3 py-1.5 text-sm text-textSecondary focus:border-primary outline-none">
                                     <option>Last 7 days</option>
                                     <option>Last 30 days</option>
                                     <option>Last 90 days</option>
                                 </select>
                             </div>
                             <div class="h-64 flex items-end gap-2">
-                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg" style="height: 65%;"></div>
-                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg" style="height: 80%;"></div>
-                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg" style="height: 45%;"></div>
-                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg" style="height: 90%;"></div>
-                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg" style="height: 70%;"></div>
-                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg" style="height: 85%;"></div>
-                                <div class="flex-1 bg-gradient-to-t from-accent/50 to-accent rounded-t-lg" style="height: 100%;"></div>
+                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg"
+                                    style="height: 65%;"></div>
+                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg"
+                                    style="height: 80%;"></div>
+                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg"
+                                    style="height: 45%;"></div>
+                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg"
+                                    style="height: 90%;"></div>
+                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg"
+                                    style="height: 70%;"></div>
+                                <div class="flex-1 bg-gradient-to-t from-primary/50 to-primary rounded-t-lg"
+                                    style="height: 85%;"></div>
+                                <div class="flex-1 bg-gradient-to-t from-accent/50 to-accent rounded-t-lg"
+                                    style="height: 100%;"></div>
                             </div>
                             <div class="flex justify-between mt-4 text-xs text-textSecondary">
                                 <span>Mon</span>
@@ -317,7 +378,8 @@
                                         <span class="text-sm font-medium text-textPrimary">68%</span>
                                     </div>
                                     <div class="h-2 bg-dark rounded-full overflow-hidden">
-                                        <div class="h-full bg-gradient-to-r from-primary to-accent rounded-full" style="width: 68%;"></div>
+                                        <div class="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                                            style="width: 68%;"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -326,7 +388,8 @@
                                         <span class="text-sm font-medium text-textPrimary">45%</span>
                                     </div>
                                     <div class="h-2 bg-dark rounded-full overflow-hidden">
-                                        <div class="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full" style="width: 45%;"></div>
+                                        <div class="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full"
+                                            style="width: 45%;"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -335,7 +398,8 @@
                                         <span class="text-sm font-medium text-textPrimary">82%</span>
                                     </div>
                                     <div class="h-2 bg-dark rounded-full overflow-hidden">
-                                        <div class="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full" style="width: 82%;"></div>
+                                        <div class="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full"
+                                            style="width: 82%;"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -344,7 +408,8 @@
                                         <span class="text-sm font-medium text-textPrimary">56%</span>
                                     </div>
                                     <div class="h-2 bg-dark rounded-full overflow-hidden">
-                                        <div class="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full" style="width: 56%;"></div>
+                                        <div class="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full"
+                                            style="width: 56%;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -355,31 +420,42 @@
                     <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6">
                         <div class="flex items-center justify-between mb-6">
                             <h3 class="font-heading font-semibold text-lg">Recent Query Activity</h3>
-                            <a href="#" class="text-sm text-primary hover:text-primary/80 transition-colors cursor-pointer">View All</a>
+                            <a href="#"
+                                class="text-sm text-primary hover:text-primary/80 transition-colors cursor-pointer">View
+                                All</a>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead>
                                     <tr class="border-b border-border">
                                         <th class="text-left py-3 px-4 text-sm font-medium text-textSecondary">User</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-textSecondary">Query</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-textSecondary">Status</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-textSecondary">Query
+                                        </th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-textSecondary">Status
+                                        </th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-textSecondary">Time</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-textSecondary">Duration</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-textSecondary">Duration
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-border/50">
                                     <tr class="hover:bg-dark/50 transition-colors cursor-pointer">
                                         <td class="py-4 px-4">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">JD</div>
+                                                <div
+                                                    class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    JD</div>
                                                 <span class="font-medium text-textPrimary">John Doe</span>
                                             </div>
                                         </td>
-                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Show customers who ordered last month"</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Show
+                                            customers who ordered last month"</td>
                                         <td class="py-4 px-4">
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
-                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                            <span
+                                                class="inline-flex items-center gap-1 px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 8 8">
+                                                    <circle cx="4" cy="4" r="3" />
+                                                </svg>
                                                 Success
                                             </span>
                                         </td>
@@ -389,14 +465,20 @@
                                     <tr class="hover:bg-dark/50 transition-colors cursor-pointer">
                                         <td class="py-4 px-4">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">SM</div>
+                                                <div
+                                                    class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    SM</div>
                                                 <span class="font-medium text-textPrimary">Sarah Miller</span>
                                             </div>
                                         </td>
-                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Total revenue by product category"</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Total
+                                            revenue by product category"</td>
                                         <td class="py-4 px-4">
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
-                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                            <span
+                                                class="inline-flex items-center gap-1 px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 8 8">
+                                                    <circle cx="4" cy="4" r="3" />
+                                                </svg>
                                                 Success
                                             </span>
                                         </td>
@@ -406,14 +488,23 @@
                                     <tr class="hover:bg-dark/50 transition-colors cursor-pointer">
                                         <td class="py-4 px-4">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">MK</div>
+                                                <div
+                                                    class="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    MK</div>
                                                 <span class="font-medium text-textPrimary">Mike Kim</span>
                                             </div>
                                         </td>
-                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"List all pending orders over $500"</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"List all
+                                            pending orders over $500"</td>
                                         <td class="py-4 px-4">
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
-                                                <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                            <span
+                                                class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
+                                                <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                        stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                                </svg>
                                                 Processing
                                             </span>
                                         </td>
@@ -423,14 +514,20 @@
                                     <tr class="hover:bg-dark/50 transition-colors cursor-pointer">
                                         <td class="py-4 px-4">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">EW</div>
+                                                <div
+                                                    class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    EW</div>
                                                 <span class="font-medium text-textPrimary">Emma Wilson</span>
                                             </div>
                                         </td>
-                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Compare Q3 vs Q4 sales performance"</td>
+                                        <td class="py-4 px-4 text-sm text-textSecondary max-w-xs truncate">"Compare Q3
+                                            vs Q4 sales performance"</td>
                                         <td class="py-4 px-4">
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
-                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                            <span
+                                                class="inline-flex items-center gap-1 px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 8 8">
+                                                    <circle cx="4" cy="4" r="3" />
+                                                </svg>
                                                 Success
                                             </span>
                                         </td>
@@ -447,4 +544,5 @@
         </main>
     </div>
 </body>
+
 </html>

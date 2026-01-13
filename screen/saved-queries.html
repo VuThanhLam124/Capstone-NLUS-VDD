@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Queries - VoiceQuery AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#3B82F6',
+                        accent: '#0EA5E9',
+                        dark: '#0F172A',
+                        darker: '#020617',
+                        surface: '#1E293B',
+                        border: '#334155',
+                        textPrimary: '#F8FAFC',
+                        textSecondary: '#94A3B8',
+                    },
+                    fontFamily: {
+                        heading: ['Space Grotesk', 'sans-serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .query-card:hover {
+            border-color: rgba(37, 99, 235, 0.5);
+        }
+    </style>
+</head>
+
+<body class="bg-darker text-textPrimary min-h-screen">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-dark border-r border-border flex flex-col">
+            <div class="p-6 border-b border-border">
+                <a href="index.html" class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                    </div>
+                    <span class="text-lg font-heading font-bold">VoiceQuery<span class="text-primary">AI</span></span>
+                </a>
+            </div>
+            <nav class="flex-1 p-4">
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Main Menu</p>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="sales-dashboard.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg>
+                                <span>Voice Query</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="query-history.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Query History</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="saved-queries.html"
+                                class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-xl cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                                <span class="font-medium">Saved Queries</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Sales Workflow
+                    </p>
+                    <ul class="space-y-1">
+                        <li><a href="customers.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg><span>Customers</span></a></li>
+                        <li><a href="orders.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg><span>Orders</span></a></li>
+                        <li><a href="products.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg><span>Products</span></a></li>
+                        <li><a href="reports.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg><span>Reports</span></a></li>
+                        <li><a href="revenue.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg><span>Revenue</span></a></li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Quick Actions
+                    </p>
+                    <ul class="space-y-1">
+                        <li><a href="export-data.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg><span>Export Data</span></a></li>
+                        <li><a href="help.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg><span>Help & Support</span></a></li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="p-4 border-t border-border">
+                <div class="flex items-center gap-3 px-3 py-2.5 bg-surface/50 rounded-xl">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
+                        JD</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-textPrimary truncate">John Doe</p>
+                        <p class="text-xs text-textSecondary">Sales Representative</p>
+                    </div>
+                    <a href="login.html" class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                        title="Logout">
+                        <svg class="w-5 h-5 text-textSecondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col">
+            <!-- Top Bar -->
+            <header class="h-16 bg-dark border-b border-border flex items-center justify-between px-6">
+                <div>
+                    <h1 class="text-xl font-heading font-bold">Saved Queries</h1>
+                    <p class="text-sm text-textSecondary">Your bookmarked queries for quick access</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="sales-dashboard.html"
+                        class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl font-medium transition-colors cursor-pointer flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Query
+                    </a>
+                </div>
+            </header>
+
+            <!-- Saved Queries Content -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="max-w-7xl mx-auto space-y-6">
+
+                    <!-- Search and Controls -->
+                    <div class="flex flex-col md:flex-row md:items-center gap-4">
+                        <div class="flex-1 relative">
+                            <svg class="w-4 h-4 text-textSecondary absolute left-3 top-1/2 -translate-y-1/2" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input type="text" placeholder="Search saved queries..."
+                                class="w-full md:max-w-md pl-10 pr-4 py-2.5 bg-surface/50 border border-border rounded-xl text-sm text-textPrimary placeholder-textSecondary focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none">
+                        </div>
+                        <p class="text-sm text-textSecondary">Showing <span
+                                class="text-textPrimary font-medium">12</span> saved queries</p>
+                    </div>
+
+                    <!-- Query Cards Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Query Card 1 -->
+                        <div
+                            class="query-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Edit">
+                                        <svg class="w-4 h-4 text-textSecondary" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Delete">
+                                        <svg class="w-4 h-4 text-textSecondary hover:text-red-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 class="font-heading font-semibold text-textPrimary mb-2">Monthly Customers</h3>
+                            <p class="text-sm text-textSecondary mb-4 line-clamp-2">"Show me all customers who ordered
+                                in the last 30 days"</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-textSecondary">Last run: 2 hours ago</span>
+                                <a href="sales-dashboard.html"
+                                    class="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Run
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Query Card 2 -->
+                        <div
+                            class="query-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Edit">
+                                        <svg class="w-4 h-4 text-textSecondary" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Delete">
+                                        <svg class="w-4 h-4 text-textSecondary hover:text-red-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 class="font-heading font-semibold text-textPrimary mb-2">Revenue by Category</h3>
+                            <p class="text-sm text-textSecondary mb-4 line-clamp-2">"Total revenue by product category
+                                this quarter"</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-textSecondary">Last run: Yesterday</span>
+                                <a href="sales-dashboard.html"
+                                    class="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Run
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Query Card 3 -->
+                        <div
+                            class="query-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Edit">
+                                        <svg class="w-4 h-4 text-textSecondary" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Delete">
+                                        <svg class="w-4 h-4 text-textSecondary hover:text-red-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 class="font-heading font-semibold text-textPrimary mb-2">Top 10 Customers</h3>
+                            <p class="text-sm text-textSecondary mb-4 line-clamp-2">"Show top 10 customers by revenue
+                                this quarter"</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-textSecondary">Last run: 3 days ago</span>
+                                <a href="sales-dashboard.html"
+                                    class="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Run
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Query Card 4 -->
+                        <div
+                            class="query-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    </svg>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Edit">
+                                        <svg class="w-4 h-4 text-textSecondary" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Delete">
+                                        <svg class="w-4 h-4 text-textSecondary hover:text-red-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 class="font-heading font-semibold text-textPrimary mb-2">Pending Orders</h3>
+                            <p class="text-sm text-textSecondary mb-4 line-clamp-2">"List all pending orders over $1000"
+                            </p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-textSecondary">Last run: 1 week ago</span>
+                                <a href="sales-dashboard.html"
+                                    class="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Run
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Query Card 5 -->
+                        <div
+                            class="query-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-10 h-10 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Edit">
+                                        <svg class="w-4 h-4 text-textSecondary" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Delete">
+                                        <svg class="w-4 h-4 text-textSecondary hover:text-red-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 class="font-heading font-semibold text-textPrimary mb-2">Low Stock Products</h3>
+                            <p class="text-sm text-textSecondary mb-4 line-clamp-2">"What products are running low on
+                                stock?"</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-textSecondary">Last run: Today</span>
+                                <a href="sales-dashboard.html"
+                                    class="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Run
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Query Card 6 -->
+                        <div
+                            class="query-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-10 h-10 bg-pink-500/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                                    </svg>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Edit">
+                                        <svg class="w-4 h-4 text-textSecondary" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                                        title="Delete">
+                                        <svg class="w-4 h-4 text-textSecondary hover:text-red-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 class="font-heading font-semibold text-textPrimary mb-2">Sales Comparison</h3>
+                            <p class="text-sm text-textSecondary mb-4 line-clamp-2">"Compare sales between last month
+                                and this month"</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-textSecondary">Last run: 5 days ago</span>
+                                <a href="sales-dashboard.html"
+                                    class="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Run
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Load More -->
+                    <div class="flex justify-center pt-4">
+                        <button
+                            class="px-6 py-2.5 bg-dark border border-border hover:border-primary/50 rounded-xl text-sm text-textSecondary hover:text-textPrimary transition-all cursor-pointer flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                            Load More Queries
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

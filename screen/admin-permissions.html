@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permissions - VoiceQuery AI Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#3B82F6',
+                        accent: '#0EA5E9',
+                        dark: '#0F172A',
+                        darker: '#020617',
+                        surface: '#1E293B',
+                        border: '#334155',
+                        textPrimary: '#F8FAFC',
+                        textSecondary: '#94A3B8',
+                    },
+                    fontFamily: {
+                        heading: ['Space Grotesk', 'sans-serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .role-card:hover {
+            border-color: rgba(37, 99, 235, 0.5);
+        }
+    </style>
+</head>
+
+<body class="bg-darker text-textPrimary min-h-screen">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-dark border-r border-border flex flex-col">
+            <div class="p-6 border-b border-border">
+                <a href="index.html" class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                    </div>
+                    <span class="text-lg font-heading font-bold">VoiceQuery<span class="text-primary">AI</span></span>
+                </a>
+            </div>
+            <nav class="flex-1 p-4">
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Overview</p>
+                    <ul class="space-y-1">
+                        <li><a href="admin-dashboard.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                <span>Dashboard</span>
+                            </a></li>
+                        <li><a href="admin-analytics.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span>Analytics</span>
+                            </a></li>
+                    </ul>
+                </div>
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Management</p>
+                    <ul class="space-y-1">
+                        <li><a href="admin-users.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                <span>Users</span>
+                                <span
+                                    class="ml-auto bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">24</span>
+                            </a></li>
+                        <li><a href="admin-databases.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                </svg>
+                                <span>Databases</span>
+                            </a></li>
+                        <li><a href="admin-permissions.html"
+                                class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-xl cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                <span class="font-medium">Permissions</span>
+                            </a></li>
+                        <li><a href="admin-query-logs.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Query Logs</span>
+                            </a></li>
+                    </ul>
+                </div>
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">System</p>
+                    <ul class="space-y-1">
+                        <li><a href="admin-settings.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span>Settings</span>
+                            </a></li>
+                        <li><a href="admin-ai-config.html"
+                                class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                                <span>AI Configuration</span>
+                            </a></li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="p-4 border-t border-border">
+                <div class="flex items-center gap-3 px-3 py-2.5 bg-surface/50 rounded-xl">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center text-white font-semibold">
+                        AD</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-textPrimary truncate">Admin User</p>
+                        <p class="text-xs text-accent">Administrator</p>
+                    </div>
+                    <a href="login.html" class="p-1.5 hover:bg-dark rounded-lg transition-colors cursor-pointer"
+                        title="Logout">
+                        <svg class="w-5 h-5 text-textSecondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col">
+            <header class="h-16 bg-dark border-b border-border flex items-center justify-between px-6">
+                <div>
+                    <h1 class="text-xl font-heading font-bold">Permissions & Roles</h1>
+                    <p class="text-sm text-textSecondary">Manage user roles and access permissions</p>
+                </div>
+                <button
+                    class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl font-medium transition-colors cursor-pointer flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Create Role
+                </button>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="max-w-7xl mx-auto space-y-6">
+                    <!-- Role Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div
+                            class="role-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-5 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-heading font-semibold text-textPrimary">Administrator</h3>
+                                    <p class="text-xs text-textSecondary">3 users</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-textSecondary mb-3">Full system access with all permissions</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs">All Access</span>
+                            </div>
+                        </div>
+
+                        <div
+                            class="role-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-5 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-heading font-semibold text-textPrimary">Manager</h3>
+                                    <p class="text-xs text-textSecondary">12 users</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-textSecondary mb-3">Team oversight and reporting access</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded text-xs">Query</span>
+                                <span
+                                    class="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded text-xs">Reports</span>
+                                <span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded text-xs">Export</span>
+                            </div>
+                        </div>
+
+                        <div
+                            class="role-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-5 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-heading font-semibold text-textPrimary">Analyst</h3>
+                                    <p class="text-xs text-textSecondary">156 users</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-textSecondary mb-3">Query and data analysis access</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="px-2 py-0.5 bg-accent/20 text-accent rounded text-xs">Query</span>
+                                <span class="px-2 py-0.5 bg-accent/20 text-accent rounded text-xs">View</span>
+                            </div>
+                        </div>
+
+                        <div
+                            class="role-card bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-5 transition-all duration-200 cursor-pointer">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 bg-gray-500/20 rounded-xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-heading font-semibold text-textPrimary">Viewer</h3>
+                                    <p class="text-xs text-textSecondary">2,376 users</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-textSecondary mb-3">Read-only access to results</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="px-2 py-0.5 bg-gray-500/20 text-gray-400 rounded text-xs">View Only</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Permission Matrix -->
+                    <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-lg font-heading font-semibold">Permission Matrix</h2>
+                            <button class="text-sm text-primary hover:text-primary/80 cursor-pointer">Edit
+                                Permissions</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-border">
+                                        <th class="text-left py-4 px-4 text-sm font-semibold text-textSecondary">
+                                            Permission</th>
+                                        <th class="text-center py-4 px-4 text-sm font-semibold text-primary">Admin</th>
+                                        <th class="text-center py-4 px-4 text-sm font-semibold text-purple-400">Manager
+                                        </th>
+                                        <th class="text-center py-4 px-4 text-sm font-semibold text-accent">Analyst</th>
+                                        <th class="text-center py-4 px-4 text-sm font-semibold text-gray-400">Viewer
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border/50">
+                                    <tr>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <svg class="w-5 h-5 text-textSecondary" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                                </svg>
+                                                <span class="text-textPrimary">Voice Query</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <svg class="w-5 h-5 text-textSecondary" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                <span class="text-textPrimary">View Results</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <svg class="w-5 h-5 text-textSecondary" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                </svg>
+                                                <span class="text-textPrimary">Export Data</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <svg class="w-5 h-5 text-textSecondary" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                                </svg>
+                                                <span class="text-textPrimary">Generate Reports</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <svg class="w-5 h-5 text-textSecondary" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                                </svg>
+                                                <span class="text-textPrimary">Manage Users</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <svg class="w-5 h-5 text-textSecondary" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                                </svg>
+                                                <span class="text-textPrimary">Manage Databases</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <svg class="w-5 h-5 text-textSecondary" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                </svg>
+                                                <span class="text-textPrimary">System Settings</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-green-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                        <td class="text-center py-4 px-4"><svg class="w-5 h-5 text-red-500 mx-auto"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
