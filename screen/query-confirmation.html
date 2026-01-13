@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Query - VoiceQuery AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#3B82F6',
+                        accent: '#0EA5E9',
+                        dark: '#0F172A',
+                        darker: '#020617',
+                        surface: '#1E293B',
+                        border: '#334155',
+                        textPrimary: '#F8FAFC',
+                        textSecondary: '#94A3B8',
+                    },
+                    fontFamily: {
+                        heading: ['Space Grotesk', 'sans-serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #2563EB 0%, #0EA5E9 50%, #3B82F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glow-blue {
+            box-shadow: 0 0 40px rgba(37, 99, 235, 0.2);
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(37, 99, 235, 0.3); }
+            50% { border-color: rgba(37, 99, 235, 0.8); }
+        }
+        .pulse-border {
+            animation: pulse-border 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-darker text-textPrimary min-h-screen">
+    <div class="flex min-h-screen">
+        <!-- Sidebar (Same as dashboard) -->
+        <aside class="w-64 bg-dark border-r border-border flex flex-col">
+            <div class="p-6 border-b border-border">
+                <a href="index.html" class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                        </svg>
+                    </div>
+                    <span class="text-lg font-heading font-bold">VoiceQuery<span class="text-primary">AI</span></span>
+                </a>
+            </div>
+            <nav class="flex-1 p-4">
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Main Menu</p>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="sales-dashboard.html" class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-xl cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                </svg>
+                                <span class="font-medium">Voice Query</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Query History</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                                </svg>
+                                <span>Saved Queries</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="mb-6">
+                    <p class="text-xs font-medium text-textSecondary uppercase tracking-wider mb-3 px-3">Sales Workflow</p>
+                    <ul class="space-y-1">
+                        <li><a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span>Customers</span></a></li>
+                        <li><a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg><span>Orders</span></a></li>
+                        <li><a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><span>Products</span></a></li>
+                        <li><a href="#" class="flex items-center gap-3 px-3 py-2.5 text-textSecondary hover:text-textPrimary hover:bg-surface/50 rounded-xl transition-colors cursor-pointer"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span>Reports</span></a></li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="p-4 border-t border-border">
+                <div class="flex items-center gap-3 px-3 py-2.5 bg-surface/50 rounded-xl">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">JD</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-textPrimary truncate">John Doe</p>
+                        <p class="text-xs text-textSecondary">Sales Representative</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col">
+            <!-- Top Bar -->
+            <header class="h-16 bg-dark border-b border-border flex items-center justify-between px-6">
+                <div class="flex items-center gap-4">
+                    <a href="sales-dashboard.html" class="p-2 hover:bg-surface rounded-xl transition-colors cursor-pointer" aria-label="Go back">
+                        <svg class="w-5 h-5 text-textSecondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-heading font-bold">Confirm Your Query</h1>
+                        <p class="text-sm text-textSecondary">Review the AI's understanding of your request</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/20 rounded-full">
+                    <span class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                    <span class="text-sm text-yellow-400">Awaiting Confirmation</span>
+                </div>
+            </header>
+
+            <!-- Confirmation Content -->
+            <div class="flex-1 flex flex-col items-center justify-center p-8">
+                <div class="w-full max-w-2xl">
+                    <!-- Query Interpretation Card -->
+                    <div class="bg-surface/50 backdrop-blur-xl rounded-3xl border border-border p-8 glow-blue pulse-border">
+                        <!-- AI Icon -->
+                        <div class="flex justify-center mb-6">
+                            <div class="w-20 h-20 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center">
+                                <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="text-center mb-8">
+                            <h2 class="text-2xl font-heading font-bold mb-2">Is this what you're looking for?</h2>
+                            <p class="text-textSecondary">Here's how I understood your query</p>
+                        </div>
+
+                        <!-- Original Query -->
+                        <div class="bg-dark/50 rounded-2xl p-6 mb-6">
+                            <div class="flex items-center gap-2 mb-3">
+                                <svg class="w-5 h-5 text-textSecondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                </svg>
+                                <span class="text-sm font-medium text-textSecondary">Your Query</span>
+                            </div>
+                            <p id="originalQuery" class="text-lg text-textPrimary">"Show me all customers who placed orders in the last 30 days"</p>
+                        </div>
+
+                        <!-- AI Interpretation -->
+                        <div class="bg-primary/5 border border-primary/20 rounded-2xl p-6 mb-8">
+                            <div class="flex items-center gap-2 mb-4">
+                                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                </svg>
+                                <span class="text-sm font-medium text-primary">AI Understanding</span>
+                            </div>
+                            <ul class="space-y-3">
+                                <li class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <div>
+                                        <span class="font-medium text-textPrimary">Target:</span>
+                                        <span class="text-textSecondary ml-2">Customer records from the database</span>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <div>
+                                        <span class="font-medium text-textPrimary">Filter:</span>
+                                        <span class="text-textSecondary ml-2">Customers who have placed at least one order</span>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <div>
+                                        <span class="font-medium text-textPrimary">Time Range:</span>
+                                        <span class="text-textSecondary ml-2">Last 30 days (from today's date)</span>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <div>
+                                        <span class="font-medium text-textPrimary">Tables Involved:</span>
+                                        <span class="text-textSecondary ml-2">customers, orders</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <a 
+                                href="sales-dashboard.html"
+                                class="h-14 bg-surface border border-border hover:border-red-500/50 hover:bg-red-500/10 text-textPrimary rounded-xl font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+                            >
+                                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                                No, Go Back
+                            </a>
+                            <a 
+                                href="query-processing.html"
+                                class="h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Yes, Proceed
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Help Text -->
+                    <p class="text-center text-sm text-textSecondary mt-6">
+                        Click "No, Go Back" to rephrase your query or "Yes, Proceed" to generate the SQL
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Load query from localStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            const query = localStorage.getItem('currentQuery');
+            if (query) {
+                document.getElementById('originalQuery').textContent = '"' + query + '"';
+            }
+        });
+    </script>
+</body>
+</html>

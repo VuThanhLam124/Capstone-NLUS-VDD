@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceQuery AI - Speech to SQL Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#3B82F6',
+                        accent: '#0EA5E9',
+                        dark: '#0F172A',
+                        darker: '#020617',
+                        surface: '#1E293B',
+                        border: '#334155',
+                        textPrimary: '#F8FAFC',
+                        textSecondary: '#94A3B8',
+                    },
+                    fontFamily: {
+                        heading: ['Space Grotesk', 'sans-serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #2563EB 0%, #0EA5E9 50%, #3B82F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glow-blue {
+            box-shadow: 0 0 40px rgba(37, 99, 235, 0.3);
+        }
+        .hero-gradient {
+            background: radial-gradient(ellipse at top, #1E293B 0%, #0F172A 50%, #020617 100%);
+        }
+        .card-glow:hover {
+            box-shadow: 0 0 30px rgba(37, 99, 235, 0.2);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(37, 99, 235, 0.8); }
+        }
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-darker text-textPrimary min-h-screen">
+    <!-- Navigation -->
+    <nav class="fixed top-4 left-4 right-4 z-50">
+        <div class="max-w-7xl mx-auto bg-surface/80 backdrop-blur-xl rounded-2xl border border-border px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                        </svg>
+                    </div>
+                    <span class="text-xl font-heading font-bold">VoiceQuery<span class="text-primary">AI</span></span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-textSecondary hover:text-textPrimary transition-colors duration-200 cursor-pointer">Features</a>
+                    <a href="#how-it-works" class="text-textSecondary hover:text-textPrimary transition-colors duration-200 cursor-pointer">How It Works</a>
+                    <a href="#pricing" class="text-textSecondary hover:text-textPrimary transition-colors duration-200 cursor-pointer">Pricing</a>
+                </div>
+                <a href="login.html" class="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl font-medium transition-colors duration-200 cursor-pointer">
+                    Sign In
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient min-h-screen flex items-center pt-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8">
+                    <div class="inline-flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-full px-4 py-2">
+                        <span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+                        <span class="text-primary text-sm font-medium">AI-Powered Database Queries</span>
+                    </div>
+                    <h1 class="text-5xl lg:text-6xl font-heading font-bold leading-tight">
+                        Transform <span class="gradient-text">Voice</span> into<br>
+                        Powerful <span class="gradient-text">SQL Queries</span>
+                    </h1>
+                    <p class="text-xl text-textSecondary leading-relaxed max-w-xl">
+                        Speak naturally, get instant database insights. VoiceQuery AI converts your speech to optimized SQL queries with intelligent reasoning and real-time results.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="login.html" class="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 glow-blue">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                            </svg>
+                            Start Speaking
+                        </a>
+                        <a href="#how-it-works" class="border border-border hover:border-primary/50 text-textPrimary px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Watch Demo
+                        </a>
+                    </div>
+                    <div class="flex items-center gap-8 pt-4">
+                        <div class="flex -space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-darker"></div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 border-2 border-darker"></div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 border-2 border-darker"></div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 border-2 border-darker"></div>
+                        </div>
+                        <div>
+                            <p class="text-textPrimary font-semibold">2,500+ Users</p>
+                            <p class="text-textSecondary text-sm">Trust VoiceQuery AI</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative float-animation">
+                    <div class="bg-surface/50 backdrop-blur-xl rounded-3xl border border-border p-8 glow-blue">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span class="text-textSecondary text-sm ml-2">VoiceQuery Terminal</span>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                    </svg>
+                                </div>
+                                <div class="bg-dark/50 rounded-xl px-4 py-3 flex-1">
+                                    <p class="text-textSecondary text-sm mb-1">Voice Input:</p>
+                                    <p class="text-textPrimary">"Show me all customers who ordered last month"</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 text-primary">
+                                <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                <span class="text-sm">Processing with AI reasoning...</span>
+                            </div>
+                            <div class="bg-dark/50 rounded-xl p-4 font-mono text-sm">
+                                <p class="text-green-400 mb-2">-- Generated SQL Query</p>
+                                <p class="text-textPrimary">SELECT <span class="text-cyan-400">*</span> FROM <span class="text-yellow-400">customers</span></p>
+                                <p class="text-textPrimary">WHERE <span class="text-yellow-400">order_date</span> >= <span class="text-orange-400">'2024-11-01'</span></p>
+                                <p class="text-textPrimary">AND <span class="text-yellow-400">order_date</span> < <span class="text-orange-400">'2024-12-01'</span>;</p>
+                            </div>
+                            <div class="flex items-center gap-2 text-green-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="text-sm">Query executed • 147 rows returned</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-24 bg-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-heading font-bold mb-4">
+                    Powerful Features for <span class="gradient-text">Modern Teams</span>
+                </h2>
+                <p class="text-textSecondary text-xl max-w-2xl mx-auto">
+                    Everything you need to query databases naturally and efficiently
+                </p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-8 card-glow transition-all duration-300 cursor-pointer hover:border-primary/50">
+                    <div class="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-heading font-semibold mb-3">Voice Recognition</h3>
+                    <p class="text-textSecondary leading-relaxed">
+                        Advanced speech recognition that understands natural language and business terminology with 99% accuracy.
+                    </p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-8 card-glow transition-all duration-300 cursor-pointer hover:border-primary/50">
+                    <div class="w-14 h-14 bg-accent/20 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-heading font-semibold mb-3">AI Reasoning</h3>
+                    <p class="text-textSecondary leading-relaxed">
+                        Intelligent query optimization that shows its reasoning process and suggests the best approach.
+                    </p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-8 card-glow transition-all duration-300 cursor-pointer hover:border-primary/50">
+                    <div class="w-14 h-14 bg-green-500/20 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-heading font-semibold mb-3">Instant Results</h3>
+                    <p class="text-textSecondary leading-relaxed">
+                        Get query results in milliseconds with real-time data visualization and export options.
+                    </p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-8 card-glow transition-all duration-300 cursor-pointer hover:border-primary/50">
+                    <div class="w-14 h-14 bg-purple-500/20 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-heading font-semibold mb-3">Secure Access</h3>
+                    <p class="text-textSecondary leading-relaxed">
+                        Role-based access control with audit logs and encrypted connections to your databases.
+                    </p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-8 card-glow transition-all duration-300 cursor-pointer hover:border-primary/50">
+                    <div class="w-14 h-14 bg-orange-500/20 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-heading font-semibold mb-3">Multi-Database</h3>
+                    <p class="text-textSecondary leading-relaxed">
+                        Connect to MySQL, PostgreSQL, SQL Server, Oracle, and more with a unified interface.
+                    </p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-8 card-glow transition-all duration-300 cursor-pointer hover:border-primary/50">
+                    <div class="w-14 h-14 bg-pink-500/20 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-heading font-semibold mb-3">Team Collaboration</h3>
+                    <p class="text-textSecondary leading-relaxed">
+                        Share queries, create templates, and collaborate with your team in real-time.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-24 bg-darker">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-heading font-bold mb-4">
+                    How <span class="gradient-text">VoiceQuery</span> Works
+                </h2>
+                <p class="text-textSecondary text-xl max-w-2xl mx-auto">
+                    From voice to insights in three simple steps
+                </p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-8 h-full">
+                        <div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white font-heading font-bold text-xl mb-6">1</div>
+                        <h3 class="text-xl font-heading font-semibold mb-3">Speak Your Query</h3>
+                        <p class="text-textSecondary leading-relaxed">
+                            Simply speak your question in natural language. Ask about customers, orders, revenue, or any data you need.
+                        </p>
+                    </div>
+                    <div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                        <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+                <!-- Step 2 -->
+                <div class="relative">
+                    <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-8 h-full">
+                        <div class="w-12 h-12 bg-accent rounded-xl flex items-center justify-center text-white font-heading font-bold text-xl mb-6">2</div>
+                        <h3 class="text-xl font-heading font-semibold mb-3">AI Processes & Reasons</h3>
+                        <p class="text-textSecondary leading-relaxed">
+                            Our AI understands context, reasons through the problem, and generates the optimal SQL query for your database.
+                        </p>
+                    </div>
+                    <div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                        <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+                <!-- Step 3 -->
+                <div>
+                    <div class="bg-surface/50 backdrop-blur-xl rounded-2xl border border-border p-8 h-full">
+                        <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white font-heading font-bold text-xl mb-6">3</div>
+                        <h3 class="text-xl font-heading font-semibold mb-3">Get Instant Results</h3>
+                        <p class="text-textSecondary leading-relaxed">
+                            View your results in beautiful tables, export to CSV/Excel, or visualize with built-in charts.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 bg-dark">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl border border-primary/30 p-12">
+                <h2 class="text-4xl font-heading font-bold mb-4">
+                    Ready to Transform Your Data Workflow?
+                </h2>
+                <p class="text-textSecondary text-xl mb-8 max-w-2xl mx-auto">
+                    Join thousands of professionals who save hours every day with VoiceQuery AI
+                </p>
+                <a href="login.html" class="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 cursor-pointer pulse-glow">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Get Started Free
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-darker border-t border-border py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                        </svg>
+                    </div>
+                    <span class="text-xl font-heading font-bold">VoiceQuery<span class="text-primary">AI</span></span>
+                </div>
+                <div class="flex items-center gap-8 text-textSecondary">
+                    <a href="#" class="hover:text-textPrimary transition-colors duration-200 cursor-pointer">Privacy</a>
+                    <a href="#" class="hover:text-textPrimary transition-colors duration-200 cursor-pointer">Terms</a>
+                    <a href="#" class="hover:text-textPrimary transition-colors duration-200 cursor-pointer">Contact</a>
+                </div>
+                <p class="text-textSecondary text-sm">© 2024 VoiceQuery AI. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
