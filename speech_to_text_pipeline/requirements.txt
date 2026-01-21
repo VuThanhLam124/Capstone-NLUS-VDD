@@ -1,0 +1,6 @@
+gradio==4.44.1
+transformers==4.57.1
+torch
+soundfile
+numpy
+chunkformer
