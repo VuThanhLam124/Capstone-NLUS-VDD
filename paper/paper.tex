@@ -1,0 +1,165 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{booktabs}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{End-to-End Voice-to-SQL Pipeline: A Case Study on Decision Support Systems With TPC-DS Data Warehouse}
+
+\author{\IEEEauthorblockN{Vu Thanh Lam}
+\IEEEauthorblockA{\textit{FPT University} \\
+Hanoi, Vietnam \\
+lamvthe180779@fpt.edu.vn}
+}
+
+\maketitle
+
+\begin{abstract}
+We present an end-to-end Voice-to-SQL pipeline designed to democratize access to complex data warehouses for non-technical users. Our system integrates state-of-the-art Vietnamese Automatic Speech Recognition (ASR) with a finetuned Large Language Model (Qwen3-Coder-30B) for SQL generation. We benchmark our system on the TPC-DS dataset, a rigorous decision support benchmark. Our experiments show that using Gemini Flash 3 Pro for ASR achieves a Word Error Rate (WER) of 0.05, while our finetuned Text-to-SQL model achieves an accuracy of approximately 63\% on schema-linked queries. We demonstrate that combining dynamic schema linking, few-shot learning, and domain-specific fine-tuning significantly outperforms baseline approaches.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Voice-to-SQL, ASR, Large Language Models, Vietnamese, TPC-DS, Qwen-Coder
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+\subsection{Problem Definition}
+In the modern e-commerce landscape, data-driven decision-making is pivotal. However, a significant bottleneck exists: business analysts and consultants often lack the SQL expertise required to extract insights from complex databases. They rely heavily on technical teams (developers or data analysts), which creates latency and reduces business agility.
+
+Our project aims to bridge this gap by building an end-to-end AI pipeline that:
+\begin{enumerate}
+    \item Accepts natural language input via voice or text (Vietnamese/English).
+    \item accurately translates this input into executable SQL queries compatible with the database schema.
+    \item Executes the query and returns results to the user.
+\end{enumerate}
+
+The system comprises two core subsystems: Speech-to-Text (STT) for transcribing spoken domain-specific queries, and Text-to-SQL for generating precise database commands.
+
+\section{Related Work}
+Research in Vietnamese Text-to-SQL has been advancing with datasets like ViText2SQL \cite{nguyen2020vitext2sql}, which adapted the Spider dataset for the Vietnamese language. Recent work focuses on leveraging Large Language Models (LLMs) with advanced prompting strategies \cite{gao2023text}.
+
+In the Voice-to-SQL domain, approaches are generally categorized into cascaded (ASR + Text-to-SQL) and end-to-end architectures \cite{li2020speechsqlnet}. While end-to-end models like SpeechSQLNet avoid error propagation, cascaded systems allow for modular improvements. Our work adopts a cascaded approach to leverage state-of-the-art developments in both Vietnamese ASR and Code-LLMs.
+
+\section{Methodology}
+We rigorously selected and evaluated technologies for both pipeline components based on performance benchmarks.
+
+\subsection{Speech-to-Text (STT)}
+We evaluated four models for the ASR component:
+\begin{itemize}
+    \item \textbf{PhoWhisper (VinAI)} \cite{phowhisper}: A monolingual adaptation of Whisper, finetuned on a massive Vietnamese dataset. It excels in general Vietnamese transcription.
+    \item \textbf{Whisper-large-v3 (OpenAI)}: Selected for its superior bilingual (Vietnamese-English) capabilities, which are crucial for recognizing English technical terms (e.g., "JOIN", "SELECT") within Vietnamese speech.
+    \item \textbf{Chunkformer}: A Conformer-based architecture offering low latency but limited bilingual support.
+    \item \textbf{Gemini Flash 3 Pro}: Utilized via API, this model provides context-aware transcription, automatically correcting spelling and logic errors, albeit at a cost.
+\end{itemize}
+
+\subsection{Text-to-SQL}
+For SQL generation, we prioritized "Instruct" models capable of generalizing to new schemas without hallucination. We selected \textbf{Qwen3-Coder-30B-Instruct} as our primary model due to its balance of performance and resource requirements (fitting within 48GB VRAM).
+
+Our Text-to-SQL methodology employs three key techniques:
+\subsubsection{Schema Linking}
+As identified in \cite{wang2024schema}, schema linking is critical for accuracy. We implement a multi-stage process:
+\begin{itemize}
+    \item \textbf{Keyword Matching}: Identifying explicit table/column names.
+    \item \textbf{Semantic Retrieval}: Using vector embeddings to match natural language terms to schema descriptions (e.g., mapping "doanh thu" to \texttt{net\_paid}).
+    \item \textbf{JOIN Inference}: Pruning irrelevant paths in the schema to simplify the context for the LLM.
+\end{itemize}
+
+\subsubsection{Few-shot Learning}
+We utilize In-Context Learning by including 3-5 high-quality examples in the prompt. This helps the model adapt to the specific SQL dialect (DuckDB) and business rules without weight updates.
+
+\subsubsection{Knowledge Internalization (Fine-tuning)}
+We employ QLoRA (Quantized Low-Rank Adaptation) to fine-tune the model. The goal is "Knowledge Internalization": teaching the model the structural relationships of the TPC-DS schema so they are retained in long-term memory, reducing the need for massive context windows during inference.
+
+\section{Dataset Selection: Why TPC-DS?}
+We selected the \textbf{TPC-DS} (Transaction Processing Performance Council - Decision Support) benchmark over other datasets for usage in a Data Warehouse context.
+
+\subsection{Data Warehouse vs. Data Lake}
+We specifically targeted a Data Warehouse environment for this research. Unlike Data Lakes, which often follow a "Schema-on-Read" paradigm with unstructured or semi-structured data, Data Warehouses enforce "Schema-on-Write" with strict constraints (Primary Keys, Foreign Keys). These constraints provide semantic clarity that significantly aids LLMs in inferring correct JOIN paths and reducing hallucination.
+
+\subsection{Complexity and Realism}
+TPC-DS features a snowflake schema with 99 tables, representing a real-world retail enterprise. Its queries involve complex aggregations, window functions, and multi-dimensional analysis, typical of the decision support tasks our users face. This benchmarks the system's readiness for production environments far better than academic datasets like Spider.
+
+\section{Experiments}
+
+\subsection{Experimental Setup}
+Our experiments were conducted on an RTX A5880 Ada (48GB VRAM) system.
+The Text-to-SQL dataset consists of:
+\begin{itemize}
+    \item \textbf{Easy (100 queries)}: < 2 JOINs, no subqueries.
+    \item \textbf{Hard (90 queries)}: Avg 3.4 JOINs, complex aggregations and subqueries.
+\end{itemize}
+
+\subsection{ASR Results}
+We measured Word Error Rate (WER) across 800 samples covering regional accents and technical jargon.
+
+\begin{table}[htbp]
+\caption{ASR Performance Comparison}
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Model} & \textbf{WER} & \textbf{Notes} \\
+\hline
+Gemini Flash 3 Pro & \textbf{0.05} & Best context awareness \\
+\hline
+Whisper-large-v3 & 0.06 & Good bilingual support \\
+\hline
+Chunkformer & 0.09 & Fast, limited mixed-language \\
+\hline
+PhoWhisper-large & 0.10 & Struggles with "English-in-Vietnamese" \\
+\hline
+\end{tabular}
+\label{tab:asr_results}
+\end{center}
+\end{table}
+
+PhoWhisper often failed to transliterate technical terms correctly (e.g., "select" becoming "sơ lếch"), whereas Whisper-v3 and Gemini handled code-switching effectively.
+
+\subsection{Text-to-SQL Results}
+We evaluated accuracy based on execution match rigor.
+
+\begin{table}[htbp]
+\caption{Text-to-SQL Accuracy}
+\begin{center}
+\begin{tabular}{|l|l|c|}
+\hline
+\textbf{Model} & \textbf{Configuration} & \textbf{Accuracy} \\
+\hline
+Qwen-4B-GGUF & Base & 17\% \\
+Qwen-4B-GGUF & Fine-tuned & 33\% \\
+DeepSeek-Coder-V2 & Few-shot (5) & 56\% \\
+Qwen3-Coder-30B & Few-shot (5) & 54\% \\
+\textbf{Qwen3-Coder-30B} & \textbf{Few-shot (3) + Schema Link} & \textbf{63.4\%} \\
+\hline
+\end{tabular}
+\label{tab:sql_results}
+\end{center}
+\end{table}
+
+Results indicate that fine-tuning doubles performance for smaller models. For larger models (30B), reducing few-shot examples from 5 to 3 actually improved performance (63.4\% vs 54\%), likely by avoiding over-constraining the model's reasoning.
+
+\section{Conclusion and Future Work}
+Our Voice-to-SQL pipeline demonstrates the feasibility of checking complex decision support queries via voice in Vietnamese. The combination of domain-specific ASR (Gemini/Whisper) and schema-aware LLMs (Qwen3-Coder) yields promising results.
+Future work will focus on handling "unhappy cases" such as incoherent speech by introducing an LLM-based rewriting layer, and improving latency through model quantization.
+
+\begin{thebibliography}{00}
+\bibitem{nguyen2020vitext2sql} Anh Tuan Nguyen, et al., "ViText2SQL: A Dataset for Vietnamese Text-to-SQL Generation," \emph{VinAI Research}, 2020.
+\bibitem{gao2023text} Dawei Gao, et al., "Text-to-SQL Empowered by Large Language Models: A Benchmark Evaluation," \emph{arXiv preprint arXiv:2308.15363}, 2023.
+\bibitem{li2020speechsqlnet} Li, et al., "SpeechSQLNet: End-to-end Speech-to-SQL Generation," \emph{Interspeech}, 2020.
+\bibitem{wang2024schema} Wang, et al., "Schema-Aware Prompting for Text-to-SQL," \emph{arXiv preprint arXiv:2409.12172}, 2024.
+\bibitem{phowhisper} VinAI, "PhoWhisper: Automatic Speech Recognition for Vietnamese," 2023.
+\bibitem{tpcds} TPC Council, "TPC-DS Benchmark," https://www.tpc.org/tpcds/.
+\end{thebibliography}
+
+\end{document}

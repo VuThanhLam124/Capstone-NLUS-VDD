@@ -1,0 +1,27 @@
+Tài Liệu Dự Án AI Pipeline
+Xác định vấn đề và bài toán
+Bối cảnh thực tế
+Trong môi trường thương mại điện tử hiện đại, việc ra quyết định dựa trên dữ liệu đóng vai trò then chốt. Tuy nhiên, một rào cản đáng kể đang cản trở hiệu quả công việc:
+Thực trạng: Các tư vấn viên và Business Analyst thường hạn chế về kỹ năng lập trình và kiến thức SQL
+Nhu cầu: Họ cần truy xuất thông tin từ cơ sở dữ liệu nhanh chóng để phục vụ công việc chuyên môn
+Nút thắt: Việc trích xuất dữ liệu phụ thuộc hoàn toàn vào đội ngũ kỹ thuật (Dev) hoặc chuyên viên dữ liệu (DA), gây tốn thời gian và giảm tính linh hoạt
+Định nghĩa bài toán
+Dự án hướng tới xây dựng một hệ thống có AI Pipeline end-to-end có khả năng:
+Nhận đầu vào là giọng nói hoặc văn bản bằng ngôn ngữ tự nhiên (tiếng Việt/Anh)
+
+
+Chuyển đổi thành câu lệnh SQL chính xác phù hợp với schema database
+
+
+Thực thi truy vấn và trả về kết quả cho người dùng không chuyên
+
+
+Hệ thống được chia thành hai phân hệ chính:
+Speech-to-Text (STT): Chuyển giọng nói thành văn bản trong domain SQL
+
+
+Text-to-SQL: Chuyển văn bản tự nhiên thành câu lệnh SQL có thể thực thi
+
+
+
+

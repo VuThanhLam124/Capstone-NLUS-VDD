@@ -1,0 +1,48 @@
+Lựa chọn công nghệ và phương pháp
+Tham khảo dựa trên các hệ thống và kỹ thuật liên quan, nhóm đưa ra lựa chọn về phương thức và công nghệ sẽ sử dụng cho từng pipeline AI chuyên biệt.
+Về các kĩ thuật/phương pháp
+Schema Linking:
+Dựa theo nghiên cứu https://arxiv.org/abs/2409.12172, kỹ thuật được cho là quan trọng nhất để nâng cao độ chính xác của Text-to-SQL là Schema Linking. Kỹ thuật này giúp mô hình ánh xạ các từ ngữ tự nhiên (ví dụ: "doanh thu", "khách hàng VIP") sang các thực thể cụ thể trong cơ sở dữ liệu (ví dụ: bảng orders, cột total_amount, cột customer_segment). Quy trình gồm:
+Quy trình gồm:
+Keyword Matching (Backward): Tìm từ khóa trực tiếp
+
+
+Semantic Retrieval (Forward): Tìm kiếm ngữ nghĩa
+
+
+Merge & Rank: Kết hợp và xếp hạng độ liên quan
+
+
+JOIN Inference: Suy luận mối quan hệ giữa các bảng
+
+Few-shot Learning (In-Context Learning):
+Phương pháp đưa một số ví dụ mẫu (input câu hỏi + output SQL đúng) vào trong prompt gửi cho mô hình. Điều này giúp mô hình "học nhanh" phong cách viết code và các quy tắc nghiệp vụ (business rules) mà không cần phải huấn luyện lại trọng số (weights) của mạng neural.​
+
+Fine-tuning (QLoRA/LoRA):
+Kỹ thuật tinh chỉnh lại một phần nhỏ tham số của mô hình trên tập dữ liệu riêng của dự án.
+
+Knowledge Internalization: Mục tiêu của fine-tuning trong dự án là để mô hình "ghi nhớ" (internalize) cấu trúc database schema (tên bảng, quan hệ khóa ngoại) vào trong bộ nhớ dài hạn, thay vì phải cung cấp toàn bộ schema dài dòng trong mỗi lần hỏi (prompt context window).
+RAG (Retrieval-Augmented Generation):
+Trong bối cảnh Text-to-SQL, RAG được dùng để truy xuất các đoạn schema hoặc ví dụ mẫu (few-shot examples) phù hợp nhất với câu hỏi hiện tại từ một kho dữ liệu vector, giúp mô hình xử lý được các database cực lớn có hàng trăm bảng mà không bị giới hạn bởi độ dài context.
+Knowledge Internalization (YORO):
+Thông qua fine-tuning giúp model "học thuộc" schema vào parameters, giảm độ phức tạp prompt và tăng tốc độ inference.
+
+Về công nghệ sử dụng
+Speech-to-Text
+Lý do lựa chọn các mô hình:
+PhoWhisper (VinAI) được lựa chọn vì khả năng nhận diện tiếng Việt vượt trội, phù hợp với ngữ cảnh người dùng Việt Nam. Model này được huấn luyện đặc thù cho tiếng Việt với chất lượng transcription cao.
+Whisper-large-v3 (OpenAI) mang lại khả năng xử lý song ngữ Việt-Anh tốt nhất, quan trọng trong domain SQL khi thuật ngữ kỹ thuật thường là tiếng Anh. Model này đạt WER thấp nhất (0.06) trong các mô hình open-source.
+Chunkformer (KhanhLD) là SOTA trong ASR tiếng Việt trên nhiều benchmark, tuy nhiên có hạn chế về xử lý song ngữ và không hỗ trợ fine-tuning.
+API Gemini Flash 3 Pro cho kết quả tốt nhất (WER 0.05) nhờ khả năng tự hiểu ngữ cảnh, sửa lỗi chính tả và điều chỉnh logic. Dù có chi phí (0.3-1$/triệu token audio), đây là lựa chọn tối ưu cho demo và production khi cần độ tin cậy cao.
+Text-to-SQL
+Lựa chọn các mô hình/model AI tạo sinh open source để huấn luyện lại hoặc triển khai các kĩ thuật để model hiểu schema của data warehouse mà nhóm dùng để benchmark. 
+Nhóm lựa chọn các model có tính generalize, khối lượng từ nhẹ tới trung bình, không quá lớn như các bản Qwen 260B với hàng trăm tỷ tham số để thử nghiệm và đánh giá kĩ thuật cũng như phương pháp sử dụng một cách công tâm nhất, tránh trường hợp model “thông minh” sẵn khiến đánh giá ảnh hưởng bởi kỹ thuật tới bài toán không rõ ràng. Do đó nhóm lựa chọn các models:
+Qwen-3-Coder-30B
+DeepSeek-Coder-V2-Lite (14 tỷ tham số) bản Instruct
+Qwen-3-4b-GGUF (4 tỷ tham số, đã được fine tune sẵn để hiểu về SQL)
+API Gemini và OpenAI (dùng để so sánh với production)
+Lý do chọn các bản Instruct mà không chọn các phiên bản Base của LLM là để phù hợp với dataset mà nhóm chuẩn bị để finetune. 
+Bản Base là bản model được huấn luyện như một “kẻ bắt chước”, nếu người dùng đưa cho nó một câu hỏi, nó có thể không trả lời mà lại viết tiếp một câu hỏi tương tự vì nó hiểu rằng dữ liệu của nó (ví dụ: các đề thi) thường liệt kê nhiều câu hỏi liên tiếp.
+Bản Instruct là bản Base đã trải qua quá trình huấn luyện để giao tiếp và hiểu ý muốn của người dùng, thích hợp để làm Chatbot và trợ lý ảo.
+Về mặt dữ liệu để training, Base Model cần hàng trăm tỷ sample để huấn luyện, tuy nhiên sẽ đạt hiệu quả rất cao về một lĩnh vực chuyên biệt nếu được huấn luyện. Còn Instruct chỉ cần huấn luyện “nhẹ” để tránh overfit-học vẹt câu trả lời với một lượng dữ liệu rất ít.  Ở đây, nhóm xác định được mục tiêu là đo tác động của phương pháp sử dụng tới mô hình, và quy mô nhóm gồm 5 người nên chỉ có thể setup được một lượng dữ liệu không lớn nên nhóm đã chọn bản Instruct và finetune nhẹ nhàng, giúp mô hình hiểu về cấu trúc của schema mà không làm mô hình học thuộc vẹt.
+

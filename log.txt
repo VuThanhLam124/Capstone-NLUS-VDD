@@ -1,175 +1,232 @@
-[1/100] Liệt kê 5 mặt hàng có giá niêm yết (current price) cao nhất ...
-  ⚠️ Different results
+Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.
 
-[2/100] Tôi cần tìm các khách hàng nam có danh xưng là Mr và hiện đa...
-  ✅ Match!
+=== QUY TẮC QUAN TRỌNG ===
+1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu (ví dụ: không thêm d.d_year nếu không hỏi về năm)
+2. "bán chạy nhất" = SUM(quantity), KHÔNG phải SUM(sales_price)
+3. "trả lại hàng" (không rõ kênh) -> mặc định dùng store_returns (sr)
+4. "từ X trở lên" = >= X (ví dụ: "từ 2 xe trở lên" = hd_vehicle_count >= 2)
+5. Chỉ SELECT các cột cần thiết, không thêm cột thừa
+6. KHÔNG bịa cột/bảng không có trong schema
+7. Luôn dùng alias cho bảng
+8. Output ONLY the SQL query, no explanation.
 
-[3/100] Lấy thông tin định danh và họ tên khách hàng...
-  ⚠️ Different results
+=== ÁNH XẠ CỘT & BẢNG ===
+CUSTOMER (c):
+- c.c_salutation: danh xưng (Mr., Ms., Mrs., Dr.)
+- c.c_birth_day / c.c_birth_month / c.c_birth_year: ngày/tháng/năm sinh (KHÔNG join date_dim)
+- c.c_birth_country: quốc gia sinh / quốc tịch
+- c.c_preferred_cust_flag: khách hàng ưu tiên (Y/N)
+- c.c_login, c.c_email_address
 
-[4/100] Tìm các cửa hàng ở bang California có giờ mở cửa vào lúc 8 g...
-  ✅ Match!
+CUSTOMER_DEMOGRAPHICS (cd):
+- cd.cd_gender, cd.cd_marital_status, cd.cd_credit_rating
+- cd.cd_education_status, cd.cd_dep_count, cd.cd_dep_college_count
 
-[5/100] Bạn có thể giúp tôi lọc ra và hiển thị toàn bộ danh sách nhữ...
-  ✅ Match!
+HOUSEHOLD_DEMOGRAPHICS (hd):
+- hd.hd_vehicle_count, hd.hd_dep_count, hd.hd_income_band_sk
 
-[6/100] Website nào có tỷ lệ thuế (web_tax_percentage) cao nhất tron...
-  ⚠️ Different results
+CUSTOMER_ADDRESS (ca):
+- ca.ca_state, ca.ca_city, ca.ca_country (địa chỉ hiện tại)
 
-[7/100] Liệt kê 5 Website đang hoạt động (không có ngày kết thúc web...
-  ⚠️ Different results
+ITEM (i):
+- "tên sản phẩm" -> i.i_product_name
+- "mô tả sản phẩm" -> i.i_item_desc
+- "giá niêm yết / giá hiện tại" -> i.i_current_price (KHÔNG có i_list_price)
+- Danh mục lớn -> i.i_category, Loại cụ thể -> i.i_class
+- "váy" -> i.i_class = 'dresses'
+- "áo sơ mi" -> i.i_class = 'shirts'
+- "áo kiểu" -> i.i_class = 'blouses'
+- "quần" -> i.i_class = 'pants'
+- "quần jeans" -> i.i_class = 'jeans'
 
-[8/100] Sắp xếp lại toàn bộ danh sách khách hàng trong hệ thống theo...
-  ✅ Match!
+CATALOG PAGE:
+- "trang số X trong catalog" -> JOIN catalog_page cp, dùng cp.cp_catalog_page_number
 
-[9/100] Cho tôi xem 10 khách hàng trẻ tuổi nhất ...
-  ⚠️ GT error: Parser Error: syntax error at or near "10"
+WEB_SITE (web):
+- web.web_rec_end_date (đang hoạt động = IS NULL)
+- web.web_rec_start_date (ngày bắt đầu)
+- web.web_tax_percentage
 
-LINE 1: SELECT TOP 10 * FROM customer ORDER BY c_birth_year DESC;
-                   ^
+SALES / ORDERS:
+- store_sales: order number = ss.ss_ticket_number (KHÔNG có ss_order_number)
+- web_sales: order number = ws.ws_order_number
+- catalog_sales: order number = cs.cs_order_number
+- "giảm giá" -> *_ext_discount_amt
+- "lợi nhuận ròng" -> *_net_profit
+- "tổn thất ròng trả hàng" -> *_net_loss
 
-[10/100] Liệt kê tất cả những khách hàng nào đã có trình độ học vấn l...
-  ✅ Match!
+DATE_DIM (d):
+- Quarter: d.d_qoy (NOT d_quarter)
+- Day name: d.d_day_name
+- Weekend: d.d_weekend = 'Y'/'N'
+- Không có d_state -> dùng ca_state (customer_address)
 
-[11/100] Lấy ra danh sách các khách hàng hiện tại không nằm trong nhó...
-  ⚠️ Different results
+WEB_SALES (ws):
+- Customer: ws.ws_bill_customer_sk (NOT ws_customer_sk)
 
-[12/100] Lấy địa chỉ email của những khách hàng nào đang có tên là La...
-  ⚠️ Different results
+STORE_SALES (ss):
+- Tax: ss.ss_ext_tax (NOT ss_tax)
+- Revenue: ss.ss_net_paid
+- Demographics: ss.ss_cdemo_sk (direct link to customer_demographics)
 
-[13/100] Lọc ra tất cả những khách hàng là nam giới và hiện tại đang ...
-  ✅ Match!
+=== DOANH THU VS SỐ LƯỢNG ===
+- "bán chạy nhất", "bán nhiều nhất" -> SUM(quantity)
+- "doanh thu", "tổng doanh thu" -> SUM(net_paid) [KHÔNG PHẢI sales_price]
+  + web_sales: ws.ws_net_paid
+  + store_sales: ss.ss_net_paid  
+  + catalog_sales: cs.cs_net_paid
+- "tiền thu được", "net" -> SUM(net_paid)
 
-[14/100] Tìm khách hàng có tên bắt đầu bằng chữ 'M'...
-  ✅ Match!
+=== QUY TẮC KÊNH ===
+- "cửa hàng", "store", "retail" -> store_sales (ss)
+- "online", "web", "website", "trực tuyến" -> web_sales (ws)
+- "catalog", "mail order" -> catalog_sales (cs)
+- "tỷ lệ đơn hàng có khuyến mãi" (không nói kênh) -> store_sales [MẶC ĐỊNH]
 
-[15/100] Những khách hàng nào có danh xưng là Tiến sĩ?...
-  ⚠️ Different results
+=== QUY TẮC TRẢ HÀNG ===
+- "trả lại hàng" (không rõ kênh) -> store_returns (sr) [MẶC ĐỊNH]
+- "trả hàng online/web" -> web_returns (wr)
+- "trả hàng catalog" -> catalog_returns (cr)
 
-[16/100] Tìm những người sinh vào năm 2002...
-  ✅ Match!
+=== DEMOGRAPHICS JOIN ===
+- Khi cần demographics từ store_sales: dùng ss.ss_cdemo_sk trực tiếp
+  Ví dụ: JOIN customer_demographics cd ON ss.ss_cdemo_sk = cd.cd_demo_sk
+- KHÔNG cần đi qua customer table nếu chỉ cần demographics
 
-[17/100] Liệt kê những khách hàng sinh ra ở Vương quốc Anh (UK)...
-  ⚠️ Different results
+=== ÁNH XẠ GIÁ TRỊ ===
+COUNTRY CODES (c_birth_country):
+- "Việt Nam"/"Vietnam" -> 'VN'
+- "Canada" -> 'CA'
+- "Mỹ"/"United States" -> 'UNITED STATES'
+- "USA" -> 'USA'
+- "Vương quốc Anh"/"UK"/"United Kingdom" -> 'UNITED KINGDOM'
+- "Nhật Bản"/"Japan" -> 'JAPAN'
 
-[18/100] Tìm tất cả khách hàng đến từ Việt Nam...
-  ✅ Match!
+GENDER (cd_gender):
+- Nam -> 'M', Nữ -> 'F'
 
-[19/100] Hãy liệt kê danh sách các mã sản phẩm và số lượng tồn kho tư...
-  ✅ Match!
+MARITAL STATUS (cd_marital_status):
+- Độc thân -> 'S', Kết hôn -> 'M', Ly hôn -> 'D', Góa -> 'W'
 
-[20/100] Tìm các quốc gia khác nhau có trong dữ liệu...
-  ⚠️ Different results
+CREDIT RATING (cd_credit_rating):
+- "thấp" -> 'Low'
+- "rủi ro thấp" -> 'Low Risk'
+- "tốt" -> 'Good'
+- "ưu tú"/"elite" -> 'Elite'
+- "rủi ro cao" -> 'High Risk'
 
-[21/100] Tìm tất cả các khách hàng mà hiện nay thông tin tên đăng nhậ...
-  ⚠️ Different results
+PREFERRED CUSTOMER (c_preferred_cust_flag):
+- "ưu tiên"/"thân thiết"/"VIP" -> 'Y'
+- "không ưu tiên" -> 'N'
 
-[22/100] Tìm thông tin những người hiện tại đang có tình trạng hôn nh...
-  ⚠️ Different results
+SALUTATION (c_salutation):
+- "Mr" -> 'Mr.' ; "Ms" -> 'Ms.' ; "Mrs" -> 'Mrs.' ; "Dr"/"Tiến sĩ" (danh xưng) -> 'Dr.'
+- LƯU Ý: "Tiến sĩ PhD" (học vấn) -> cd_education_status = 'PhD'
 
-[23/100] Bạn hãy liệt kê các giao dịch tại cửa hàng đang gây ra mức t...
-  ❌ SQL Error: Binder Error: Referenced table "亏损最大" not found!
-Candidate tables: "AS亏损最大"
+=== VỊ TRÍ / ĐỊA ĐIỂM ===
+- Bang khách hàng: JOIN customer -> customer_address, dùng ca.ca_state
+- Bang cửa hàng: dùng s.s_state trực tiếp (KHÔNG join customer_address)
+- "quốc gia sinh"/"quốc tịch" -> c.c_birth_country
+- "đang sống"/"sinh sống" -> ca.ca_country (customer_address)
 
-LINE 8: ) AS亏损最大 ON ss.
+=== LỌC THEO DANH MỤC ===
+- Khi lọc theo danh mục (Men, Women, Home, Shoes, ...): BẮT BUỘC JOIN item
+- Dùng: WHERE i.i_category = 'CategoryName'
 
-[24/100] Sắp xếp khách hàng theo năm sinh giảm dần...
-  ✅ Match!
+=== MẪU TRUY VẤN ===
+- "tỷ lệ đơn hàng có khuyến mãi" (không nói kênh) -> store_sales:
+  CAST(SUM(CASE WHEN ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+- "trẻ tuổi nhất" -> ORDER BY c_birth_year DESC, c_birth_month DESC, c_birth_day DESC
+- "giảm giá" -> ss.ss_ext_discount_amt (KHÔNG dùng promotion.p_discount_amt)
 
-[25/100] Liệt kê danh sách những khách hàng đang ở trạng thái góa vợ ...
-  ⚠️ Different results
+=== CỘT KHÔNG TỒN TẠI - TUYỆT ĐỐI KHÔNG DÙNG ===
+- customer_address: KHÔNG có ca_birth_country, ca_last_name, ca_birth_month
+- customer: KHÔNG có c_birth_date_sk (dùng c_birth_year/month/day)
+- store: KHÔNG có s_addr_sk (dùng s_state trực tiếp)
+- item: KHÔNG có i_list_price (dùng i_current_price)
+- store_sales: KHÔNG có ss_order_number (dùng ss_ticket_number)
+- promotion: KHÔNG có p_discount_amt (dùng ss_ext_discount_amt)
+- category: BẢNG NÀY KHÔNG TỒN TẠI (dùng i.i_category)
 
-[26/100] Liệt kê các khách hàng có danh xưng là 'Ms.'...
-  ⚠️ Different results
+DATABASE SCHEMA:
+TABLE ALIASES (USE EXACTLY):
+  customer = c
+  customer_demographics = cd
+  customer_address = ca
 
-[27/100] Lọc ra danh sách những khách hàng hiện tại vẫn còn đang độc ...
-  ⚠️ Different results
+TABLE customer (alias: c)
+  c_customer_sk -- PRIMARY KEY - Surrogate key (dùng cho JOIN)
+  c_customer_id -- Mã định danh khách hàng (human-readable)
+  c_current_cdemo_sk -- FK → customer_demographics.cd_demo_sk (JOIN để lấy gender, marital, credit)
+  c_current_hdemo_sk -- FK → household_demographics.hd_demo_sk (JOIN để lấy vehicle_count)
+  c_current_addr_sk -- FK → customer_address.ca_address_sk (JOIN để lấy địa chỉ HIỆN TẠI)
+  c_first_shipto_date_sk
+  c_first_sales_date_sk
+  c_salutation -- "DANH XƯNG" - Mr./Ms./Mrs./Dr. (Dr. = Tiến sĩ danh xưng, KHÔNG PHẢI học vấn!)
+  c_first_name -- Tên khách hàng
+  c_last_name -- Họ khách hàng
+  c_preferred_cust_flag -- "KHÁCH HÀNG ƯU TIÊN/THÂN THIẾT" - Y=Có, N=Không
+  c_birth_day -- Ngày sinh (1-31) - DÙNG TRỰC TIẾP, KHÔNG cần join date_dim!
+  c_birth_month -- Tháng sinh (1-12) - DÙNG TRỰC TIẾP, KHÔNG cần join date_dim!
+  c_birth_year -- Năm sinh - DÙNG TRỰC TIẾP, KHÔNG cần join date_dim! (KHÔNG CÓ c_birth_date_sk!)
+  c_birth_country -- "QUỐC TỊCH/QUỐC GIA SINH" - VN, JAPAN, UNITED STATES, UNITED KINGDOM, CA...
+  c_login -- Tên đăng nhập
+  c_email_address -- Địa chỉ email
+  c_last_review_date_sk
 
-[28/100] Tìm tất cả những khách hàng mà tên của họ bắt đầu bằng chữ "...
-  ⚠️ Different results
+TABLE customer_demographics (alias: cd)
+  cd_demo_sk -- PRIMARY KEY
+  cd_gender -- "GIỚI TÍNH" - M=Nam, F=Nữ (KHÔNG CÓ c_gender trong customer!)
+  cd_marital_status -- "TÌNH TRẠNG HÔN NHÂN" - S=Độc thân, M=Kết hôn, D=Ly hôn, W=Góa
+  cd_education_status -- "TRÌNH ĐỘ HỌC VẤN" - Primary, 2 yr Degree, College, 4 yr Degree, Advanced Degree, PhD, MBA
+  cd_purchase_estimate -- "ƯỚC TÍNH MUA SẮM" - Điểm 1-10
+  cd_credit_rating -- "XẾP HẠNG TÍN DỤNG" - Low, Good, High Risk, Elite (KHÔNG CÓ 'Low Risk', 'Excellent'!)
+  cd_dep_count -- "SỐ NGƯỜI PHỤ THUỘC" trong gia đình
+  cd_dep_employed_count -- Số người phụ thuộc đang đi làm
+  cd_dep_college_count -- Số người phụ thuộc đang học đại học/cao đẳng
 
-[29/100] Hiển thị danh sách các thương hiệu sản phẩm thuộc danh mục h...
-  ✅ Match!
+TABLE customer_address (alias: ca)
+  ca_address_sk -- PRIMARY KEY
+  ca_address_id -- Mã địa chỉ
+  ca_street_number -- Số nhà
+  ca_street_name -- Tên đường
+  ca_street_type
+  ca_suite_number
+  ca_city -- Thành phố
+  ca_county -- Quận/Huyện
+  ca_state -- "BANG" - CA, TX, NY... (đang sống)
+  ca_zip -- Mã bưu điện
+  ca_country -- "QUỐC GIA ĐANG SỐNG" - KHÁC với c_birth_country! (dùng cho "đang sống tại")
+  ca_gmt_offset -- Múi giờ
+  ca_location_type
 
-[30/100] Tìm các khách hàng sinh vào tháng 12...
-  ⚠️ Different results
+JOIN HINTS:
+  JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk
+  JOIN customer_address ON c_current_addr_sk = ca_address_sk
 
-[31/100] Hiển thị chi tiết thông tin của người dùng hiện đang sử dụng...
-  ✅ Match!
+COLUMN MEANINGS:
+  c_customer_sk: PRIMARY KEY - Surrogate key (dùng cho JOIN)
+  c_customer_id: Mã định danh khách hàng (human-readable)
+  c_current_cdemo_sk: FK → customer_demographics.cd_demo_sk (JOIN để lấy gender, marital, credit)
+  c_current_hdemo_sk: FK → household_demographics.hd_demo_sk (JOIN để lấy vehicle_count)
+  c_current_addr_sk: FK → customer_address.ca_address_sk (JOIN để lấy địa chỉ HIỆN TẠI)
+  c_salutation: "DANH XƯNG" - Mr./Ms./Mrs./Dr. (Dr. = Tiến sĩ danh xưng, KHÔNG PHẢI học vấn!)
+  c_first_name: Tên khách hàng
+  c_last_name: Họ khách hàng
+  c_preferred_cust_flag: "KHÁCH HÀNG ƯU TIÊN/THÂN THIẾT" - Y=Có, N=Không
+  c_birth_day: Ngày sinh (1-31) - DÙNG TRỰC TIẾP, KHÔNG cần join date_dim!
+  c_birth_month: Tháng sinh (1-12) - DÙNG TRỰC TIẾP, KHÔNG cần join date_dim!
+  c_birth_year: Năm sinh - DÙNG TRỰC TIẾP, KHÔNG cần join date_dim! (KHÔNG CÓ c_birth_date_sk!)
+  c_birth_country: "QUỐC TỊCH/QUỐC GIA SINH" - VN, JAPAN, UNITED STATES, UNITED KINGDOM, CA...
+  c_login: Tên đăng nhập
+  c_email_address: Địa chỉ email
+  cd_demo_sk: PRIMARY KEY
+  cd_gender: "GIỚI TÍNH" - M=Nam, F=Nữ (KHÔNG CÓ c_gender trong customer!)
+  cd_marital_status: "TÌNH TRẠNG HÔN NHÂN" - S=Độc thân, M=Kết hôn, D=Ly hôn, W=Góa
+  cd_education_status: "TRÌNH ĐỘ HỌC VẤN" - Primary, 2 yr Degree, College, 4 yr Degree, Advanced Degree, PhD, MBA
+  cd_purchase_estimate: "ƯỚC TÍNH MUA SẮM" - Điểm 1-10
 
-[32/100] Tìm các khách hàng đến từ Nhật Bản (JP)...
-  ⚠️ Different results
 
-[33/100] Trong loại hàng 'Electronics' (Điện tử), món đồ nào có giá n...
-  ⚠️ Different results
+QUESTION: hãy cho tôi biết số lượng khách hàng là phụ nữ đến từ Việt Nam
 
-[34/100] Tìm tên các sản phẩm thuộc danh mục Fashion có giá bán hiện ...
-  ✅ Match!
-
-[35/100] Lọc danh sách khách hàng thân thiết...
-  ⚠️ Different results
-
-[36/100] Liệt kê thông tin các khách hàng nữ có mức ước tính mua sắm ...
-  ✅ Match!
-
-[37/100] Truy vấn thông tin của những khách hàng có ngày sinh là ngày...
-  ❌ SQL Error: Binder Error: Referenced column "cd_demo_sk" not found in FROM clause!
-Candidate bindings: "d_date_s
-
-[38/100] Liệt kê các khách hàng có danh xưng là tiến sĩ và đến từ Việ...
-  ✅ Match!
-
-[39/100] Thống kê xem có bao nhiêu khách hàng trong hệ thống của chún...
-  ⚠️ Different results
-
-[40/100] Hãy cho tôi biết mặt hàng có mã số sản phẩm là một trăm bốn ...
-  ⚠️ Different results
-
-[41/100] Có bao nhiêu khách hàng chưa cập nhật địa chỉ email?...
-  ❌ SQL Error: Binder Error: Table "ca" does not have a column named "ca_email_address"
-
-Candidate bindings: : "ca_
-
-[42/100] Hãy tìm giúp tôi tổng mức tổn thất ròng từ việc trả hàng qua...
-  ❌ SQL Error: Binder Error: Table "cs" does not have a column named "cs_net_loss"
-
-Candidate bindings: : "cs_net_p
-
-[43/100] Đếm tổng số lượng khách hàng trong bảng...
-  ✅ Match!
-
-[44/100] Có bao nhiêu khách hàng đang phải nuôi từ ba người phụ thuộc...
-  ⚠️ Different results
-
-[45/100] Đếm xem có bao nhiêu sản phẩm thuộc danh mục Beauty mà tên t...
-  ✅ Match!
-
-[46/100] Đếm tổng tất cả khách hàng đến từ Mỹ...
-  ⚠️ Different results
-
-[47/100] Bạn hãy liệt kê mười món đồ có giá vốn nhập hàng thấp nhất n...
-  ⚠️ Different results
-
-[48/100] Liệt kê họ và tên của tất cả những khách hàng nào có trình đ...
-  ✅ Match!
-
-[49/100] Liệt kê khách hàng có từ 2 xe ô tô trở lên (Vehicle count)....
-  ⚠️ Different results
-
-[50/100] Cho biết tên của những khách hàng góa vợ hoặc góa chồng sinh...
-  ⚠️ Different results
-
-[51/100] Hiển thị thông tin tên đăng nhập của những khách hàng đã ly ...
-  ✅ Match!
-
-[52/100] Hiển thị tên và email của các khách hàng nữ đã ly hôn và sin...
-  ✅ Match!
-
-[53/100] Tìm những khách hàng mua đồ qua Web mà có địa chỉ nhận hàng ...
-  ⚠️ Different results
-
-[54/100] Tìm email của các khách hàng nam sinh ra tại nước Anh và có ...
-  ✅ Match!
-
-[55/100] Bạn hãy thực hiện phân chia danh sách khách hàng thành bốn n...
-.....
+SQL:
