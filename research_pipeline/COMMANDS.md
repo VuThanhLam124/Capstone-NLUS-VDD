@@ -91,7 +91,7 @@ python research_pipeline/finetune_qwen_coder.py \
     --batch-size 8 \
     --grad-accum 2 \
     --lora-r 8 \
-    --output ./deepseek_coder_finetuned_v2
+    --output ./deepseek_coder_finetuned
 ```
 
 ### 3. Benchmark finetuned model
@@ -99,7 +99,7 @@ python research_pipeline/finetune_qwen_coder.py \
 python research_pipeline/finetune_qwen_coder.py \
     --model deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
     --skip-train --use-vllm \
-    --adapter ./deepseek_coder_finetuned_v2 \
+    --adapter ./deepseek_coder_finetuned \
     --easy --schema-linking --few-shot 3
 ```
 

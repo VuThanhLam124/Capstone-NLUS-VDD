@@ -3,13 +3,13 @@ ID,Transcription,SQL Ground Truth
 FROM item
 WHERE i_category = 'Books'
 ORDER BY i_current_price DESC LIMIT 5;"
-21,"Tôi cần tìm các khách hàng nam có danh xưng là Mr và hiện đang sinh sống hoặc có quốc tịch tại Canada, hãy liệt kê cho tôi đầy đủ thông tin của họ ","SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Mr.' AND c_birth_country = 'CA';"
+21,"Tôi cần tìm các khách hàng nam có danh xưng là Mr và hiện đang sinh sống hoặc có quốc tịch tại Canada, hãy liệt kê cho tôi đầy đủ thông tin của họ ",SELECT * FROM customer WHERE c_salutation = 'Mr.' AND c_birth_country = 'CA';
 3,Lấy thông tin định danh và họ tên khách hàng,"SELECT c_customer_id, c_first_name, c_last_name 
 FROM customer;"
 192,Tìm các cửa hàng ở bang California có giờ mở cửa vào lúc 8 giờ sáng và liệt kê tên quản lý của họ.,"SELECT s_store_name, s_manager
 FROM store
 WHERE s_state = 'CA' AND s_hours ILIKE '%8AM%';"
-22,Bạn có thể giúp tôi lọc ra và hiển thị toàn bộ danh sách những khách hàng hiện tại đang có họ là Nguyen trong cơ sở dữ liệu được không?,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_first_name = 'Nguyen';"
+22,Bạn có thể giúp tôi lọc ra và hiển thị toàn bộ danh sách những khách hàng hiện tại đang có họ là Nguyen trong cơ sở dữ liệu được không?,SELECT * FROM customer WHERE c_first_name = 'Nguyen';
 173,Website nào có tỷ lệ thuế (web_tax_percentage) cao nhất trong hệ thống?,"SELECT web_name, web_tax_percentage
 FROM web_site
 ORDER BY web_tax_percentage DESC LIMIT 1;"
@@ -17,31 +17,31 @@ ORDER BY web_tax_percentage DESC LIMIT 1;"
 FROM web_site
 WHERE web_rec_end_date IS NULL
 LIMIT 5;"
-29,Sắp xếp lại toàn bộ danh sách khách hàng trong hệ thống theo thứ tự của mã định danh khách hàng theo thứ tự tăng dần,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer ORDER BY c_customer_id;"
-14,Cho tôi xem 10 khách hàng trẻ tuổi nhất ,"SELECT c_customer_id, c_first_name, c_last_name, c_birth_year FROM customer ORDER BY c_birth_year DESC LIMIT 10;"
-35,Liệt kê tất cả những khách hàng nào đã có trình độ học vấn là tiến sĩ PhD,"SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics 
+29,Sắp xếp lại toàn bộ danh sách khách hàng trong hệ thống theo thứ tự của mã định danh khách hàng theo thứ tự tăng dần,SELECT * FROM customer ORDER BY c_customer_id;
+14,Cho tôi xem 10 khách hàng trẻ tuổi nhất ,SELECT TOP 10 * FROM customer ORDER BY c_birth_year DESC;
+35,Liệt kê tất cả những khách hàng nào đã có trình độ học vấn là tiến sĩ PhD,"SELECT * FROM customer_demographics 
 WHERE cd_education_status = 'PhD';"
 7,Lấy ra danh sách các khách hàng hiện tại không nằm trong nhóm đối tượng khách hàng ưu tiên của cửa hàng,"SELECT c_first_name, c_last_name, c_email_address 
 FROM customer 
 WHERE c_preferred_cust_flag = 'N';"
 25,Lấy địa chỉ email của những khách hàng nào đang có tên là Lan,SELECT c_email_address FROM customer WHERE c_last_name = 'Lan';
-41,Lọc ra tất cả những khách hàng là nam giới và hiện tại đang có xếp hạng tín dụng ở mức thấp để bộ phận chăm sóc kiểm tra lại,"SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics 
+41,Lọc ra tất cả những khách hàng là nam giới và hiện tại đang có xếp hạng tín dụng ở mức thấp để bộ phận chăm sóc kiểm tra lại,"SELECT * FROM customer_demographics 
 WHERE cd_gender = 'M' AND cd_credit_rating = 'Low';"
 19,Tìm khách hàng có tên bắt đầu bằng chữ 'M',"SELECT c_first_name, c_last_name 
 FROM customer 
 WHERE c_first_name LIKE 'M%';"
-15,Những khách hàng nào có danh xưng là Tiến sĩ?,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Dr.';"
-13,Tìm những người sinh vào năm 2002,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_birth_year = 2002;"
-16,Liệt kê những khách hàng sinh ra ở Vương quốc Anh (UK),"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_birth_country = 'UNITED KINGDOM';"
-4,Tìm tất cả khách hàng đến từ Việt Nam,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer 
+15,Những khách hàng nào có danh xưng là Tiến sĩ?,SELECT * FROM customer WHERE c_salutation = 'Dr.';
+13,Tìm những người sinh vào năm 2002,SELECT * FROM customer WHERE c_birth_year = 2002;
+16,Liệt kê những khách hàng sinh ra ở Vương quốc Anh (UK),SELECT * FROM customer WHERE c_birth_country = 'UNITED KINGDOM';
+4,Tìm tất cả khách hàng đến từ Việt Nam,"SELECT * FROM customer 
 WHERE c_birth_country = 'VN';"
 257,Hãy liệt kê danh sách các mã sản phẩm và số lượng tồn kho tương ứng của chúng tại kho hàng có mã số là một,"SELECT inv_item_sk, inv_quantity_on_hand 
 FROM inventory 
 WHERE inv_warehouse_sk = 1;"
 10,Tìm các quốc gia khác nhau có trong dữ liệu,"SELECT DISTINCT c_birth_country 
 FROM customer;"
-23,Tìm tất cả các khách hàng mà hiện nay thông tin tên đăng nhập đang bị để trống trong toàn bộ cơ sở dữ liệu,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_login IS NULL;"
-36,Tìm thông tin những người hiện tại đang có tình trạng hôn nhân là độc thân,"SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics WHERE cd_marital_status = 'S';"
+23,Tìm tất cả các khách hàng mà hiện nay thông tin tên đăng nhập đang bị để trống trong toàn bộ cơ sở dữ liệu,SELECT * FROM customer WHERE c_login IS NULL;
+36,Tìm thông tin những người hiện tại đang có tình trạng hôn nhân là độc thân,SELECT * FROM customer_demographics WHERE cd_marital_status = 'S';
 229,"Bạn hãy liệt kê các giao dịch tại cửa hàng đang gây ra mức thua lỗ lớn nhất, cụ thể là có lợi nhuận ròng âm hơn bảy trăm đô la","SELECT ss_ticket_number, ss_net_profit
 FROM store_sales
 WHERE ss_net_profit < -700.00
@@ -49,18 +49,18 @@ ORDER BY ss_net_profit ASC;"
 9,Sắp xếp khách hàng theo năm sinh giảm dần,"SELECT c_first_name, c_last_name, c_birth_year 
 FROM customer 
 ORDER BY c_birth_year DESC;"
-38,Liệt kê danh sách những khách hàng đang ở trạng thái góa vợ hoặc góa chồng và đang phải nuôi dưỡng một người phụ thuộc duy nhất trong gia đình,"SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics 
+38,Liệt kê danh sách những khách hàng đang ở trạng thái góa vợ hoặc góa chồng và đang phải nuôi dưỡng một người phụ thuộc duy nhất trong gia đình,"SELECT * FROM customer_demographics 
 WHERE cd_marital_status = 'W' AND cd_dep_count = 1"
-20,Liệt kê các khách hàng có danh xưng là 'Ms.',"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer 
+20,Liệt kê các khách hàng có danh xưng là 'Ms.',"SELECT * FROM customer 
 WHERE c_salutation = 'Ms.';"
-39,Lọc ra danh sách những khách hàng hiện tại vẫn còn đang độc thân và có trình độ cao đẳng,"SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics WHERE cd_marital_status = 'S' AND cd_education_status = 'College';"
-27,"Tìm tất cả những khách hàng mà tên của họ bắt đầu bằng chữ ""B""","SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_first_name LIKE 'B%';"
+39,Lọc ra danh sách những khách hàng hiện tại vẫn còn đang độc thân và có trình độ cao đẳng,SELECT * FROM customer_demographics WHERE cd_marital_status = 'S' AND cd_education_status = 'College';
+27,"Tìm tất cả những khách hàng mà tên của họ bắt đầu bằng chữ ""B""",SELECT * FROM customer WHERE c_first_name LIKE 'B%';
 288,Hiển thị danh sách các thương hiệu sản phẩm thuộc danh mục hàng Shoes,SELECT DISTINCT i_brand FROM item WHERE i_category = 'Shoes';
 17,Tìm các khách hàng sinh vào tháng 12,"SELECT c_first_name, c_last_name, c_birth_day 
 FROM customer 
 WHERE c_birth_month = 12;"
-30,Hiển thị chi tiết thông tin của người dùng hiện đang sử dụng tên đăng nhập là user15,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_login = 'user15';"
-11,Tìm các khách hàng đến từ Nhật Bản (JP),"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_birth_country = 'JAPAN';"
+30,Hiển thị chi tiết thông tin của người dùng hiện đang sử dụng tên đăng nhập là user15,SELECT * FROM customer WHERE c_login = 'user15';
+11,Tìm các khách hàng đến từ Nhật Bản (JP),SELECT * FROM customer WHERE c_birth_country = 'JAPAN';
 116,"Trong loại hàng 'Electronics' (Điện tử), món đồ nào có giá niêm yết cao nhất hiện nay?","SELECT i_item_desc, i_current_price
 FROM item
 WHERE i_category = 'Electronics'
@@ -72,10 +72,10 @@ WHERE i_category = 'Fashion' AND i_current_price > 100;"
 6,Lọc danh sách khách hàng thân thiết,"SELECT c_first_name, c_last_name, c_email_address 
 FROM customer 
 WHERE c_preferred_cust_flag = 'Y';"
-40,Liệt kê thông tin các khách hàng nữ có mức ước tính mua sắm đạt mức tám điểm và có xếp hạng tín dụng ở mức ưu tú,"SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics 
+40,Liệt kê thông tin các khách hàng nữ có mức ước tính mua sắm đạt mức tám điểm và có xếp hạng tín dụng ở mức ưu tú,"SELECT * FROM customer_demographics 
 WHERE cd_gender = 'F' AND cd_purchase_estimate = 8 AND cd_credit_rating = 'Elite'"
-26,Truy vấn thông tin của những khách hàng có ngày sinh là ngày hai mươi hai ,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_birth_day = 22;"
-24,Liệt kê các khách hàng có danh xưng là tiến sĩ và đến từ Việt Nam ,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Dr.' AND c_birth_country = 'VN';"
+26,Truy vấn thông tin của những khách hàng có ngày sinh là ngày hai mươi hai ,SELECT * FROM customer WHERE c_birth_day = 22;
+24,Liệt kê các khách hàng có danh xưng là tiến sĩ và đến từ Việt Nam ,SELECT * FROM customer WHERE c_salutation = 'Dr.' AND c_birth_country = 'VN';
 28,Thống kê xem có bao nhiêu khách hàng trong hệ thống của chúng ta sinh ra tại quốc gia Mỹ,SELECT COUNT(*) FROM customer WHERE c_birth_country = 'UNITED STATES';
 228,Hãy cho tôi biết mặt hàng có mã số sản phẩm là một trăm bốn mươi sáu đã mang lại bao nhiêu doanh thu trên kênh bán hàng trực tuyến Web,"SELECT SUM(ws_sales_price)
 FROM web_sales
@@ -133,7 +133,7 @@ LIMIT 10;"
 FROM customer 
 JOIN store_sales ON c_customer_sk = ss_customer_sk 
 WHERE c_birth_country = 'UK' AND c_preferred_cust_flag = 'Y' AND ss_quantity > 5;"
-50,Truy vấn danh sách những khách hàng có trình độ học vấn phổ thông đang sống tại Canada và có xếp hạng tín dụng ở mức tốt,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_education_status = 'School' AND c_birth_country = 'CA' AND cd_credit_rating = 'Good';"
+50,Truy vấn danh sách những khách hàng có trình độ học vấn phổ thông đang sống tại Canada và có xếp hạng tín dụng ở mức tốt,SELECT * FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_education_status = 'School' AND c_birth_country = 'CA' AND cd_credit_rating = 'Good';
 59,Tìm những khách hàng đã mua hàng và được giảm giá trên 100 đô la.,"SELECT DISTINCT c.c_first_name, c.c_last_name 
 FROM customer c 
 JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk 

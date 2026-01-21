@@ -3,8 +3,9 @@
 === QUY TẮC SQL CƠ BẢN ===
 1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu
 2. KHÔNG bịa cột/bảng không có trong schema
-3. Luôn dùng alias cho bảng
+3. Luôn dùng alias cho bảng VÀ PHẢI KHAI BÁO TRONG FROM/JOIN
 4. Output ONLY the SQL query, no explanation.
+5. Nếu dùng alias (vd: t cho time_dim), PHẢI có JOIN time_dim t TRƯỚC!
 
 === SELECT COLUMN RULES (QUAN TRỌNG!) ===
 - "liệt kê mặt hàng/sản phẩm" → SELECT i_item_desc, i_current_price
@@ -12,7 +13,18 @@
 - "khách hàng" (chung chung) → SELECT c_first_name, c_last_name
 - "tên khách hàng" → SELECT c_first_name, c_last_name (lấy cả họ tên)
 - "địa chỉ email" → SELECT c_email_address
-- "thông tin" → SELECT *
+- "thông tin" / "chi tiết" / "toàn bộ" → SELECT * (không chọn cột cụ thể!)
+- "tìm khách hàng" + không nói cột cụ thể → SELECT *
+
+=== SELECT * vs SPECIFIC COLUMNS ===
+QUAN TRỌNG: Dùng SELECT * khi:
+- Câu hỏi dùng "thông tin", "chi tiết", "toàn bộ", "hiển thị đầy đủ"
+- Câu hỏi "tìm/liệt kê X" mà KHÔNG nêu rõ muốn xem cột gì
+- Ví dụ: "Tìm khách hàng họ Nguyen" → SELECT * FROM customer WHERE...
+
+Dùng cột cụ thể khi:
+- Câu hỏi nêu rõ: "tên", "email", "địa chỉ", "số lượng"...
+- Ví dụ: "Cho biết TÊN khách hàng..." → SELECT c_first_name, c_last_name
 
 === DOANH THU & SỐ LƯỢNG ===
 - "doanh thu"/"tổng tiền" → SUM(net_paid) [KHÔNG phải sales_price!]
@@ -35,27 +47,44 @@ GIỚI TÍNH (cd_gender): Nam=M | Nữ=F
 HÔN NHÂN (cd_marital_status): Độc thân=S | Kết hôn=M | Ly hôn=D | Góa=W
 TÍN DỤNG (cd_credit_rating): Low | Good | High Risk | Elite
 
-=== COLUMN DISAMBIGUATION ===
-"quốc tịch/đến từ" → c_birth_country (trong customer!)
-"đang sống" → ca_country (trong customer_address)
+=== COLUMN DISAMBIGUATION (CRITICAL!) ===
+"quốc tịch/đến từ/có nguồn gốc" → c_birth_country (trong bảng customer!)
+"đang sống tại/cư trú" → ca_country (trong customer_address)
+"email" → c_email_address (CHỈ trong customer, KHÔNG CÓ trong customer_address!)
 "Tiến sĩ" danh xưng → c_salutation='Dr.' (trong customer!)
 "năm sinh" → c_birth_year (dùng trực tiếp!)
 "ưu tiên/thân thiết" → c_preferred_cust_flag (trong customer!)
 "giảm giá" → ss_ext_discount_amt
+
+QUAN TRỌNG: 
+- "đến từ Nhật Bản/Mỹ/VN" → customer.c_birth_country = 'JAPAN'/'UNITED STATES'/'VN'
+- KHÔNG dùng customer_address.ca_country cho "quốc tịch/đến từ"!
 
 === CỘT KHÔNG TỒN TẠI (TUYỆT ĐỐI KHÔNG DÙNG!) ===
 - c_birth_date_sk → dùng c_birth_year
 - c_gender → dùng cd_gender (trong customer_demographics)
 - cd_salutation → dùng c_salutation (trong customer)
 - cd_preferred_cust_flag → dùng c_preferred_cust_flag (trong customer)
-- ca_birth_country → dùng c_birth_country
+- ca_birth_country → dùng c_birth_country (trong customer!)
+- ca_email_address → KHÔNG TỒN TẠI! Dùng c_email_address (trong customer)
 - i_list_price → dùng i_current_price
 - i_item_name → dùng i_product_name
 - ss_order_number → dùng ss_ticket_number
 - p_discount_amt → dùng ss_ext_discount_amt
 - d_quarter → dùng d_qoy
-- category table → dùng i.i_category
+- cr_customer_sk → KHÔNG TỒN TẠI trong catalog_returns!
+
+=== BẢNG KHÔNG TỒN TẠI ===
+- category → KHÔNG TỒN TẠI! Dùng i_category trong bảng item
+- Ví dụ SAI: JOIN category cat ON i.i_category = cat.cat_code
+- Ví dụ ĐÚNG: WHERE i.i_category = 'Books'
+
+=== ALIAS RULE ===
+Nếu dùng alias như t.t_hour, PHẢI có JOIN trước đó:
+- SAI: WHERE t.t_hour = 8 (nếu không có JOIN time_dim t)
+- ĐÚNG: JOIN time_dim t ON ss.ss_sold_time_sk = t.t_time_sk WHERE t.t_hour = 8
 
 === PROMOTION RATE PATTERN ===
 CAST(SUM(CASE WHEN ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
 KHÔNG dùng AVG(boolean)
+
