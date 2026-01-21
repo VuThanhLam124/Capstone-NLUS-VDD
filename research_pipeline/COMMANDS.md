@@ -70,3 +70,42 @@ python research_pipeline/finetune_qwen_coder.py \
 |-------|-----------|------------------|
 | Qwen3-Coder-30B | ~24GB | ~40GB |
 | DeepSeek-V2-Lite | ~16GB | ~20GB |
+
+---
+
+## Augmented Training (Recommended)
+
+### 1. Generate augmented data
+```bash
+python research_pipeline/augment_training_data.py
+# Output: train_augmented.jsonl (10k+ samples from 3.7k original)
+```
+
+### 2. Finetune DeepSeek with augmented data (5 epochs, lower lr)
+```bash
+python research_pipeline/finetune_qwen_coder.py \
+    --model deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
+    --train-data research_pipeline/datasets/train_augmented.jsonl \
+    --epochs 5 \
+    --lr 5e-6 \
+    --batch-size 8 \
+    --grad-accum 2 \
+    --lora-r 8 \
+    --output ./deepseek_coder_finetuned_v2
+```
+
+### 3. Benchmark finetuned model
+```bash
+python research_pipeline/finetune_qwen_coder.py \
+    --model deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
+    --skip-train --use-vllm \
+    --adapter ./deepseek_coder_finetuned_v2 \
+    --easy --schema-linking --few-shot 3
+```
+
+### Training Parameters Comparison
+
+| Version | Data | Epochs | LR | Expected |
+|---------|------|--------|-----|----------|
+| v1 (original) | 3.7k | 3 | 2e-5 | 53% |
+| v2 (augmented) | 10k+ | 5 | 5e-6 | 60%+ |
