@@ -57,6 +57,19 @@ from prompt_assets import (
     load_valid_tables,
 )
 
+# SQL Enhancement module
+try:
+    from sql_enhancement import (
+        get_dynamic_examples,
+        post_process_sql,
+        build_correction_prompt,
+        should_retry,
+        get_enhanced_rules,
+    )
+    HAS_ENHANCEMENT = True
+except ImportError:
+    HAS_ENHANCEMENT = False
+
 # Monkey-patch DynamicCache for DeepSeek-Coder-V2 compatibility
 # DeepSeek uses old cache API, but new transformers changed method names
 try:
@@ -124,6 +137,7 @@ def parse_args():
     parser.add_argument("--max-test-samples", type=int, default=None, help="Max test samples")
     parser.add_argument("--few-shot", type=int, default=0, help="Number of few-shot examples (0-3)")
     parser.add_argument("--schema-linking", action="store_true", help="Use dynamic schema linking")
+    parser.add_argument("--enhance", action="store_true", help="Use SQL enhancement (dynamic few-shot, post-process, retry)")
     
     # Quantization
     parser.add_argument("--8bit", dest="use_8bit", action="store_true", 
@@ -479,6 +493,51 @@ def build_prompt(question: str, schema_linker=None, few_shot: int = 0) -> str:
     return "\n".join(prompt_parts)
 
 
+def build_prompt_enhanced(question: str, schema_linker=None, dynamic_examples: list = None) -> str:
+    """Build prompt với dynamic few-shot và enhanced rules"""
+    
+    # Use dynamic schema if available
+    if schema_linker:
+        schema = schema_linker.build_dynamic_schema(question, max_tables=5)
+    else:
+        schema = FULL_SCHEMA
+    
+    # Use enhanced rules nếu có
+    if HAS_ENHANCEMENT:
+        rules = get_enhanced_rules()
+    else:
+        rules = load_business_rules()
+    
+    system_rules = "\n".join([
+        "Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.",
+        "",
+        rules,
+    ])
+
+    prompt_parts = [
+        system_rules,
+        "",
+        "DATABASE SCHEMA:",
+        schema,
+    ]
+    
+    # Add dynamic few-shot examples
+    if dynamic_examples:
+        prompt_parts.append("\nEXAMPLES:")
+        for ex in dynamic_examples:
+            prompt_parts.append(f"\nQ: {ex['question']}")
+            prompt_parts.append(f"SQL:\n{ex['sql']}")
+    
+    prompt_parts.extend([
+        "",
+        f"QUESTION: {question}",
+        "",
+        "SQL:"
+    ])
+    
+    return "\n".join(prompt_parts)
+
+
 def generate_sql(model, tokenizer, question: str, schema_linker=None, few_shot: int = 0) -> str:
     """Generate SQL for question"""
     prompt = build_prompt(question, schema_linker, few_shot)
@@ -539,6 +598,89 @@ def generate_sql_vllm(llm, tokenizer, question: str, schema_linker=None, few_sho
     return postprocess_sql(response)
 
 
+def generate_sql_enhanced(llm, tokenizer, question: str, schema_linker=None,
+                           adapter_path: str = None, conn=None, use_vllm: bool = True) -> tuple:
+    """
+    Generate SQL với enhancement: dynamic few-shot, post-processing, retry
+    Returns: (sql, metadata)
+    """
+    from vllm import SamplingParams
+    from vllm.lora.request import LoRARequest
+    
+    metadata = {
+        "dynamic_examples": [],
+        "post_process_fixes": [],
+        "retried": False,
+        "original_sql": None
+    }
+    
+    # 1. Dynamic few-shot
+    if HAS_ENHANCEMENT:
+        dynamic_examples = get_dynamic_examples(question, max_examples=3)
+        metadata["dynamic_examples"] = [ex["question"][:50] for ex in dynamic_examples]
+    else:
+        dynamic_examples = FEW_SHOT_EXAMPLES[:3]
+    
+    # 2. Build enhanced prompt
+    prompt = build_prompt_enhanced(question, schema_linker, dynamic_examples)
+    
+    messages = [{"role": "user", "content": prompt}]
+    text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    
+    sampling_params = SamplingParams(
+        temperature=0.1,
+        top_p=0.9,
+        max_tokens=512,
+        repetition_penalty=1.05,
+    )
+    
+    lora_request = None
+    if adapter_path and Path(adapter_path).exists():
+        lora_request = LoRARequest("finetuned", 1, adapter_path)
+    
+    # Generate SQL
+    outputs = llm.generate([text], sampling_params, lora_request=lora_request)
+    raw_sql = outputs[0].outputs[0].text
+    sql = postprocess_sql(raw_sql)
+    metadata["original_sql"] = sql
+    
+    # 3. Post-processing
+    if HAS_ENHANCEMENT:
+        sql, fixes = post_process_sql(sql, conn)
+        metadata["post_process_fixes"] = fixes
+    
+    # 4. Self-correction retry (1 lần) nếu có lỗi syntax
+    if conn:
+        try:
+            conn.execute(sql)
+        except Exception as e:
+            error = str(e)
+            if HAS_ENHANCEMENT and should_retry(error):
+                metadata["retried"] = True
+                # Build correction prompt
+                schema = schema_linker.build_dynamic_schema(question, max_tables=5) if schema_linker else FULL_SCHEMA
+                correction_prompt = f"""SQL bị lỗi: {error[:100]}
+
+SQL lỗi: {sql}
+
+Hãy sửa lỗi. CHỈ trả về SQL đúng, không giải thích.
+
+SQL đã sửa:"""
+                
+                messages = [{"role": "user", "content": correction_prompt}]
+                text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+                
+                outputs = llm.generate([text], sampling_params, lora_request=lora_request)
+                corrected_sql = outputs[0].outputs[0].text
+                sql = postprocess_sql(corrected_sql)
+                
+                if HAS_ENHANCEMENT:
+                    sql, new_fixes = post_process_sql(sql, None)  # Không validate lại lần nữa
+                    metadata["post_process_fixes"].extend(new_fixes)
+    
+    return sql, metadata
+
+
 def benchmark_model(args, model, tokenizer, use_vllm: bool = False, 
                      preloaded_schema_linker=None):
     """Run benchmark on test set"""
@@ -584,7 +726,17 @@ def benchmark_model(args, model, tokenizer, use_vllm: bool = False,
         print(f"\n[{idx+1}/{len(test_df)}] {question[:60]}...")
         
         start_time = time.time()
-        if use_vllm:
+        enhance_metadata = None
+        
+        # Sử dụng enhanced mode nếu được bật
+        if getattr(args, 'enhance', False) and use_vllm and HAS_ENHANCEMENT:
+            generated_sql, enhance_metadata = generate_sql_enhanced(
+                model, tokenizer, question, schema_linker, 
+                args.adapter, conn
+            )
+            if enhance_metadata.get('retried'):
+                print(f"  🔄 Đã retry do lỗi syntax")
+        elif use_vllm:
             generated_sql = generate_sql_vllm(model, tokenizer, question, schema_linker, 
                                                args.few_shot, args.adapter)
         else:

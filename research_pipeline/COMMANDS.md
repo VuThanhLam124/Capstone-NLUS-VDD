@@ -109,3 +109,24 @@ python research_pipeline/finetune_qwen_coder.py \
 |---------|------|--------|-----|----------|
 | v1 (original) | 3.7k | 3 | 2e-5 | 53% |
 | v2 (augmented) | 10k+ | 5 | 5e-6 | 60%+ |
+
+---
+
+## Enhanced Mode (NEW)
+
+Sử dụng `--enhance` để bật 4 tính năng cải tiến:
+
+1. **Dynamic Few-shot**: Chọn examples phù hợp với loại câu hỏi
+2. **Post-processing SQL**: Tự động sửa lỗi cột/bảng không tồn tại
+3. **Self-Correction**: Retry 1 lần khi gặp lỗi syntax
+4. **Enhanced Business Rules**: Rules cụ thể hơn cho các pattern hay sai
+
+### Benchmark với Enhanced Mode
+```bash
+python research_pipeline/finetune_qwen_coder.py \
+    --model deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
+    --skip-train --use-vllm \
+    --adapter ./deepseek_coder_finetuned_v2 \
+    --easy --schema-linking \
+    --enhance
+```
