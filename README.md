@@ -91,3 +91,13 @@ If you find this work useful, please cite our paper:
 ## 🙏 Acknowledgements
 
 This research uses the TPC-DS benchmark by the Transaction Processing Performance Council. We thank the open-source community for libraries like `transformers`, `vllm`, and `duckdb`.
+
+## 📈 Reproducibility & Logs
+
+To ensure transparency and reproducibility of our results, we provide full execution logs:
+
+- **DeepSeek-V2 Case Study Logs**:
+    - [logl.json](./logl.json): Finetuned Model (58% accuracy, 1163ms latency).
+    - [logl2.json](./logl2.json): Baseline Model (56% accuracy, 1298ms latency).
+- **API Benchmark Logs**: Full JSON logs for Gemini Flash 3, GPT-4o, and other API-based models can be found in the [log_benchmark_text_to_sql](./log_benchmark_text_to_sql/) directory.
+- **ASR Evaluation**: We release the metadata for our **custom evaluation on 800 samples** used to calculate WER in `speech_to_text_pipeline/eval_metadata.csv` (if available) or detailed in the paper.

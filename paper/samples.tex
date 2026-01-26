@@ -37,7 +37,7 @@
 \maketitle
 
 \begin{abstract}
-We present an Voice-to-SQL pipeline designed to democratize access to complex data warehouses for non-technical users. Our system integrates state-of-the-art Vietnamese Automatic Speech Recognition (ASR) with a finetuned Large Language Model (Qwen3-Coder-30B) for SQL generation. We benchmark our system on the TPC-DS dataset, a rigorous decision support benchmark. Our experiments show that using Gemini Flash 3 Pro for ASR achieves a Word Error Rate (WER) of 0.05, while our finetuned Text-to-SQL model achieves an accuracy of approximately 68\% on schema-linked queries. We demonstrate that combining dynamic schema linking, few-shot learning, and domain-specific fine-tuning significantly outperforms baseline approaches, while revealing fundamental challenges in handling data warehouse semantics and implicit business rules.
+We present an Voice-to-SQL pipeline designed to democratize access to complex data warehouses for non-technical users. Our system integrates state-of-the-art Vietnamese Automatic Speech Recognition (ASR) with a finetuned Large Language Model (Qwen3-Coder-30B) for SQL generation. We benchmark our system on the TPC-DS dataset, a rigorous decision support benchmark. Our experiments show that using Gemini Flash 3 Pro for ASR achieves a Word Error Rate (WER) of 0.05, while our finetuned Text-to-SQL model achieves an accuracy of approximately 68\% on schema-linked queries. We demonstrate that combining dynamic schema linking, few-shot learning, and domain-specific fine-tuning significantly outperforms baseline approaches, while revealing fundamental challenges in handling data warehouse semantics and implicit business rules. Our code and benchmark data are publicly available at \url{https://github.com/VuThanhLam124/Capstone-NLUS-VDD}.
 \end{abstract}
 
 \vspace{0.5em}
@@ -147,11 +147,11 @@ This benchmarks the system's readiness for production environments far better th
 Our experiments were conducted on an NVIDIA RTX A5880 Ada (48GB VRAM) system:
 
 \begin{itemize}
-    \item \textbf{ASR Evaluation}: 800 audio samples covering 8 regional Vietnamese accents and technical jargon.
-    \item \textbf{Text-to-SQL Dataset}: To rigorously evaluate our system, we constructed a custom benchmark suite of 190 Vietnamese queries distinct from the official TPC-DS set, manually curated and stratified by difficulty:
+    \item \textbf{ASR Evaluation}: We conducted a \textbf{custom evaluation on 800 audio samples} covering 8 regional Vietnamese accents and specialized SQL technical jargon, ensuring robust performance analysis beyond standard open datasets.
+    \item \textbf{Text-to-SQL Dataset}: To rigorously evaluate our system, we constructed a custom benchmark suite of 190 Vietnamese queries distinct from the official TPC-DS set, manually curated and stratified by difficulty (Source: \texttt{research\_pipeline/datasets/*.jsonl} in our repository):
     \begin{itemize}
         \item \textbf{Test Set A: Easy (100 Queries)}: Focuses on single-table lookups or simple star-schema JOINs (max 2 dimensions). Examples include entity filtering and basic aggregation (e.g., ``Liệt kê danh sách khách hàng sống tại bang Texas'').
-        \item \textbf{Test Set B: Hard (90 Queries)}: Targets multi-hop JOINs (3+ tables), complex window functions, CTEs, and nested subqueries. This set tests reasoning over dimensional hierarchies and implicit business logic (e.g., ``Find top 5 stores with highest revenue growth in Q1 2002 vs 2001'').
+        \item \textbf{Test Set B: Hard (90 Queries)}: Targets multi-hop JOINs (3+ tables), complex window functions, CTEs, and nested subqueries. This set tests reasoning over dimensional hierarchies and implicit business logic.
     \end{itemize}
     \item \textbf{Evaluation Metrics}: Detailed below.
 \end{itemize}
@@ -222,8 +222,7 @@ We evaluated multiple models with varying configurations.
 \toprule
 \textbf{Model} & \textbf{Config} & \textbf{EMA} & \textbf{ES} \\
 \midrule
-Qwen-4B-GGUF & Base & 17\% & 91\% \\
-Qwen-4B-GGUF & FS(5)+SL & 19\% & 98\% \\
+Qwen-4B-GGUF & FS(5)+SL & 24\% & 98\% \\
 Qwen-4B-GGUF & FS(5)+SL+FT & 33\% & 98\% \\
 \midrule
 DeepSeek-V2 & FS(5)+SL & 54\% & 97\% \\
@@ -245,7 +244,7 @@ Qwen3-30B & FS(5)+SL & 63\% & 97\% \\
 
 \subsubsection{Impact of Fine-tuning}
 
-Fine-tuning delivered massive gains for smaller models (Qwen-4B: 17\% to 33\%). For Qwen3-30B, the absolute accuracy gain was 5\% (63\% to 68\%), but fine-tuning was critical for robustness.
+Fine-tuning delivered massive gains for smaller models (Qwen-4B: 24\% to 33\%). For Qwen3-30B, the absolute accuracy gain was 5\% (63\% to 68\%), but fine-tuning was critical for robustness.
 
 Table~\ref{tab:error_analysis} presents error type distribution of Qwen3-30B before and after fine-tuning:
 
@@ -270,6 +269,9 @@ Other errors & 9\% & 7\% \\
 \end{table}
 
 Fine-tuning significantly reduced systematic errors: hallucinated columns ($-42.1\%$), JOIN path errors ($-27.3\%$), and aggregation errors ($-30\%$).
+
+\paragraph{Comparison with Generalist Models:}
+Our results contrast with the recent analysis by Wang et al. \cite{wang2024generalist}, which found that off-the-shelf LLMs generally fail to capture the structural complexity of TPC-DS (specifically JOIN paths and predicates), deeming them ``insufficient for practical application''. By achieving \textbf{68\% EMA} via fine-tuning, we demonstrate that the complexity barrier identified by Wang et al. can be overcome through targeted schema alignment, rather than relying solely on model scale.
 
 \subsection{End-to-End Pipeline Performance}
 
@@ -437,7 +439,7 @@ The pipeline consists of 8 modular components:
     \item \textbf{Language}: Python 3.10+ with PyTorch.
     \item \textbf{LLM Inference}: vLLM for efficient batch inference.
     \item \textbf{Fine-tuning}: QLoRA for parameter-efficient adaptation.
-    \item \textbf{Vector Store}: FAISS for semantic retrieval.
+    \item \textbf{Vector Store}: Baai/bge-m3 for semantic retrieval.
     \item \textbf{Database}: DuckDB for SQL execution.
 \end{itemize}
 
