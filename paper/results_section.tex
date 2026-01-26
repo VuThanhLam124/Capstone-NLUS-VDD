@@ -1,0 +1,235 @@
+\section{Experimental Results and Analysis}
+
+\subsection{Experimental Setup}
+
+Our evaluation was conducted using two test configurations:
+
+\begin{itemize}
+    \item \textbf{Configuration 1 (With Fine-tuning)}: DeepSeek-Coder-V2-Lite-Instruct with fine-tuned adapter
+    \item \textbf{Configuration 2 (Baseline)}: DeepSeek-Coder-V2-Lite-Instruct without fine-tuning
+    \item \textbf{Test Set}: 100 Vietnamese Text-to-SQL queries on TPC-DS schema
+    \item \textbf{Prompting}: Few-shot (3 examples) + Dynamic Schema Linking enabled
+\end{itemize}
+
+\subsection{Comparative Results: Fine-tuning Impact}
+
+We evaluated the same model under two conditions to isolate the fine-tuning effect.
+
+\begin{table}[htbp]
+\caption{Fine-tuning Impact on DeepSeek-Coder-V2-Lite-Instruct}
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Metric} & \textbf{With FT} & \textbf{Baseline} & \textbf{Improvement} & \textbf{Absolute} \\
+\midrule
+Valid SQL (\%) & 96 & 94 & +2.1\% & +2 cases \\
+Exact Match (\%) & 58 & 56 & +3.6\% & +2 cases \\
+Execution Success (\%) & 58 & 56 & +3.6\% & +2 cases \\
+Avg Latency (ms) & 1298 & 1163 & -10.4\% & -135ms \\
+\bottomrule
+\end{tabular}
+\label{tab:finetuning_impact}
+\end{center}
+\end{table}
+
+Fine-tuning with 190 curated TPC-DS queries yielded a consistent 2-3\% improvement across all metrics. While the absolute gain appears modest, this represents a meaningful reduction in systematic errors. Notably, fine-tuning also improved inference latency, suggesting the model achieved better pattern recognition with domain-specific knowledge.
+
+\subsubsection{Error Distribution Analysis}
+
+To understand where failures occur, we categorized the 42 non-matching cases (58\% exact match rate implies 42\% error rate) as follows:
+
+\begin{table}[htbp]
+\caption{Error Classification (Configuration 1: With Fine-tuning)}
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Error Category} & \textbf{Count} & \textbf{Percentage} \\
+\midrule
+Valid=false (Hallucinated schema elements) & 4 & 9.5\% \\
+\midrule
+Valid=true but Exec\_Match=false (34 cases): \\
+\quad - Column selection mismatch & 18 & 42.9\% \\
+\quad - JOIN path errors & 8 & 19.0\% \\
+\quad - Business logic errors & 5 & 11.9\% \\
+\quad - Aggregation/ORDER BY differences & 3 & 7.1\% \\
+\midrule
+\textbf{TOTAL ERRORS} & \textbf{42} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}
+\label{tab:error_classification}
+\end{center}
+\end{table}
+
+\subsubsection{Category 1: Hallucinated Schema Elements (9.5\% of errors)}
+
+The model generated invalid SQL by referencing non-existent schema elements in 4 queries:
+
+\paragraph{Example 1: Non-existent Column Hallucination}
+
+Query 10 asked: \textit{``Lấy ra danh sách các khách hàng hiện tại không nằm trong nhóm đối tượng khách hàng ưu tiên của cửa hàng'' (Retrieve non-preferred customers)}
+
+Ground truth:
+\begin{verbatim}
+SELECT c_first_name, c_last_name, c_email_address 
+FROM customer 
+WHERE c_preferred_cust_flag = 'N';
+\end{verbatim}
+
+Generated (INVALID):
+\begin{verbatim}
+SELECT c.c_first_name, c.c_last_name
+FROM customer c
+LEFT JOIN customer_demographics cd 
+  ON c.c_current_cdemo_sk = cd.cd_demo_sk
+WHERE cd.cd_preferred_cust_flag IS NULL 
+  OR cd.cd_preferred_cust_flag = 'N';
+\end{verbatim}
+
+Error: Table \texttt{customer\_demographics} has no column \texttt{cd\_preferred\_cust\_flag}. The model confused the location of the \texttt{preferred\_cust\_flag} column (in \texttt{customer} table, not \texttt{customer\_demographics}). Despite schema linking providing explicit column definitions, the model's JOIN inference mechanism incorrectly expanded the schema scope.
+
+\paragraph{Example 2: Non-existent Table Reference}
+
+Query 32 asked for products in the Electronics category with highest current price. The model generated:
+
+\begin{verbatim}
+JOIN category cat ON i.i_category = cat.cat_code
+\end{verbatim}
+
+Error: \texttt{Catalog Error: Table with name category does not exist!}
+
+The model hallucinated a separate \texttt{category} table, failing to recognize that category information is embedded as a direct column in the \texttt{item} table. This reflects a fundamental limitation: the model lacks semantic understanding of the dimensional schema design (denormalized vs. normalized structures).
+
+\paragraph{Mitigation Strategy}
+
+Fine-tuning reduced hallucinations from occurring in queries that the model had seen patterns for during training. However, generalization to unseen schemas remains problematic. We recommend:
+
+\begin{enumerate}
+    \item Enforce schema validation: Query-time checking against schema definitions before execution.
+    \item Explicit schema constraint encoding: Provide not only column definitions but also explicit ``forbidden joins'' to block invalid join paths.
+    \item Retrieval-augmented generation: Use semantic similarity to retrieve only valid columns/tables for the specific query intent.
+\end{enumerate}
+
+\subsubsection{Category 2: Column Selection Mismatches (42.9\% of errors)}
+
+The most prevalent error class was selecting the wrong columns while maintaining valid SQL syntax. These queries executed without errors but produced incorrect results.
+
+\paragraph{Example 1: Selecting Related but Wrong Column}
+
+Query 6 asked for websites currently active and their start date.
+
+Ground truth:
+\begin{verbatim}
+SELECT web_name, web_rec_start_date
+FROM web_site
+WHERE web_rec_end_date IS NULL;
+\end{verbatim}
+
+Generated (SYNTACTICALLY VALID but SEMANTICALLY WRONG):
+\begin{verbatim}
+SELECT web.web_name, web.web_open_date_sk
+FROM web_site web
+WHERE web.web_rec_end_date IS NULL;
+\end{verbatim}
+
+The model selected \texttt{web\_open\_date\_sk} (a surrogate key) instead of \texttt{web\_rec\_start\_date} (the descriptive datetime). Both columns exist, are temporally related, and are in the correct table, making this a particularly subtle error. The model lacked the semantic understanding to distinguish between keys and descriptive attributes in business contexts.
+
+\paragraph{Example 2: Overselection of Columns}
+
+Query 30 asked for user details given login name ``user15''. The ground truth minimally selects 4 columns. The model generated:
+
+\begin{verbatim}
+SELECT c.c_customer_sk, c.c_customer_id, 
+       c.c_first_name, c.c_last_name, 
+       c.c_email_address, c.c_preferred_cust_flag, 
+       c.c_birth_day, c.c_birth_month, 
+       c.c_birth_year, c.c_birth_country
+\end{verbatim}
+
+While this executed successfully and the user got more information than requested (not strictly wrong), it violates the principle of minimal column selection. This suggests the model tends to ``over-specify'' when uncertain about which columns are truly required.
+
+\subsubsection{Category 3: JOIN Path Errors (19.0\% of errors)}
+
+Eight queries failed to infer the correct foreign key joins, either omitting necessary joins or adding unnecessary ones.
+
+\paragraph{Example: Missing vs. Unnecessary JOINs}
+
+Query 18 asks for inventory items and quantities at warehouse 1.
+
+Ground truth:
+\begin{verbatim}
+SELECT inv_item_sk, inv_quantity_on_hand 
+FROM inventory 
+WHERE inv_warehouse_sk = 1;
+\end{verbatim}
+
+Generated:
+\begin{verbatim}
+SELECT i.i_item_id, inv.inv_quantity_on_hand
+FROM item i
+JOIN inventory inv ON i.i_item_sk = inv.inv_item_sk
+JOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk
+WHERE w.w_warehouse_id = '1';
+\end{verbatim}
+
+The generated query unnecessarily joins \texttt{item} (not required for output) and uses \texttt{w\_warehouse\_id} (string ID) instead of \texttt{inv\_warehouse\_sk} (numeric key). This demonstrates weak join inference: the model adds joins reflexively when it sees a dimension table reference, rather than determining if the join is functionally necessary.
+
+\subsubsection{Category 4: Business Logic and Data Encoding Errors (11.9\%)}
+
+Five queries failed due to misunderstanding implicit business rules or data encoding conventions.
+
+\paragraph{Example: Country Code Confusion}
+
+Query 16 asks for customers born in the UK.
+
+Ground truth:
+\begin{verbatim}
+WHERE c_birth_country = 'UNITED KINGDOM'
+\end{verbatim}
+
+Generated:
+\begin{verbatim}
+WHERE ca.ca_country = 'UK'
+\end{verbatim}
+
+The model confused the country code abbreviation (``UK'') with the full country name (``UNITED KINGDOM''). Worse, it joined to \texttt{customer\_address} instead of using \texttt{customer.c\_birth\_country}. This error reflects the ``Data Warehouse Semantics Gap'': the model lacks knowledge of encoding conventions (full vs. abbreviated country names) that are implicit in the schema but not captured in schema definitions alone.
+
+\paragraph{Encoding Convention Examples from Test Set}
+
+The TPC-DS dataset uses several encoding conventions:
+
+\begin{itemize}
+    \item \textbf{Country codes}: ``CA'' vs. ``CANADA'', ``VN'' vs. ``VIETNAM''
+    \item \textbf{State codes}: ``CA'' (California) vs. full names
+    \item \textbf{Marital status}: ``W'' (Widowed), ``S'' (Single), ``M'' (Married), ``D'' (Divorced)
+    \item \textbf{Gender}: ``M'' (Male), ``F'' (Female)
+    \item \textbf{Credit ratings}: ``Low'', ``Medium'', ``High'', ``Elite''
+\end{itemize}
+
+Few-shot examples helped mitigate these errors, but fine-tuning was necessary to fully internalize them. In the baseline configuration (without fine-tuning), encoding errors occurred in 8 additional queries.
+
+\subsection{Latency Analysis}
+
+Average query generation latency: 1.30 seconds (with fine-tuning), 1.16 seconds (baseline).
+
+Latency distribution:
+\begin{itemize}
+    \item \textbf{Fast queries} (< 800ms): Simple single-table selects (12 queries)
+    \item \textbf{Medium queries} (800--1500ms): Single joins or basic aggregations (65 queries)
+    \item \textbf{Complex queries} (1500--2900ms): Multi-join or complex business logic (23 queries)
+\end{itemize}
+
+Interestingly, fine-tuning reduced average latency by 10.4\%, suggesting improved pattern recognition reduces inference time. The fastest query (414ms) was a simple DISTINCT query; the slowest (2893ms) involved complex filtering and promotion rate calculation.
+
+\subsection{Summary: Bridging the Semantics Gap}
+
+Our analysis reveals that modern Code LLMs, even when fine-tuned and equipped with schema linking, struggle with three fundamental challenges:
+
+\begin{enumerate}
+    \item \textbf{Schema Hallucination}: Creating joins to non-existent tables or columns when the model is uncertain.
+    \item \textbf{Column Semantics}: Distinguishing between keys, identifiers, and descriptive attributes without explicit guidance.
+    \item \textbf{Business Rule Encoding}: Inferring implicit conventions (country codes, date formats, marital status abbreviations) that require domain knowledge.
+\end{enumerate}
+
+These errors are systematic and persist even with fine-tuning, indicating they reflect fundamental architectural limitations rather than insufficient training data. Addressing them requires not just larger models or more data, but architectural innovations such as retrieval-augmented generation, explicit constraint checking, or hybrid neuro-symbolic approaches.

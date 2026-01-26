@@ -1,4 +1,5 @@
 \documentclass[conference]{IEEEtran}
+\usepackage[T5]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
@@ -15,7 +16,7 @@
 
 \begin{document}
 
-\title{End-to-End Voice-to-SQL Pipeline: A Case Study on Decision Support Systems With TPC-DS Data Warehouse}
+\title{End-to-End Voice-to-SQL Vietnamese Pipeline: A Case Study on Decision Support Systems With TPC-DS Data Warehouse}
 
 \author{\IEEEauthorblockN{Vu Thanh Lam}
 \IEEEauthorblockA{\textit{FPT University} \\
@@ -89,7 +90,7 @@ We selected the \textbf{TPC-DS} (Transaction Processing Performance Council - De
 We specifically targeted a Data Warehouse environment for this research. Unlike Data Lakes, which often follow a "Schema-on-Read" paradigm with unstructured or semi-structured data, Data Warehouses enforce "Schema-on-Write" with strict constraints (Primary Keys, Foreign Keys). These constraints provide semantic clarity that significantly aids LLMs in inferring correct JOIN paths and reducing hallucination.
 
 \subsection{Complexity and Realism}
-TPC-DS features a snowflake schema with 99 tables, representing a real-world retail enterprise. Its queries involve complex aggregations, window functions, and multi-dimensional analysis, typical of the decision support tasks our users face. This benchmarks the system's readiness for production environments far better than academic datasets like Spider.
+TPC-DS features a snowflake schema with 24 tables, representing a real-world retail enterprise. Its queries involve complex aggregations, window functions, and multi-dimensional analysis, typical of the decision support tasks our users face. This benchmarks the system's readiness for production environments far better than academic datasets like Spider.
 
 \section{Experiments}
 
@@ -132,25 +133,31 @@ We evaluated accuracy based on execution match rigor.
 \begin{table}[htbp]
 \caption{Text-to-SQL Accuracy}
 \begin{center}
-\begin{tabular}{|l|l|c|}
+\begin{tabular}{|l|l|c|c|}
 \hline
-\textbf{Model} & \textbf{Configuration} & \textbf{Accuracy} \\
+\textbf{Model} & \textbf{Configuration} & \textbf{Accuracy} & \textbf{Execution success} \\
 \hline
-Qwen-4B-GGUF & Base & 17\% \\
-Qwen-4B-GGUF & Fine-tuned & 33\% \\
-DeepSeek-Coder-V2 & Few-shot (5) & 56\% \\
-Qwen3-Coder-30B & Few-shot (5) & 54\% \\
-\textbf{Qwen3-Coder-30B} & \textbf{Few-shot (3) + Schema Link} & \textbf{63.4\%} \\
+Qwen-4B-GGUF & Base & 17\% & 91\% \\
+Qwen-4B-GGUF & Few-shot(5) + Schema Link & 19\% & 98\% \\
+Qwen-4B-GGUF & Few-shot(5) + Schema Link + Fine-tuned & 33\% & 98\% \\
+DeepSeek-Coder-V2 & Few-shot(5) & 54\% & 97\% \\
+DeepSeek-Coder-V2 & Few-shot(5) + Schema Link & 58\% & 99\% \\
+Gemini-2.5-pro & Few-shot(5) + Schema Link & 59\% & 97\% \\
+Gemini-3-flash & Few-shot(5) + Schema Link & 59\% & 94\% \\
+OpenAI-gpt-4o & Few-shot(5) + Schema Link & 61\% & 99\% \\
+OpenAI-gpt-o3 & Few-shot(5) + Schema Link & 63\% & 98\% \\
+\textbf{Qwen3-Coder-30B} & \textbf{Few-shot (3) + Schema Link + Finetune} & \textbf{64\%} & \textbf{--} \\
 \hline
 \end{tabular}
 \label{tab:sql_results}
 \end{center}
 \end{table}
 
-Results indicate that fine-tuning doubles performance for smaller models. For larger models (30B), reducing few-shot examples from 5 to 3 actually improved performance (63.4\% vs 54\%), likely by avoiding over-constraining the model's reasoning.
+
+Results indicate that ... (đoạn này viết tiếp phân tích cho tôi. Các lỗi thường gặp là model bịa ra tên cột/bảng, không biết các quy luật nhâp liệu dữ liệu ví dụ Los Angeles được nhập vào là LA, hay California -> CA... mặc dù đã có business rule và schema link hỗ trợ. Qua đó thấy được sự phức tạp của TPC-DS mà nghiên cứu [https://arxiv.org/pdf/2407.19517](https://arxiv.org/pdf/2407.19517) đã đề cập...  Gemini và OpenAI mặc định sẽ được sử dụng 2 kĩ thuật đi kèm để đảm bảo context để model hiểu về data warehousewarehouse)
 
 \section{Conclusion and Future Work}
-Our Voice-to-SQL pipeline demonstrates the feasibility of checking complex decision support queries via voice in Vietnamese. The combination of domain-specific ASR (Gemini/Whisper) and schema-aware LLMs (Qwen3-Coder) yields promising results.
+Our Voice-to-SQL pipeline demonstrates the feasibility of checking complex decision support queries via voice in Vietnamese. The combination of domain-specific ASRwarehousewarehouse (Gemini/Whisper) and schema-aware LLMs (Qwen3-Coder) yields promising results.
 Future work will focus on handling "unhappy cases" such as incoherent speech by introducing an LLM-based rewriting layer, and improving latency through model quantization.
 
 \begin{thebibliography}{00}
@@ -159,7 +166,11 @@ Future work will focus on handling "unhappy cases" such as incoherent speech by 
 \bibitem{li2020speechsqlnet} Li, et al., "SpeechSQLNet: End-to-end Speech-to-SQL Generation," \emph{Interspeech}, 2020.
 \bibitem{wang2024schema} Wang, et al., "Schema-Aware Prompting for Text-to-SQL," \emph{arXiv preprint arXiv:2409.12172}, 2024.
 \bibitem{phowhisper} VinAI, "PhoWhisper: Automatic Speech Recognition for Vietnamese," 2023.
-\bibitem{tpcds} TPC Council, "TPC-DS Benchmark," https://www.tpc.org/tpcds/.
+\bibitem{tpcds} TPC Council, "TPC-DS Benchmark," [https://www.tpc.org/tpcds/](https://www.tpc.org/tpcds/).
+
+(NEED add more ref)
 \end{thebibliography}
 
 \end{document}
+
+tiến hành bổ sung, hoàn thiện paper tôi đang viết và format tài liệu

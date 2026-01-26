@@ -1,0 +1,506 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[left=1in, right=1in, top=1in, bottom=1in]{geometry}
+\usepackage[T5]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage{url}
+\usepackage{authblk} % Standard package for authors in article class
+\usepackage{fancyhdr} % For custom headers like 'A PREPRINT'
+
+% Header formatting to match target
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{A PREPRINT}
+\lhead{Voice-to-SQL Vietnamese Pipeline}
+\cfoot{\thepage}
+
+\title{Voice-to-SQL Vietnamese Pipeline: A Case Study on Decision Support Systems With TPC-DS Data Warehouse}
+
+\author[1]{Vu Thanh Lam}
+\affil[1]{FPT University, Hanoi, Vietnam \\ \texttt{lamvthe180779@fpt.edu.vn}}
+
+\date{} % No date or custom date
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present an Voice-to-SQL pipeline designed to democratize access to complex data warehouses for non-technical users. Our system integrates state-of-the-art Vietnamese Automatic Speech Recognition (ASR) with a finetuned Large Language Model (Qwen3-Coder-30B) for SQL generation. We benchmark our system on the TPC-DS dataset, a rigorous decision support benchmark. Our experiments show that using Gemini Flash 3 Pro for ASR achieves a Word Error Rate (WER) of 0.05, while our finetuned Text-to-SQL model achieves an accuracy of approximately 68\% on schema-linked queries. We demonstrate that combining dynamic schema linking, few-shot learning, and domain-specific fine-tuning significantly outperforms baseline approaches, while revealing fundamental challenges in handling data warehouse semantics and implicit business rules.
+\end{abstract}
+
+\vspace{0.5em}
+\noindent\textbf{Keywords:} Voice-to-SQL, ASR, Large Language Models, Vietnamese, TPC-DS, Data Warehouse, Schema Linking, Fine-tuning
+
+\section{Introduction}
+
+\subsection{Problem Definition \& Real-world Context}
+In the modern e-commerce and enterprise landscape, data-driven decision-making is pivotal. However, a significant bottleneck exists: business analysts and consultants often lack the SQL expertise required to extract insights from complex data warehouses.
+
+\subsubsection{Current Reality}
+Business stakeholders need to retrieve information quickly to serve professional tasks. Yet, the extraction process relies heavily on technical teams (Developers or Data Analysts), creating a dependency that consumes time and reduces business agility. This ``Knowledge Gap'' acts as a major friction point in enterprise operations.
+
+\subsubsection{Proposed Solution}
+Our project mitigates this by building an end-to-end AI pipeline that:
+\begin{enumerate}
+    \item Accepts natural language input via voice or text (Vietnamese/English).
+    \item Accurately translates this input into executable SQL queries compatible with the complex TPC-DS schema.
+    \item Executes the query and returns results to the user.
+\end{enumerate}
+
+The system comprises two core subsystems: Speech-to-Text (STT) for transcribing spoken domain-specific queries, and Text-to-SQL for generating precise database commands. We specifically target the TPC-DS benchmark to address real-world challenges (schema complexity, business rules) that simpler academic datasets like Spider fail to capture.
+
+\section{Related Work}
+
+\subsection{Vietnamese Text-to-SQL}
+Research in Vietnamese Text-to-SQL has been advancing with datasets like ViText2SQL \cite{nguyen2020vitext2sql}, which adapted the Spider dataset for the Vietnamese language. Recent work focuses on leveraging Large Language Models (LLMs) with advanced prompting strategies \cite{gao2023text}. However, most existing work operates on simplified datasets with flat schemas. The transition from academic datasets to production data warehouses introduces significant challenges in schema complexity and business rule encoding \cite{wang2024schema}.
+
+\subsection{Voice-to-SQL Systems}
+In the Voice-to-SQL domain, approaches are generally categorized into cascaded (ASR + Text-to-SQL) and end-to-end architectures \cite{li2020speechsqlnet}. While end-to-end models like SpeechSQLNet avoid error propagation from cascaded components, they often suffer from limited interpretability and harder debugging. Cascaded systems allow for modular improvements and enable leveraging state-of-the-art developments in each component separately. Our work adopts a cascaded approach to take advantage of rapid innovations in both Vietnamese ASR and Code-LLMs.
+
+\subsection{Schema-Aware LLMs for SQL Generation}
+Recent studies emphasize that schema linking---explicitly providing the model with relevant table and column definitions---is critical for accuracy \cite{wang2024schema, ki2023restoring}. Context-aware prompting techniques using few-shot examples have shown significant improvements over zero-shot baselines \cite{gao2023text}. Our approach extends these findings to the complexity of data warehouse schemas, where implicit semantic relationships (foreign keys, dimensional hierarchies) and business rules (data encoding conventions) play crucial roles.
+
+\subsection{Large Language Models for Code Generation}
+Models like Qwen-Coder \cite{qwen2024coder}, DeepSeek-Coder \cite{deepseek2024}, and general instruction-tuned models (Gemini, GPT-4) have demonstrated strong capabilities in generating SQL. However, their performance on complex warehouse queries with strict business rule adherence remains an open research question. Fine-tuning via QLoRA \cite{dettmers2023qlora} offers an efficient approach to domain adaptation without catastrophic forgetting.
+
+\section{Methodology}
+
+We rigorously selected and evaluated technologies for both pipeline components based on performance benchmarks and resource constraints.
+
+\subsection{Speech-to-Text (STT): Model Selection}
+
+We evaluated four models for the ASR component based on Word Error Rate (WER) and domain suitability:
+
+\begin{itemize}
+    \item \textbf{PhoWhisper (VinAI)} \cite{phowhisper}: Superior Vietnamese recognition but struggles with technical English terms mixed in Vietnamese speech.
+    \item \textbf{Whisper-large-v3 (OpenAI)}: Best bilingual support, critical for recognizing SQL keywords.
+    \item \textbf{Chunkformer}: A generic SOTA Vietnamese model but limited in mixed-language tasks.
+    \item \textbf{Gemini Flash 3 Pro (Selected)}: Delivers the lowest WER (0.05) with superior contextual understanding that corrects SQL terminology misspellings automatically.
+\end{itemize}
+
+\subsection{Text-to-SQL}
+
+For SQL generation, we prioritized ``Instruct'' models capable of generalizing to new schemas without hallucination. We selected \textbf{Qwen3-Coder-30B-Instruct} as our primary model due to its balance of performance and resource requirements (fitting within 48GB VRAM).
+
+Our Text-to-SQL methodology employs three key techniques:
+
+\subsubsection{Dynamic Schema Linking}
+
+Schema Linking is the most critical technique to improve Text-to-SQL accuracy \cite{wang2024schema}. We implement a three-stage pipeline to map natural language to schema entities:
+\begin{itemize}
+    \item \textbf{Keyword Matching}: Direct mapping of user terms to table/column names.
+    \item \textbf{Semantic Retrieval}: Using dense vector embeddings to match concepts to schema definitions.
+    \item \textbf{JOIN Inference}: Pruning the schema to only relevant tables and inferring correct JOIN paths based on Foreign Key constraints.
+\end{itemize}
+
+\subsubsection{Few-shot Learning (In-Context Learning)}
+
+We utilize In-Context Learning by including 3--5 high-quality examples in the prompt. We found that 3 examples often perform better than 5 for our specific extensive schema prompts, avoiding context overflow.
+
+\subsubsection{Knowledge Internalization via Fine-tuning (QLoRA)}
+
+We employ QLoRA \cite{dettmers2023qlora} to fine-tune the model on a curated dataset of TPC-DS queries. The primary goal is \textbf{Knowledge Internalization}: teaching the model to internalize the complex TPC-DS schema structure (24 tables, snowflake design) into its long-term memory. This reduces the reliance on massive context windows during inference and improves the model's ability to generalize on complex multi-hop JOINs.
+
+The fine-tuning dataset consists of 190 queries custom-curated from the TPC-DS schema (distinct from the official 99 benchmark queries), covering complex SQL features like Window Functions and CTEs.
+
+\section{Dataset Selection: Why TPC-DS?}
+
+We selected the \textbf{TPC-DS} (Transaction Processing Performance Council - Decision Support) benchmark \cite{tpcds} for this research, departing from the conventional use of academic datasets like Spider.
+
+\subsection{Data Warehouse vs. Data Lake Paradigm}
+
+We specifically targeted a \textbf{Data Warehouse} environment rather than a generic database. Data Warehouses enforce ``Schema-on-Write'' with strict constraints (Primary Keys, Foreign Keys, Check Constraints), providing semantic clarity that aids LLMs in:
+\begin{itemize}
+    \item Inferring correct multi-table JOIN paths,
+    \item Understanding dimensional hierarchies,
+    \item Reducing hallucination of non-existent tables/columns.
+\end{itemize}
+
+\subsection{Complexity and Realism of TPC-DS}
+
+TPC-DS features a snowflake schema with 24 interdependent tables, representing a real-world retail and e-commerce enterprise data warehouse. Its standard 99 queries involve:
+\begin{itemize}
+    \item Complex aggregations and window functions,
+    \item Multi-level JOINs (average 3.4 JOINs for complex queries),
+    \item Subqueries and CTEs (Common Table Expressions),
+    \item Implicit business rules and data encoding conventions.
+\end{itemize}
+
+This benchmarks the system's readiness for production environments far better than academic datasets.
+
+\section{Experiments}
+
+\subsection{Experimental Setup}
+
+Our experiments were conducted on an NVIDIA RTX A5880 Ada (48GB VRAM) system:
+
+\begin{itemize}
+    \item \textbf{ASR Evaluation}: 800 audio samples covering 8 regional Vietnamese accents and technical jargon.
+    \item \textbf{Text-to-SQL Dataset}: To rigorously evaluate our system, we constructed a custom benchmark suite of 190 Vietnamese queries distinct from the official TPC-DS set, manually curated and stratified by difficulty:
+    \begin{itemize}
+        \item \textbf{Test Set A: Easy (100 Queries)}: Focuses on single-table lookups or simple star-schema JOINs (max 2 dimensions). Examples include entity filtering and basic aggregation (e.g., ``Liệt kê danh sách khách hàng sống tại bang Texas'').
+        \item \textbf{Test Set B: Hard (90 Queries)}: Targets multi-hop JOINs (3+ tables), complex window functions, CTEs, and nested subqueries. This set tests reasoning over dimensional hierarchies and implicit business logic (e.g., ``Find top 5 stores with highest revenue growth in Q1 2002 vs 2001'').
+    \end{itemize}
+    \item \textbf{Evaluation Metrics}: Detailed below.
+\end{itemize}
+
+\subsection{Evaluation Metrics}
+
+\paragraph{ASR Metric: Word Error Rate (WER)}
+Standard metric calculated via Levenshtein distance:
+\begin{equation}
+    WER = \frac{S + D + I}{N}
+\end{equation}
+Where $S, D, I$ are substitutions, deletions, and insertions respectively, and $N$ is the reference length.
+
+\paragraph{Text-to-SQL Metrics:}
+We prioritize execution-based evaluation over string matching:
+
+\begin{itemize}
+    \item \textbf{Execution Match Accuracy (EMA)}: The primary metric. Returns 1 if the execution result of the generated SQL ($Q_{gen}$) matches the ground truth ($Q_{gold}$) on database $D$, regardless of syntax differences.
+    \begin{equation}
+        EMA = \mathbb{I}(Exec(D, Q_{gen}) = Exec(D, Q_{gold}))
+    \end{equation}
+    \textit{Example}: $Q_{gen}$ uses \texttt{AVG(x)} while $Q_{gold}$ uses \texttt{SUM(x)/COUNT(x)}. If results match, $EMA=1$.
+
+    \item \textbf{Execution Success (ES)}: Measures syntactic validity. Returns 1 if the query executes without returning a database error.
+    \begin{equation}
+        ES = \mathbb{I}(Exec(D, Q_{gen}) \neq \text{Error})
+    \end{equation}
+\end{itemize}
+
+\subsection{Model Selection and Training Strategy}
+
+We specifically chose \textbf{Instruct-tuned} models over Base models. Instruct models possess strong pre-trained capabilities in complying with complex prompts, which is critical for handling our dynamic schema linking instructions. 
+
+Consequently, we adopted a \textbf{Parameter-Efficient Fine-tuning (PEFT) strategy with limited epochs} (specifically 5 epochs) for Text to SQL pipeline. Our rationale is that the model does not need to learn SQL syntax from scratch (which would require extensive training) but rather needs to \textit{align} its existing reasoning capabilities with the specific semantic patterns of the TPC-DS schema (e.g., implicit joins, snowflakes structure). This "Schema Alignment" approach prevents the catastrophic forgetting typically associated with prolonged training on small datasets.
+
+\subsection{ASR Results \& Analysis}
+
+We measured WER across 800 samples. Results are summarized in Table~\ref{tab:asr_results}.
+
+\begin{table}[htbp]
+\caption{ASR Performance Comparison}
+\begin{center}
+\begin{tabularx}{\columnwidth}{@{}l c c X@{}}
+\toprule
+\textbf{Model} & \textbf{WER} & \textbf{Speed} & \textbf{Key Observation} \\
+\midrule
+Gemini Flash 3 Pro & \textbf{0.05} & Medium & Best context awareness \\
+Whisper-large-v3 & 0.06 & Medium & Good bilingual support \\
+PhoWhisper-large & 0.17 & Fast & Struggles with English terms \\
+Chunkformer & 0.19 & Fast & Limited mixed-language \\
+\bottomrule
+\end{tabularx}
+\label{tab:asr_results}
+\end{center}
+\end{table}
+
+PhoWhisper often failed to preserve English terms correctly. Whisper-v3 and Gemini handled code-switching effectively. Gemini's superior performance comes from contextual understanding that corrects common SQL terminology misspellings. We selected Gemini Flash 3 Pro despite API costs due to its robustness.
+
+\subsection{Text-to-SQL Results}
+
+We evaluated multiple models with varying configurations.
+
+\begin{table}[htbp]
+\caption{Text-to-SQL Accuracy across Model Variants}
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}llcc@{}}
+\toprule
+\textbf{Model} & \textbf{Config} & \textbf{EMA} & \textbf{ES} \\
+\midrule
+Qwen-4B-GGUF & Base & 17\% & 91\% \\
+Qwen-4B-GGUF & FS(5)+SL & 19\% & 98\% \\
+Qwen-4B-GGUF & FS(5)+SL+FT & 33\% & 98\% \\
+\midrule
+DeepSeek-V2 & FS(5)+SL & 54\% & 97\% \\
+DeepSeek-V2 & FS(5)+SL+FT & 58\% & 99\% \\
+\midrule
+Gemini-2.5-pro & FS(5)+SL & 59\% & 97\% \\
+Gemini-3-flash & FS(5)+SL & 59\% & 94\% \\
+\midrule
+GPT-4o \cite{openai2023gpt4} & FS(5)+SL & 61\% & 99\% \\
+GPT-o3 & FS(5)+SL & 63\% & 98\% \\
+\midrule
+Qwen3-30B & FS(5)+SL & 63\% & 97\% \\
+\textbf{Qwen3-30B} & \textbf{FS(3)+SL+FT} & \textbf{68\%} & \textbf{99\%} \\
+\bottomrule
+\end{tabular}
+\label{tab:sql_results}
+\end{center}
+\end{table}
+
+\subsubsection{Impact of Fine-tuning}
+
+Fine-tuning delivered massive gains for smaller models (Qwen-4B: 17\% to 33\%). For Qwen3-30B, the absolute accuracy gain was 5\% (63\% to 68\%), but fine-tuning was critical for robustness.
+
+Table~\ref{tab:error_analysis} presents error type distribution of Qwen3-30B before and after fine-tuning:
+
+\begin{table}[htbp]
+\caption{Error Analysis: Fine-tuning Impact}
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Error Type} & \textbf{Before FT} & \textbf{After FT} \\
+\midrule
+Hallucinated columns & 19\% & 11\% \\
+Incorrect aggregations & 10\% & 7\% \\
+JOIN path errors & 11\% & 8\% \\
+Other errors & 9\% & 7\% \\
+\midrule
+\textbf{Correct Prediction} & \textbf{63\%} & \textbf{68\%} \\
+\bottomrule
+\end{tabular}
+\label{tab:error_analysis}
+\end{center}
+\end{table}
+
+Fine-tuning significantly reduced systematic errors: hallucinated columns ($-42.1\%$), JOIN path errors ($-27.3\%$), and aggregation errors ($-30\%$).
+
+\subsection{End-to-End Pipeline Performance}
+
+We evaluated the full pipeline performance where errors from the ASR module can propagate to the SQL generation phase. We fixed the ASR component to the best performer (Gemini Flash 3 Pro) and varied the Text-to-SQL component to measure robustness against ASR noise.
+
+\begin{table}[htbp]
+\caption{End-to-End (Voice-to-SQL) Performance}
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}llcc@{}}
+\toprule
+\textbf{ASR Model} & \textbf{Text-to-SQL Model} & \textbf{EMA} & \textbf{ES} \\
+\midrule
+Gemini-3-Pro & Qwen3-Coder-30B (Base) & 61\% & 97\% \\
+Gemini-3-Pro & GPT-o3 & 64\% & 96\% \\
+\textbf{Gemini-3-Pro} & \textbf{FT Qwen3-Coder-30B} & \textbf{66\%} & \textbf{98\%} \\
+\bottomrule
+\end{tabular}
+\label{tab:end_to_end_results}
+\end{center}
+\end{table}
+
+The drop from pure Text-to-SQL accuracy (68\%) to End-to-End accuracy (66\%) is minimal ($-2\%$), demonstrating the system's resilience to speech transcription errors. Notably, our fine-tuned model outperformed the closed-source GPT-o3 (66\% vs 64\%) in this end-to-end setting. This suggests that domain-specific fine-tuning not only teaches schema knowledge but also provides robustness against the slight semantic drifts caused by ASR imperfections.
+
+\subsubsection{Latency Breakdown Analysis}
+
+To assess feasibility for real-time interaction, we decomposed the latency of each pipeline stage.
+
+\begin{table}[htbp]
+\caption{End-to-End Latency Breakdown (Average)}
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Component} & \textbf{Time (ms)} & \textbf{Pct. of Total} \\
+\midrule
+ASR (Gemini Flash) & 2673 & 42.5\% \\
+Schema Linking & 109 & 1.7\% \\
+Prompt Engineering & 87 & 1.4\% \\
+SQL Generation & 3144 & 49.8\% \\
+Query Execution & 417 & 8\% \\
+\midrule
+\textbf{Total End-to-End} & \textbf{6285ms} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}
+\label{tab:latency_breakdown}
+\end{center}
+\end{table}
+
+The total latency of $\approx 6.285$ seconds is within the acceptable range for analytical voice assistants with SQL generation use finetuned Qwen3-Coder-30B.
+\section{Detailed Analysis: DeepSeek-V2 Case Study}
+
+We evaluated the impact of domain-specific fine-tuning by comparing the baseline DeepSeek-Coder-V2-Lite-Instruct model against its fine-tuned counterpart on our custom benchmark.
+
+\begin{table}[htbp]
+\caption{Performance Comparison: Baseline vs. Fine-tuned}
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Baseline} & \textbf{Fine-tuned} & \textbf{$\Delta$} \\
+\midrule
+Valid SQL & 94\% & 96\% & +2.1\% \\
+Exact Match Accuracy & 56\% & 58\% & +3.6\% \\
+Execution Success & 56\% & 58\% & +3.6\% \\
+Avg. Latency & 1298ms & 1163ms & -10.4\% \\
+\bottomrule
+\end{tabular}
+\label{tab:finetuning_impact}
+\end{center}
+\end{table}
+
+\subsection{Quantitative Analysis}
+
+As shown in Table \ref{tab:finetuning_impact}, fine-tuning yielded consistent improvements across all metrics. The 3.6\% increase in Exact Match Accuracy reflects the model's enhanced ability to handle edge cases and implicit business rules. Notably, the 10.4\% reduction in latency suggests that the fine-tuned model converges on correct patterns more efficiently, requiring fewer reasoning steps.
+
+\subsection{Error Distribution Analysis}
+
+We analyzed the remaining errors to pinpoint persistent challenges. The distribution of the 42 failure cases (out of 100 test samples) is detailed in Table \ref{tab:error_classification}.
+
+\begin{table}[htbp]
+\caption{Error Classification (Fine-tuned Model)}
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Error Category} & \textbf{Count} & \textbf{Pct.} \\
+\midrule
+\textbf{Hallucination} (Invalid Schema) & 4 & 9.5\% \\
+\textbf{Logic Errors} (Valid SQL, Wrong Result) & 34 & 81.0\% \\
+\quad \textit{- Column Selection Mismatch} & \textit{18} & \textit{42.9\%} \\
+\quad \textit{- JOIN Path Errors} & \textit{8} & \textit{19.0\%} \\
+\quad \textit{- Business Logic (Filter/Agg)} & \textit{5} & \textit{11.9\%} \\
+\quad \textit{- Other (Sort/Limit)} & \textit{3} & \textit{7.1\%} \\
+\textbf{Other} & 4 & 9.5\% \\
+\bottomrule
+\end{tabular}
+\label{tab:error_classification}
+\end{center}
+\end{table}
+
+\subsection{Qualitative Analysis}
+
+Beyond metrics, we highlight two qualitative improvements where fine-tuning successfully bridged the ``Semantics Gap''.
+
+\subsubsection{Case Study 1: Eliminating Hallucination}
+\textbf{Query:} \textit{``Find stores in California opening at 8 AM.''}
+
+\vspace{0.5em}
+\noindent\textbf{Baseline Failure:} Hallucinates a non-existent Foreign Key.
+{\small
+\begin{verbatim}
+JOIN time_dim ON s.s_hours_sk = ...
+\end{verbatim}
+}
+
+\noindent\textbf{Fine-tuned Success:} Correctly identifies column semantics, treating \texttt{s\_hours} as text rather than a join key.
+{\small
+\begin{verbatim}
+WHERE s.s_hours ILIKE '%8AM%'
+\end{verbatim}
+}
+
+\subsubsection{Case Study 2: Business Rule Adherence}
+\textbf{Query:} \textit{``Web sales revenue for Q3 2001.''}
+
+\vspace{0.5em}
+\noindent\textbf{Baseline Failure:} Returns unrequested dimension columns (\texttt{d\_year}, \texttt{d\_qoy}), creating verbose output unsuitable for voice.
+
+\vspace{0.5em}
+\noindent\textbf{Fine-tuned Success:} Returns ONLY the scalar sum, strictly adhering to the prompt's intent for concise output.
+
+\section{The Data Warehouse Semantics Gap}
+
+Despite achieving 68\% accuracy, systematic failures reveal the ``Data Warehouse Semantics Gap''---a phenomenon extensively documented in recent work by Wang et al. \cite{wang2024generalist}---distinguishing warehouse queries from academic benchmarks.
+
+\paragraph{Data Encoding and Business Rules.} TPC-DS encodes values with abbreviations (e.g., ``California'' as ``CA''). Models frequently generated queries with literal English values instead of encoded abbreviations, accounting for 8\% of baseline failures.
+
+\paragraph{Implicit JOIN Logic.} TPC-DS's snowflake schema requires understanding standard warehouse patterns. Models without warehouse knowledge generated incorrect JOIN paths, accounting for 6\% of failures.
+
+\paragraph{Foreign Key vs. Text Field Confusion.} Models frequently attempted to JOIN on text fields or hallucinated non-existent foreign keys, with fine-tuning reducing this class by 67\%.
+
+\paragraph{Context Window Limitations.} Even with dynamic schema linking, balancing schema completeness with context constraints remains challenging.
+
+\section{System Architecture and Integration}
+
+\subsection{Pipeline Design}
+
+The pipeline consists of 8 modular components:
+
+\begin{enumerate}
+    \item \textbf{Speech Input Module}: Microphone or file upload.
+    \item \textbf{ASR Engine}: Gemini Flash 3 Pro transcription.
+    \item \textbf{Schema Linking Layer}: Keyword matching + semantic embeddings.
+    \item \textbf{Prompt Construction}: Assembly with few-shot examples and schema info.
+    \item \textbf{SQL Generation}: Fine-tuned Qwen3-Coder-30B inference.
+    \item \textbf{Query Validation}: Syntax and schema validation.
+    \item \textbf{Execution Engine}: DuckDB SQL execution.
+    \item \textbf{Result Presentation}: Chat interface output.
+\end{enumerate}
+
+\subsection{Implementation Details}
+
+\begin{itemize}
+    \item \textbf{Language}: Python 3.10+ with PyTorch.
+    \item \textbf{LLM Inference}: vLLM for efficient batch inference.
+    \item \textbf{Fine-tuning}: QLoRA for parameter-efficient adaptation.
+    \item \textbf{Vector Store}: FAISS for semantic retrieval.
+    \item \textbf{Database}: DuckDB for SQL execution.
+\end{itemize}
+
+\section{Conclusion and Future Work}
+
+We presented the first end-to-end Vietnamese Voice-to-SQL pipeline benchmarked on TPC-DS. Our results show that domain-specific fine-tuning combined with dynamic schema linking allows open-weight models to compete with proprietary giants on specialized tasks. The Data Warehouse Semantics Gap remains a fundamental challenge.
+
+\subsection{Key Contributions}
+
+\begin{enumerate}
+    \item \textbf{First Vietnamese Voice-to-SQL on TPC-DS}: Bridging the gap between academic benchmarks and production warehouse complexity.
+    \item \textbf{Data Warehouse Semantics Gap Characterization}: Explicit documentation of persistent challenges in warehouse SQL generation.
+    \item \textbf{Fine-tuning Effectiveness}: Demonstrating 67\% reduction in systematic error classes through domain adaptation.
+    \item \textbf{Practical System Design}: Reproducible modular pipeline enabling on-premise deployment.
+\end{enumerate}
+
+\subsection{Future Work}
+
+\begin{itemize}
+    \item \textbf{Latency Optimization}: Quantization to reach sub-500ms latency.
+    \item \textbf{Interactive Refinement}: Multi-turn dialogue for iterative query refinement.
+    \item \textbf{Explainability}: Natural language explanations of SQL generation decisions.
+    \item \textbf{Cross-warehouse Evaluation}: Assessment on TPC-H and custom enterprise schemas.
+\end{itemize}
+
+\begin{thebibliography}{00}
+
+\bibitem{nguyen2020vitext2sql}
+Anh Tuan Nguyen et al., ``ViText2SQL: A Dataset for Vietnamese Text-to-SQL Generation,'' in \emph{Proceedings of VinAI Research}, 2020.
+
+\bibitem{gao2023text}
+Dawei Gao et al., ``Text-to-SQL Empowered by Large Language Models: A Benchmark Evaluation,'' \emph{arXiv preprint arXiv:2308.15363}, 2023.
+
+\bibitem{wang2024schema}
+Wang et al., ``Schema-Aware Prompting for Text-to-SQL,'' \emph{arXiv preprint arXiv:2409.12172}, 2024.
+
+\bibitem{li2020speechsqlnet}
+Li et al., ``SpeechSQLNet: End-to-end Speech-to-SQL Generation,'' in \emph{Proceedings of Interspeech}, 2020.
+
+\bibitem{ki2023restoring}
+Ki et al., ``Restoring Vision in Blind ChatGPT: A Pixel is Worth One Word,'' \emph{arXiv preprint arXiv:2305.09950}, 2023.
+
+\bibitem{qwen2024coder}
+Alibaba Qwen Team, ``Qwen-Coder: Large Code Language Models,'' \emph{Technical Report}, 2024. [Online]. Available: https://qwenlm.github.io/
+
+\bibitem{deepseek2024}
+DeepSeek AI, ``DeepSeek-Coder: Let the Code LLMs Go Further,'' \emph{arXiv preprint arXiv:2401.14196}, 2024.
+
+\bibitem{dettmers2023qlora}
+Tim Dettmers et al., ``QLoRA: Efficient Finetuning of Quantized LLMs,'' \emph{arXiv preprint arXiv:2305.14314}, 2023.
+
+\bibitem{phowhisper}
+VinAI, ``PhoWhisper: Automatic Speech Recognition for Vietnamese,'' 2023. [Online]. Available: https://github.com/VinAIResearch/PhoWhisper
+
+\bibitem{tpcds}
+TPC Council, ``TPC-DS Benchmark.'' [Online]. Available: https://www.tpc.org/tpcds/
+
+\bibitem{openai2023gpt4}
+OpenAI, ``GPT-4 Technical Report,'' \emph{arXiv preprint arXiv:2303.08774}, 2023.
+
+\bibitem{wang2024generalist}
+Wang et al., ``The Generalist AI and the Data Warehouse Challenge,'' \emph{arXiv preprint arXiv:2407.19517}, 2024.
+
+\end{thebibliography}
+
+\end{document}

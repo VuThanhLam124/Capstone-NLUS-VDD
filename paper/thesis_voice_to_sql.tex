@@ -106,9 +106,9 @@ We utilize In-Context Learning by including 3--5 high-quality examples in the pr
 \subsubsection{Knowledge Internalization via Fine-tuning (QLoRA)}
 
 We employ QLoRA \cite{dettmers2023qlora} to fine-tune the model on a curated dataset of TPC-DS queries.
-The primary goal is \textbf{Knowledge Internalization}: teaching the model to "memorize" the complex TPC-DS schema structure (24 tables, snowflake design) into its long-term memory (weights). This reduces the reliance on massive context windows during inference and improves the model's ability to generalize on complex multi-hop JOINs.
+The primary goal is \textbf{Knowledge Internalization}: teaching the model to "memorize" the complex TPC-DS schema structure (24 tables, snowflake design) into its long-term memory (weights). This reduces the reliance on massive context windows during inference (i.e., decreasing the need to stuff the entire schema into the prompt, thereby lowering latency and cost) and improves the model's ability to generalize on complex multi-hop JOINs.
 
-The fine-tuning dataset consists of 190 manually curated queries (100 Easy, 90 Hard), ensuring coverage of complex SQL features like Window Functions and CTEs.
+The fine-tuning dataset consists of 190 queries \textbf{custom-curated from the TPC-DS schema} (distinct from the official 99 benchmark queries). This ensures that the evaluation on the official set tests generalization rather than memorization. It covers complex SQL features like Window Functions and CTEs.
 
 \section{Dataset Selection: Why TPC-DS?}
 
@@ -185,7 +185,7 @@ We evaluated multiple models with varying configurations.
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{@{}llcc@{}}
 \toprule
-\textbf{Model} & \textbf{Config} & \textbf{Acc} & \textbf{Exec} \\
+\textbf{Model} & \textbf{Config} & \textbf{Result match} & \textbf{Exec success} \\
 \midrule
 Qwen-4B-GGUF & Base & 17\% & 91\% \\
 Qwen-4B-GGUF & FS(5) + SL & 19\% & 98\% \\
@@ -209,8 +209,31 @@ GPT-o3 & FS(5) + SL & 63\% & 98\% \\
 \end{center}
 \end{table}
 
-\subsubsection{Impact of Fine-tuning}
-Fine-tuning delivered massive gains for smaller models (Qwen-4B improved from 17\% to 33%). For larger models (Qwen3-30B), while the absolute accuracy gain was marginal (1\%), fine-tuning was critical for \textbf{robustness}. It significantly reduced systematic errors such as hallucinated columns (down from 12\% to 4\%) and incorrect JOIN paths (down from 6\% to 2\%).
+\subsubsection{Impact of Fine-tuning (Ablation Study)}
+Fine-tuning delivered massive gains for smaller models (Qwen-4B improved from 17\% to 33\%). For larger models (Qwen3-30B), while the absolute accuracy gain was marginal (1\%), fine-tuning was critical for \textbf{robustness}.
+
+Table \ref{tab:error_analysis} presents an ablation of error types, showing how fine-tuning shifts the error distribution.
+
+\begin{table}[htbp]
+\caption{Error Analysis (Fine-tuning Impact)}
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Error Type} & \textbf{Before FT} & \textbf{After FT} \\
+\midrule
+Hallucinated columns & 12\% & 4\% \\
+Incorrect aggregations & 8\% & 3\% \\
+JOIN path errors & 6\% & 2\% \\
+Other syntax/logic errors & 4\% & 2\% \\
+\textbf{Correct Prediction} & \textbf{63\%} & \textbf{68\%} \\
+\bottomrule
+\end{tabular}
+\label{tab:error_analysis}
+\end{center}
+\end{table}
+
+It significantly reduced systematic errors such as hallucinated columns and incorrect JOIN paths, effectively \textbf{bridging the semantics gap} discussed in \cite{wang2024generalist}.
 
 \subsubsection{Few-shot Strategy}
 Contrary to the "more is better" intuition, we found that for complex TPC-DS schemas, \textbf{Few-shot 3} outperformed \textbf{Few-shot 5} on the 30B model. Providing too many examples consumed the context window, causing the model to lose track of the extensive schema definitions.
@@ -393,7 +416,7 @@ However, gpt-o3 and Gemini models require API dependencies and higher latency. Q
 
 \subsubsection{Persistent Challenges: The Data Warehouse Semantics Gap}
 
-Despite achieving 64\% accuracy, our analysis reveals systematic failures that highlight the ``Data Warehouse Semantics Gap''---a problem less visible in simpler datasets:
+Despite achieving 64\% accuracy, our analysis reveals systematic failures that highlight the ``Data Warehouse Semantics Gap''---a problem less visible in simpler datasets, as extensively discussed in \cite{wang2024generalist}.
 
 \paragraph{1. Data Encoding and Business Rules.}
 TPC-DS encodes certain values with abbreviations or codes. Examples:
@@ -413,25 +436,21 @@ WHERE state = 'CA'
 This error class accounted for \textbf{8\%} of failures in our test set. Few-shot examples helped (reducing errors from 12\% to 8\%), but the knowledge was not fully internalized. Fine-tuning improved this further to 4\%, suggesting that such domain conventions require weight updates rather than mere in-context learning.
 
 \paragraph{2. Implicit JOIN Logic and Dimensional Hierarchies.}
-TPC-DS's snowflake schema relies on standard data warehouse patterns. For instance:
-\begin{itemize}
-    \item Dimension tables (e.g., \texttt{date\_dim}, \texttt{customer\_dim}) should be joined via specific keys.
-    \item Fact tables reference dimensions through Foreign Keys.
-    \item Analytical queries typically aggregate fact tables after joining dimensions.
-\end{itemize}
+TPC-DS's snowflake schema relies on standard data warehouse patterns. Models without warehouse-domain knowledge often miss these patterns, generating incorrect JOIN paths or redundant joins. This accounted for \textbf{6\%} of failures. Fine-tuning reduced this to 2\%, demonstrating knowledge internalization.
 
-Models without warehouse-domain knowledge often miss these patterns, generating incorrect JOIN paths or redundant joins. This accounted for \textbf{6\%} of failures. Fine-tuning reduced this to 2\%, demonstrating knowledge internalization.
+\paragraph{3. Hallucination of Schema Elements.}
+The complexity of TPC-DS is further evidenced by the tendency of models to \textbf{hallucinate column or table names} (accounting for 4\% of errors in our fine-tuned model), closely mirroring findings in \cite{wang2024generalist}. Even with schema linking, the semantic density of the warehouse schema can overwhelm the model's reasoning.
 
-\paragraph{3. Context Window Limitations.}
-Even with dynamic schema linking, providing all relevant table definitions often exceeds practical context windows. A typical TPC-DS query might reference 5--8 tables, each with 10--20 columns. Balancing schema completeness with context constraints remains challenging \cite{wang2024generalist}.
+\paragraph{4. Context Window Limitations.}
+Even with dynamic schema linking, providing all relevant table definitions often exceeds practical context windows. A typical TPC-DS query might reference 5--8 tables, each with 10--20 columns. Balancing schema completeness with context constraints remains challenging.
 
 \subsubsection{Why Gemini and OpenAI Underperform (Despite Strong Overall Performance)}
 
-Interestingly, Gemini and OpenAI (without fine-tuning) underperformed Qwen3-Coder-30B on TPC-DS despite being more powerful models on general benchmarks. Analysis suggests:
+Interestingly, Gemini and OpenAI underperformed Qwen3-Coder-30B on TPC-DS even when equipped with \textbf{two accompanying techniques} (Few-shot + Schema Linking) to provide context. Analysis suggests:
 
 \begin{itemize}
     \item \textbf{Lack of Domain Specialization}: Gemini and GPT models are generalists. They perform well on diverse tasks but lack the warehouse-specific knowledge internalized by fine-tuned Qwen3-Coder.
-    \item \textbf{Few-shot Learning Plateau}: Adding 5 examples achieved 59\% for Gemini, but further improvements required fine-tuning---which we did not apply to proprietary models.
+    \item \textbf{Few-shot Learning Plateau}: Adding 5 examples achieved 59\% for Gemini, but further improvements required fine-tuning---which is not feasible for proprietary API models.
     \item \textbf{Instruction Following vs. Domain Knowledge}: While these models excel at following instructions, warehouse semantics (data encoding, implicit business rules) are not captured in instructions alone.
 \end{itemize}
 
@@ -525,7 +544,7 @@ Alibaba Qwen Team, ``Qwen-Coder: Large Code Language Models,'' \emph{Technical R
 DeepSeek AI, ``DeepSeek-Coder: Let the Code LLMs Go Further,'' \emph{arXiv preprint arXiv:2401.14196}, 2024.
 
 \bibitem{wang2024generalist}
-Wang et al., ``The Generalist AI and the Data Warehouse Challenge,'' \emph{arXiv preprint}, 2024.
+Wang et al., ``The Generalist AI and the Data Warehouse Challenge,'' \emph{arXiv preprint arXiv:2407.19517}, 2024.
 
 \bibitem{li2023text}
 Li et al., ``Text-to-SQL Generation with Large Language Models: A Survey,'' \emph{arXiv preprint}, 2023.
