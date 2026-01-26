@@ -1,0 +1,47 @@
+[
+  {
+    "question": "Tôi cần tìm các khách hàng nam có danh xưng là Mr và hiện đang sinh sống hoặc có quốc tịch tại Canada, hãy liệt kê cho tôi đầy đủ thông tin của họ ",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Mr.' AND c_birth_country = 'CA';",
+    "predicted_sql": "SELECT *\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nJOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk\nWHERE cd.cd_gender = 'M'\n  AND c.c_salutation = 'Mr.'\n  AND (ca.ca_country = 'Canada' OR c.c_birth_country = 'CA');",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 20.086278200149536
+  },
+  {
+    "question": "Tìm các cửa hàng ở bang California có giờ mở cửa vào lúc 8 giờ sáng và liệt kê tên quản lý của họ.",
+    "ground_truth_sql": "SELECT s_store_name, s_manager\nFROM store\nWHERE s_state = 'CA' AND s_hours ILIKE '%8AM%';",
+    "predicted_sql": "SELECT s_store_name, s_manager\nFROM store s\nWHERE s_state = 'CA' AND s_hours LIKE '8AM%';",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 17.276880025863647
+  },
+  {
+    "question": "Website nào có tỷ lệ thuế (web_tax_percentage) cao nhất trong hệ thống?",
+    "ground_truth_sql": "SELECT web_name, web_tax_percentage\nFROM web_site\nORDER BY web_tax_percentage DESC LIMIT 1;",
+    "predicted_sql": "SELECT *\nFROM web_site web\nORDER BY web.web_tax_percentage DESC\nLIMIT 1;",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 16.96773862838745
+  },
+  {
+    "question": "Cho tôi xem 10 khách hàng trẻ tuổi nhất ",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_birth_year FROM customer ORDER BY c_birth_year DESC LIMIT 10;",
+    "predicted_sql": "SELECT *\nFROM customer c\nORDER BY c.c_birth_year DESC, c.c_birth_month DESC, c.c_birth_day DESC\nLIMIT 10",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 16.550936460494995
+  },
+  {
+    "question": "Liệt kê tất cả những khách hàng nào đã có trình độ học vấn là tiến sĩ PhD",
+    "ground_truth_sql": "SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics \nWHERE cd_education_status = 'PhD';",
+    "predicted_sql": "SELECT *\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_education_status = 'PhD'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 16.426830768585205
+  }
+]

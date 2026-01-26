@@ -25,6 +25,7 @@ from datetime import datetime
 
 import pandas as pd
 import duckdb
+import requests  # Cho Vertex AI REST API
 
 # Add parent to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -41,25 +42,42 @@ except ImportError:
     print("⚠️  OpenAI not installed. Run: pip install openai")
 
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
     HAS_GEMINI = True
 except ImportError:
     HAS_GEMINI = False
-    print("⚠️  Gemini not installed. Run: pip install google-generativeai")
+    print("⚠️  Gemini not installed. Run: pip install google-genai")
 
 # ========== CONSTANTS ==========
 DB_PATH = "research_pipeline/cache/ecommerce_dw.duckdb"
 
 # Model configurations
 MODEL_CONFIGS = {
-    # OpenAI models
+    # OpenAI models - GPT-5 series (mới nhất)
+    "gpt-5": {"provider": "openai", "model_name": "gpt-5", "max_tokens": 4000},
+    "gpt-5-codex": {"provider": "openai", "model_name": "gpt-5-codex", "max_tokens": 4000},
+    "gpt-5.1-codex": {"provider": "openai", "model_name": "gpt-5.1-codex", "max_tokens": 4000},
+    "gpt-5.2": {"provider": "openai", "model_name": "gpt-5.2", "max_tokens": 4000},
+    "gpt-5.2-codex": {"provider": "openai", "model_name": "gpt-5.2-codex", "max_tokens": 4000},
+    # OpenAI models - o series (reasoning)
+    "o3": {"provider": "openai", "model_name": "o3", "max_tokens": 4000},
+    "o3-mini": {"provider": "openai", "model_name": "o3-mini", "max_tokens": 4000},
+    "o1": {"provider": "openai", "model_name": "o1", "max_tokens": 4000},
+    "o1-mini": {"provider": "openai", "model_name": "o1-mini", "max_tokens": 4000},
+    # OpenAI models - GPT-4 series
     "gpt-4o": {"provider": "openai", "model_name": "gpt-4o", "max_tokens": 1000},
     "gpt-4o-mini": {"provider": "openai", "model_name": "gpt-4o-mini", "max_tokens": 1000},
     "gpt-4-turbo": {"provider": "openai", "model_name": "gpt-4-turbo-preview", "max_tokens": 1000},
     
-    # Gemini models
-    "gemini-1.5-pro": {"provider": "gemini", "model_name": "gemini-1.5-pro", "max_tokens": 1000},
-    "gemini-1.5-flash": {"provider": "gemini", "model_name": "gemini-1.5-flash", "max_tokens": 1000},
+    # Gemini models (Vertex AI) - tăng max_tokens lên 2000
+    "gemini-3-pro": {"provider": "gemini", "model_name": "gemini-3-pro-preview", "max_tokens": 2000},
+    "gemini-3-flash": {"provider": "gemini", "model_name": "gemini-3-flash-preview", "max_tokens": 2000},
+    "gemini-2.5-pro": {"provider": "gemini", "model_name": "gemini-2.5-pro", "max_tokens": 2000},
+    "gemini-2.5-flash": {"provider": "gemini", "model_name": "gemini-2.5-flash", "max_tokens": 2000},
+    "gemini-2.0-flash": {"provider": "gemini", "model_name": "gemini-2.0-flash", "max_tokens": 2000},
+    "gemini-1.5-pro": {"provider": "gemini", "model_name": "gemini-1.5-pro", "max_tokens": 2000},
+    "gemini-1.5-flash": {"provider": "gemini", "model_name": "gemini-1.5-flash", "max_tokens": 2000},
 }
 
 # Static few-shot examples (same as Qwen benchmark)
@@ -88,94 +106,185 @@ class APIModelBenchmark:
             self.client = openai.OpenAI(api_key=api_key)
             
         elif self.provider == "gemini":
-            if not HAS_GEMINI:
-                raise ImportError("Gemini not installed. Run: pip install google-generativeai")
             api_key = os.getenv("GOOGLE_API_KEY")
             if not api_key:
                 raise ValueError("GOOGLE_API_KEY environment variable not set")
-            genai.configure(api_key=api_key)
-            self.client = genai.GenerativeModel(self.config["model_name"])
+            self.api_key = api_key
+            # Xác định loại API key: Vertex AI (AQ.xxx) hay Generative AI
+            self.use_vertex_rest = api_key.startswith("AQ.")
+            if not self.use_vertex_rest:
+                if not HAS_GEMINI:
+                    raise ImportError("Gemini not installed. Run: pip install google-genai")
+                self.client = genai.Client(api_key=api_key)
     
     def generate_sql(self, question: str, schema_info: str, join_hints: str, 
                      examples: List[Dict], num_shots: int) -> str:
         """Generate SQL using API"""
         prompt = self._build_prompt(question, schema_info, join_hints, examples, num_shots)
         
-        try:
-            if self.provider == "openai":
-                response = self.client.chat.completions.create(
-                    model=self.config["model_name"],
-                    messages=[
-                        {"role": "system", "content": "You are an expert SQL assistant for TPC-DS database."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=self.config["max_tokens"],
-                    temperature=0.0
-                )
-                return response.choices[0].message.content.strip()
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                if self.provider == "openai":
+                    model_name = self.config["model_name"]
+                    # o1, o3 models không hỗ trợ system message và dùng max_completion_tokens
+                    is_reasoning_model = model_name.startswith("o1") or model_name.startswith("o3")
+                    
+                    if is_reasoning_model:
+                        # o1 models: không có system message, dùng max_completion_tokens
+                        response = self.client.chat.completions.create(
+                            model=model_name,
+                            messages=[
+                                {"role": "user", "content": f"You are an expert SQL assistant for TPC-DS database.\n\n{prompt}"}
+                            ],
+                            max_completion_tokens=self.config["max_tokens"]
+                        )
+                    else:
+                        # GPT-4o và các model khác
+                        response = self.client.chat.completions.create(
+                            model=model_name,
+                            messages=[
+                                {"role": "system", "content": "You are an expert SQL assistant for TPC-DS database."},
+                                {"role": "user", "content": prompt}
+                            ],
+                            max_tokens=self.config["max_tokens"],
+                            temperature=0.0
+                        )
+                    return response.choices[0].message.content.strip()
+                
+                elif self.provider == "gemini":
+                    if self.use_vertex_rest:
+                        # Gọi Vertex AI REST API trực tiếp
+                        return self._call_vertex_rest_api(prompt)
+                    else:
+                        # Gọi qua SDK
+                        response = self.client.models.generate_content(
+                            model=self.config["model_name"],
+                            contents=prompt,
+                            config=types.GenerateContentConfig(
+                                max_output_tokens=self.config["max_tokens"],
+                                temperature=0.0
+                            )
+                        )
+                        return response.text.strip()
             
-            elif self.provider == "gemini":
-                response = self.client.generate_content(
-                    prompt,
-                    generation_config=genai.types.GenerationConfig(
-                        max_output_tokens=self.config["max_tokens"],
-                        temperature=0.0
-                    )
-                )
-                return response.text.strip()
+            except Exception as e:
+                error_str = str(e)
+                # Retry nếu gặp rate limiting (429)
+                if "429" in error_str or "rate_limit" in error_str.lower():
+                    wait_time = 5 * (attempt + 1)  # 5s, 10s, 15s
+                    print(f"⏳ Rate limited, waiting {wait_time}s... (attempt {attempt+1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"❌ API Error: {e}")
+                    return ""
         
-        except Exception as e:
-            print(f"❌ API Error: {e}")
+        print(f"❌ Max retries exceeded")
+        return ""
+    
+    def _call_vertex_rest_api(self, prompt: str) -> str:
+        """Gọi Vertex AI REST API trực tiếp với API key"""
+        model_name = self.config["model_name"]
+        # Endpoint format for Generative Language API (using API key)
+        # Note: 'gemini-2.5-pro' requires the v1beta endpoint sometimes, but let's try v1 first or v1beta appropriately if needed. 
+        # Actually, for API key (AQ...), we should use generativelanguage.googleapis.com usually, but the user's curl worked with aiplatform and API key?
+        # User output showed: "Publisher Model ... not found". 
+        # Let's keep aiplatform if that's what worked for gemini-3-flash, but handle errors better.
+        
+        url = f"https://aiplatform.googleapis.com/v1/publishers/google/models/{model_name}:generateContent?key={self.api_key}"
+        
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "maxOutputTokens": self.config["max_tokens"],
+                "temperature": 0.0
+            }
+        }
+        
+        response = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=120  # Increased timeout
+        )
+        
+        if response.status_code != 200:
+            # Try to extract error message
+            try:
+                error_body = response.json()
+                error_msg = json.dumps(error_body, indent=2)
+            except:
+                error_msg = response.text[:500]
+            raise Exception(f"{response.status_code}: {error_msg}")
+        
+        result = response.json()
+        
+        # Lấy text từ response
+        try:
+            if "candidates" in result and len(result["candidates"]) > 0:
+                candidate = result["candidates"][0]
+                
+                # Check for finishReason
+                finish_reason = candidate.get("finishReason")
+                if finish_reason and finish_reason != "STOP":
+                    print(f"⚠️ Finish Reason: {finish_reason}")
+                
+                if "content" in candidate and "parts" in candidate["content"]:
+                    return candidate["content"]["parts"][0].get("text", "").strip()
+            
+            # Fallback debug
+            print(f"⚠️ Empty/Unexpected response structure: {json.dumps(result)[:200]}...")
+            return ""
+            
+        except Exception as parse_error:
+            print(f"❌ Parse Error: {parse_error} - Raw: {json.dumps(result)[:200]}")
             return ""
     
     def _build_prompt(self, question: str, schema_info: str, join_hints: str,
                      examples: List[Dict], num_shots: int) -> str:
-        """Build prompt with few-shot examples"""
+        """Build prompt with few-shot examples - đồng bộ với finetune_qwen_coder.py"""
+        from business_rules import load_business_rules
         
-        system_msg = """Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.
+        rules = load_business_rules()
+        system_rules = "\n".join([
+            "Bạn là chuyên gia SQL cho TPC-DS database. Sinh câu SQL chính xác.",
+            "",
+            rules,
+        ])
 
-=== CRITICAL RULES ===
-1. KHÔNG thêm filter (WHERE) nếu câu hỏi KHÔNG yêu cầu
-2. "bán chạy nhất" = SUM(quantity), KHÔNG phải SUM(sales_price)
-3. "trả lại hàng" → mặc định dùng store_returns (sr)
-4. "từ X trở lên" = >= X
-5. Chỉ SELECT các columns cần thiết
-
-=== COLUMN MAPPINGS ===
-- Email: c.c_email_address (NOT c_email)
-- Gender: cd.cd_gender (customer_demographics, NOT customer)
-- Marital: cd.cd_marital_status (customer_demographics)
-- Vehicle: hd.hd_vehicle_count (household_demographics)
-- Tax: ss.ss_ext_tax (NOT ss_tax)
-- Quarter: d.d_qoy (NOT d_quarter)
-
-=== CHANNEL RULES ===
-- "cửa hàng" → store_sales (ss)
-- "online/web" → web_sales (ws)
-- "catalog" → catalog_sales (cs)
-
-Output ONLY the SQL query, no explanation."""
+        prompt_parts = [
+            system_rules,
+            "",
+            "DATABASE SCHEMA:",
+            schema_info,
+        ]
         
-        # Build examples
-        examples_text = ""
-        for i, ex in enumerate(examples[:num_shots], 1):
-            examples_text += f"\n### Example {i}:\nQuestion: {ex['question']}\nSQL: {ex['sql']}\n"
+        # Add JOIN hints
+        if join_hints and join_hints != "(No direct joins)":
+            prompt_parts.append("\nJOIN HINTS:")
+            prompt_parts.append(join_hints)
         
-        prompt = f"""{system_msg}
-
-### Relevant Schema:
-{schema_info}
-
-### JOIN Hints:
-{join_hints}
-
-### Examples:{examples_text}
-
-### Question to answer:
-Question: {question}
-SQL:"""
+        # Add few-shot examples
+        if num_shots > 0 and examples:
+            prompt_parts.append("\nEXAMPLES:")
+            for ex in examples[:num_shots]:
+                prompt_parts.append(f"\nQ: {ex['question']}")
+                prompt_parts.append(f"SQL:\n{ex['sql']}")
         
-        return prompt
+        prompt_parts.extend([
+            "",
+            f"QUESTION: {question}",
+            "",
+            "SQL:"
+        ])
+        
+        return "\n".join(prompt_parts)
 
 
 def get_schema_for_tables(tables: List[str]) -> str:
@@ -246,7 +355,10 @@ def run_benchmark(args):
     print("=" * 80)
     
     # Load dataset
-    dataset_file = "research_pipeline/datasets/test_easy.csv" if args.easy else "research_pipeline/datasets/test.csv"
+    if args.dataset:
+        dataset_file = args.dataset
+    else:
+        dataset_file = "research_pipeline/datasets/test_easy.csv" if args.easy else "research_pipeline/datasets/test.csv"
     df = pd.read_csv(dataset_file)
     
     if args.max_samples:
@@ -266,10 +378,9 @@ def run_benchmark(args):
         
         print(f"\n[{idx+1}/{len(df)}] {question[:60]}...")
         
-        # Schema linking
+        # Schema linking - sử dụng build_dynamic_schema như finetune_qwen_coder.py
+        schema_info = benchmark.schema_linker.build_dynamic_schema(question, max_tables=5)
         linking_result = benchmark.schema_linker.link_schema(question, top_k_tables=5)
-        linked_tables = linking_result["tables"]
-        schema_info = get_schema_for_tables(linked_tables)
         join_hints = "\n".join(linking_result["joins"][:3]) or "(No direct joins)"
         
         # Generate SQL
@@ -317,7 +428,7 @@ def run_benchmark(args):
         })
         
         # Rate limiting
-        time.sleep(0.5)  # Avoid hitting API rate limits
+        time.sleep(3)  # Delay 3s cho Tier 1 rate limit
     
     # Save results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -354,6 +465,8 @@ def main():
                        help="Max test samples (default: all)")
     parser.add_argument("--easy", action="store_true",
                        help="Use test_easy.csv instead of test.csv")
+    parser.add_argument("--dataset", type=str, default=None,
+                       help="Custom dataset file path (overrides --easy)")
     parser.add_argument("--verbose", action="store_true",
                        help="Print detailed errors")
     

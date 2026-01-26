@@ -1,0 +1,902 @@
+[
+  {
+    "question": "Liệt kê 5 mặt hàng có giá niêm yết (current price) cao nhất thuộc danh mục 'Books' (Sách).",
+    "ground_truth_sql": "SELECT i_item_desc, i_current_price\nFROM item\nWHERE i_category = 'Books'\nORDER BY i_current_price DESC LIMIT 5;",
+    "predicted_sql": "SELECT i.i_item_desc,\n       i.i_current_price\nFROM item i\nWHERE i.i_category = 'Books'\nORDER BY i.i_current_price DESC\nLIMIT 5",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 5.9443278312683105
+  },
+  {
+    "question": "Tôi cần tìm các khách hàng nam có danh xưng là Mr và hiện đang sinh sống hoặc có quốc tịch tại Canada, hãy liệt kê cho tôi đầy đủ thông tin của họ ",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Mr.' AND c_birth_country = 'CA';",
+    "predicted_sql": "SELECT *\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nJOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk\nWHERE cd.cd_gender = 'M'\n  AND c.c_salutation = 'Mr.'\n  AND (ca.ca_country = 'CA' OR c.c_birth_country = 'CA')",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 7.164117813110352
+  },
+  {
+    "question": "Lấy thông tin định danh và họ tên khách hàng",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name \nFROM customer;",
+    "predicted_sql": "SELECT c.c_customer_id,\n       c.c_first_name,\n       c.c_last_name\nFROM customer c",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.715214967727661
+  },
+  {
+    "question": "Tìm các cửa hàng ở bang California có giờ mở cửa vào lúc 8 giờ sáng và liệt kê tên quản lý của họ.",
+    "ground_truth_sql": "SELECT s_store_name, s_manager\nFROM store\nWHERE s_state = 'CA' AND s_hours ILIKE '%8AM%';",
+    "predicted_sql": "SELECT s.s_manager\nFROM store s\nWHERE s.s_state = 'CA'\n  AND s.s_hours LIKE '8%'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 7.0049357414245605
+  },
+  {
+    "question": "Bạn có thể giúp tôi lọc ra và hiển thị toàn bộ danh sách những khách hàng hiện tại đang có họ là Nguyen trong cơ sở dữ liệu được không?",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_first_name = 'Nguyen';",
+    "predicted_sql": "SELECT * \nFROM customer c \nWHERE c.c_last_name = 'Nguyen'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 3.2675650119781494
+  },
+  {
+    "question": "Website nào có tỷ lệ thuế (web_tax_percentage) cao nhất trong hệ thống?",
+    "ground_truth_sql": "SELECT web_name, web_tax_percentage\nFROM web_site\nORDER BY web_tax_percentage DESC LIMIT 1;",
+    "predicted_sql": "SELECT web.web_name,\n       web.web_tax_percentage\nFROM web_site web\nWHERE CAST(web.web_tax_percentage AS DECIMAL) = (\n    SELECT MAX(CAST(web2.web_tax_percentage AS DECIMAL))\n    FROM web_site web2\n)",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 6.043846368789673
+  },
+  {
+    "question": "Liệt kê 5 Website đang hoạt động (không có ngày kết thúc web_rec_end_date) và ngày bắt đầu của chúng.",
+    "ground_truth_sql": "SELECT web_name, web_rec_start_date\nFROM web_site\nWHERE web_rec_end_date IS NULL\nLIMIT 5;",
+    "predicted_sql": "SELECT web.web_name,\n       web.web_rec_start_date\nFROM web_site web\nWHERE web.web_rec_end_date IS NULL\nLIMIT 5",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.073816299438477
+  },
+  {
+    "question": "Sắp xếp lại toàn bộ danh sách khách hàng trong hệ thống theo thứ tự của mã định danh khách hàng theo thứ tự tăng dần",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer ORDER BY c_customer_id;",
+    "predicted_sql": "SELECT *\nFROM customer c\nORDER BY c.c_customer_id ASC",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 4.463919639587402
+  },
+  {
+    "question": "Cho tôi xem 10 khách hàng trẻ tuổi nhất ",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_birth_year FROM customer ORDER BY c_birth_year DESC LIMIT 10;",
+    "predicted_sql": "SELECT\n  c_first_name,\n  c_last_name\nFROM customer c\nORDER BY c_birth_year DESC, c_birth_month DESC, c_birth_day DESC\nLIMIT 10",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 4.813843727111816
+  },
+  {
+    "question": "Liệt kê tất cả những khách hàng nào đã có trình độ học vấn là tiến sĩ PhD",
+    "ground_truth_sql": "SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics \nWHERE cd_education_status = 'PhD';",
+    "predicted_sql": "SELECT *\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_education_status = 'PhD'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.488569974899292
+  },
+  {
+    "question": "Lấy ra danh sách các khách hàng hiện tại không nằm trong nhóm đối tượng khách hàng ưu tiên của cửa hàng",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name, c_email_address \nFROM customer \nWHERE c_preferred_cust_flag = 'N';",
+    "predicted_sql": "SELECT c.c_first_name, c.c_last_name\nFROM customer c\nWHERE c.c_preferred_cust_flag <> 'Y'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 5.428965091705322
+  },
+  {
+    "question": "Lấy địa chỉ email của những khách hàng nào đang có tên là Lan",
+    "ground_truth_sql": "SELECT c_email_address FROM customer WHERE c_last_name = 'Lan';",
+    "predicted_sql": "SELECT c.c_email_address\nFROM customer c\nWHERE c.c_first_name = 'Lan'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 3.2388203144073486
+  },
+  {
+    "question": "Lọc ra tất cả những khách hàng là nam giới và hiện tại đang có xếp hạng tín dụng ở mức thấp để bộ phận chăm sóc kiểm tra lại",
+    "ground_truth_sql": "SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics \nWHERE cd_gender = 'M' AND cd_credit_rating = 'Low';",
+    "predicted_sql": "SELECT *\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_gender = 'M'\n  AND cd.cd_credit_rating = 'Low'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 5.349542617797852
+  },
+  {
+    "question": "Tìm khách hàng có tên bắt đầu bằng chữ 'M'",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name \nFROM customer \nWHERE c_first_name LIKE 'M%';",
+    "predicted_sql": "SELECT * \nFROM customer c \nWHERE c.c_first_name LIKE 'M%'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 2.1680521965026855
+  },
+  {
+    "question": "Những khách hàng nào có danh xưng là Tiến sĩ?",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Dr.';",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_salutation = 'Dr.'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 3.117621660232544
+  },
+  {
+    "question": "Tìm những người sinh vào năm 2002",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_birth_year = 2002;",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_birth_year = 2002",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.983332395553589
+  },
+  {
+    "question": "Liệt kê những khách hàng sinh ra ở Vương quốc Anh (UK)",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_birth_country = 'UNITED KINGDOM';",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_birth_country = 'UNITED KINGDOM'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 6.1532301902771
+  },
+  {
+    "question": "Tìm tất cả khách hàng đến từ Việt Nam",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer \nWHERE c_birth_country = 'VN';",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_birth_country = 'VN'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.7800614833831787
+  },
+  {
+    "question": "Hãy liệt kê danh sách các mã sản phẩm và số lượng tồn kho tương ứng của chúng tại kho hàng có mã số là một",
+    "ground_truth_sql": "SELECT inv_item_sk, inv_quantity_on_hand \nFROM inventory \nWHERE inv_warehouse_sk = 1;",
+    "predicted_sql": "SELECT\n  i.i_item_id,\n  inv.inv_quantity_on_hand\nFROM inventory inv\nJOIN item i ON inv.inv_item_sk = i.i_item_sk\nJOIN warehouse w ON inv.inv_warehouse_sk = w.w_warehouse_sk\nWHERE w.w_warehouse_id = '1'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 4.644909620285034
+  },
+  {
+    "question": "Tìm các quốc gia khác nhau có trong dữ liệu",
+    "ground_truth_sql": "SELECT DISTINCT c_birth_country \nFROM customer;",
+    "predicted_sql": "SELECT DISTINCT c.c_birth_country\nFROM customer c",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.26810097694397
+  },
+  {
+    "question": "Tìm tất cả các khách hàng mà hiện nay thông tin tên đăng nhập đang bị để trống trong toàn bộ cơ sở dữ liệu",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_login IS NULL;",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_login IS NULL\n   OR c.c_login = ''",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 3.139848232269287
+  },
+  {
+    "question": "Tìm thông tin những người hiện tại đang có tình trạng hôn nhân là độc thân",
+    "ground_truth_sql": "SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics WHERE cd_marital_status = 'S';",
+    "predicted_sql": "SELECT *\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_marital_status = 'S'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 3.7856884002685547
+  },
+  {
+    "question": "Bạn hãy liệt kê các giao dịch tại cửa hàng đang gây ra mức thua lỗ lớn nhất, cụ thể là có lợi nhuận ròng âm hơn bảy trăm đô la",
+    "ground_truth_sql": "SELECT ss_ticket_number, ss_net_profit\nFROM store_sales\nWHERE ss_net_profit < -700.00\nORDER BY ss_net_profit ASC;",
+    "predicted_sql": "SELECT *\nFROM store_sales ss\nWHERE CAST(ss.ss_net_profit AS DECIMAL) < -700",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 4.884379863739014
+  },
+  {
+    "question": "Sắp xếp khách hàng theo năm sinh giảm dần",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name, c_birth_year \nFROM customer \nORDER BY c_birth_year DESC;",
+    "predicted_sql": "SELECT c.c_first_name,\n       c.c_last_name\nFROM customer c\nORDER BY c.c_birth_year DESC",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 6.0116868019104
+  },
+  {
+    "question": "Liệt kê danh sách những khách hàng đang ở trạng thái góa vợ hoặc góa chồng và đang phải nuôi dưỡng một người phụ thuộc duy nhất trong gia đình",
+    "ground_truth_sql": "SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics \nWHERE cd_marital_status = 'W' AND cd_dep_count = 1",
+    "predicted_sql": "SELECT DISTINCT\n       c.c_first_name,\n       c.c_last_name\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nJOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk\nWHERE cd.cd_marital_status = 'W'\n  AND hd.hd_dep_count = 1",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 9.726369380950928
+  },
+  {
+    "question": "Liệt kê các khách hàng có danh xưng là 'Ms.'",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer \nWHERE c_salutation = 'Ms.';",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_salutation = 'Ms.'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 2.7687184810638428
+  },
+  {
+    "question": "Lọc ra danh sách những khách hàng hiện tại vẫn còn đang độc thân và có trình độ cao đẳng",
+    "ground_truth_sql": "SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics WHERE cd_marital_status = 'S' AND cd_education_status = 'College';",
+    "predicted_sql": "SELECT c.c_first_name, c.c_last_name\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_marital_status = 'S'\n  AND cd.cd_education_status = 'College'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 10.15841293334961
+  },
+  {
+    "question": "Tìm tất cả những khách hàng mà tên của họ bắt đầu bằng chữ \"B\"",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_first_name LIKE 'B%';",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_first_name LIKE 'B%'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 2.61187481880188
+  },
+  {
+    "question": "Hiển thị danh sách các thương hiệu sản phẩm thuộc danh mục hàng Shoes",
+    "ground_truth_sql": "SELECT DISTINCT i_brand FROM item WHERE i_category = 'Shoes';",
+    "predicted_sql": "SELECT DISTINCT i.i_brand\nFROM item i\nWHERE i.i_category = 'Shoes'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.629016637802124
+  },
+  {
+    "question": "Tìm các khách hàng sinh vào tháng 12",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name, c_birth_day \nFROM customer \nWHERE c_birth_month = 12;",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_birth_month = 12",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 2.391171455383301
+  },
+  {
+    "question": "Hiển thị chi tiết thông tin của người dùng hiện đang sử dụng tên đăng nhập là user15",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_login = 'user15';",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_login = 'user15'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 5.411804676055908
+  },
+  {
+    "question": "Tìm các khách hàng đến từ Nhật Bản (JP)",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_birth_country = 'JAPAN';",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_birth_country = 'JAPAN'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 5.491008996963501
+  },
+  {
+    "question": "Trong loại hàng 'Electronics' (Điện tử), món đồ nào có giá niêm yết cao nhất hiện nay?",
+    "ground_truth_sql": "SELECT i_item_desc, i_current_price\nFROM item\nWHERE i_category = 'Electronics'\nORDER BY i_current_price DESC\nLIMIT 1;",
+    "predicted_sql": "SELECT\n  i.i_item_desc,\n  i.i_current_price\nFROM item i\nWHERE i.i_category = 'Electronics'\nORDER BY i.i_current_price DESC\nFETCH FIRST 1 ROW ONLY",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.525083541870117
+  },
+  {
+    "question": "Tìm tên các sản phẩm thuộc danh mục Fashion có giá bán hiện tại lớn hơn một trăm đô la trong bảng hàng hóa",
+    "ground_truth_sql": "SELECT i_product_name, i_current_price \nFROM item \nWHERE i_category = 'Fashion' AND i_current_price > 100;",
+    "predicted_sql": "SELECT i.i_item_desc\nFROM item i\nWHERE i.i_category = 'Fashion'\n  AND i.i_current_price > 100",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.442105770111084
+  },
+  {
+    "question": "Lọc danh sách khách hàng thân thiết",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name, c_email_address \nFROM customer \nWHERE c_preferred_cust_flag = 'Y';",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_preferred_cust_flag = 'Y'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 5.879362344741821
+  },
+  {
+    "question": "Liệt kê thông tin các khách hàng nữ có mức ước tính mua sắm đạt mức tám điểm và có xếp hạng tín dụng ở mức ưu tú",
+    "ground_truth_sql": "SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics \nWHERE cd_gender = 'F' AND cd_purchase_estimate = 8 AND cd_credit_rating = 'Elite'",
+    "predicted_sql": "SELECT *\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_gender = 'F'\n  AND cd.cd_purchase_estimate = 8\n  AND cd.cd_credit_rating = 'Elite'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 8.369077205657959
+  },
+  {
+    "question": "Truy vấn thông tin của những khách hàng có ngày sinh là ngày hai mươi hai ",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_birth_day = 22;",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_birth_day = 22",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 2.2988762855529785
+  },
+  {
+    "question": "Liệt kê các khách hàng có danh xưng là tiến sĩ và đến từ Việt Nam ",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Dr.' AND c_birth_country = 'VN';",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_salutation = 'Dr.'\n  AND c.c_birth_country = 'VN'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.1268908977508545
+  },
+  {
+    "question": "Thống kê xem có bao nhiêu khách hàng trong hệ thống của chúng ta sinh ra tại quốc gia Mỹ",
+    "ground_truth_sql": "SELECT COUNT(*) FROM customer WHERE c_birth_country = 'UNITED STATES';",
+    "predicted_sql": "SELECT COUNT(*) \nFROM customer c \nWHERE c.c_birth_country = 'UNITED STATES'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.803577423095703
+  },
+  {
+    "question": "Hãy cho tôi biết mặt hàng có mã số sản phẩm là một trăm bốn mươi sáu đã mang lại bao nhiêu doanh thu trên kênh bán hàng trực tuyến Web",
+    "ground_truth_sql": "SELECT SUM(ws_sales_price)\nFROM web_sales\nWHERE ws_item_sk = 146;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN item i ON ws.ws_item_sk = i.i_item_sk\nWHERE i.i_item_id = '146'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 3.8976640701293945
+  },
+  {
+    "question": "Có bao nhiêu khách hàng chưa cập nhật địa chỉ email?",
+    "ground_truth_sql": "SELECT COUNT(*) FROM customer WHERE c_email_address IS NULL;",
+    "predicted_sql": "SELECT COUNT(*) \nFROM customer c\nWHERE c.c_email_address IS NULL",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.408743143081665
+  },
+  {
+    "question": "Hãy tìm giúp tôi tổng mức tổn thất ròng từ việc trả hàng qua Catalog đối với mặt hàng có mã số sản phẩm là một trăm năm mươi tư",
+    "ground_truth_sql": "SELECT SUM(cr_net_loss)\nFROM catalog_returns\nWHERE cr_item_sk = 154;",
+    "predicted_sql": "SELECT SUM(sr.sr_net_loss)\nFROM store_returns sr\nJOIN item i ON sr.sr_item_sk = i.i_item_sk\nWHERE i.i_item_id = '154'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 7.537216424942017
+  },
+  {
+    "question": "Đếm tổng số lượng khách hàng trong bảng",
+    "ground_truth_sql": "SELECT COUNT(*) AS total_customers \nFROM customer;",
+    "predicted_sql": "SELECT COUNT(*) FROM customer c",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 1.8593120574951172
+  },
+  {
+    "question": "Có bao nhiêu khách hàng đang phải nuôi từ ba người phụ thuộc trở lên trong gia đình",
+    "ground_truth_sql": "SELECT COUNT(*) FROM customer_demographics WHERE cd_dep_count >= 3;",
+    "predicted_sql": "SELECT COUNT(DISTINCT c.c_customer_sk)\nFROM customer c\nJOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk\nWHERE hd.hd_dep_count >= 3",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 2.989003896713257
+  },
+  {
+    "question": "Đếm xem có bao nhiêu sản phẩm thuộc danh mục Beauty mà tên thương hiệu của nó có chứa chữ Premium bên trong",
+    "ground_truth_sql": "SELECT COUNT(*) FROM item WHERE i_category = 'Beauty' AND i_brand LIKE '%Premium%';",
+    "predicted_sql": "SELECT COUNT(*) \nFROM item i \nWHERE i.i_category = 'Beauty' \n  AND i.i_brand LIKE '%Premium%'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.368772268295288
+  },
+  {
+    "question": "Đếm tổng tất cả khách hàng đến từ Mỹ",
+    "ground_truth_sql": "SELECT COUNT(*) AS \"TOTAL CUSTOMER\" \nFROM customer \nWHERE c_birth_country = 'UNITED STATES';",
+    "predicted_sql": "SELECT COUNT(*)\nFROM customer c\nWHERE c.c_birth_country = 'UNITED STATES'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.6412971019744873
+  },
+  {
+    "question": "Bạn hãy liệt kê mười món đồ có giá vốn nhập hàng thấp nhất nhưng lại mang về lợi nhuận dương cao nhất trên hệ thống bán lẻ Web",
+    "ground_truth_sql": "SELECT i.i_item_desc, ws.ws_net_profit\nFROM web_sales ws\nJOIN item i ON ws.ws_item_sk = i.i_item_sk\nWHERE ws.ws_net_profit > 0\nORDER BY i.i_wholesale_cost ASC, ws.ws_net_profit DESC\nLIMIT 10;",
+    "predicted_sql": "SELECT sub.i_item_desc,\n       sub.i_current_price\nFROM (\n    SELECT i.i_item_desc,\n           i.i_current_price,\n           AVG(ws.ws_wholesale_cost) AS avg_cost,\n           SUM(CAST(ws.ws_net_profit AS DECIMAL(18,2))) AS total_profit\n    FROM web_sales ws\n    JOIN item i ON ws.ws_item_sk = i.i_item_sk\n    GROUP BY i.i_item_desc,\n             i.i_current_price\n    HAVING SUM(CAST(ws.ws_net_profit AS DECIMAL(18,2))) > 0\n) sub\nORDER BY sub.avg_cost ASC,\n         sub.total_profit DESC\nLIMIT 10",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 8.802000999450684
+  },
+  {
+    "question": "Liệt kê họ và tên của tất cả những khách hàng nào có trình độ học vấn là tiến sĩ PhD và sinh ra tại Việt Nam",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name FROM customer \nJOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_education_status = 'PhD' AND c_birth_country = 'VN';",
+    "predicted_sql": "SELECT c.c_first_name, c.c_last_name\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_education_status = 'PhD'\n  AND c.c_birth_country = 'VN'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.9816975593566895
+  },
+  {
+    "question": "Liệt kê khách hàng có từ 2 xe ô tô trở lên (Vehicle count).",
+    "ground_truth_sql": "SELECT c.c_first_name, hd.hd_vehicle_count \nFROM customer c \nJOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk \nWHERE hd.hd_vehicle_count > 2;",
+    "predicted_sql": "SELECT c.c_first_name,\n       c.c_last_name\nFROM customer c\nJOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk\nWHERE hd.hd_vehicle_count >= 2",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 5.392626047134399
+  },
+  {
+    "question": "Cho biết tên của những khách hàng góa vợ hoặc góa chồng sinh năm 1990 và có mức ước tính mua sắm là 6 điểm.",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_marital_status = 'W' AND c_birth_year = 1990 AND cd_purchase_estimate = 6",
+    "predicted_sql": "SELECT c.c_first_name,\n       c.c_last_name\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_marital_status = 'W'\n  AND c.c_birth_year = 1990\n  AND cd.cd_purchase_estimate = 6",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 5.281231164932251
+  },
+  {
+    "question": "Hiển thị thông tin tên đăng nhập của những khách hàng đã ly hôn và đang có từ ba người phụ thuộc trở lên trong gia đình.",
+    "ground_truth_sql": "SELECT c_login FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_marital_status = 'D' AND cd_dep_count >= 3;",
+    "predicted_sql": "SELECT c.c_login\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nJOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk\nWHERE cd.cd_marital_status = 'D'\n  AND hd.hd_dep_count >= 3",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.83172082901001
+  },
+  {
+    "question": "Hiển thị tên và email của các khách hàng nữ đã ly hôn và sinh vào tháng 8 năm 1999 tại nước Anh.",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name, c_email_address FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_gender = 'F' AND cd_marital_status = 'D' AND c_birth_month = 8 AND c_birth_year = 1999 AND c_birth_country = 'UK';",
+    "predicted_sql": "SELECT c.c_first_name, c.c_last_name, c.c_email_address\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_gender = 'F'\n  AND cd.cd_marital_status = 'D'\n  AND c.c_birth_month = 8\n  AND c.c_birth_year = 1999\n  AND c.c_birth_country = 'UNITED KINGDOM'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.8855044841766357
+  },
+  {
+    "question": "Tìm những khách hàng mua đồ qua Web mà có địa chỉ nhận hàng khác hoàn toàn với địa chỉ thanh toán.",
+    "ground_truth_sql": "SELECT DISTINCT c.c_first_name, c.c_last_name\nFROM web_sales ws\nJOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk\nWHERE ws.ws_bill_addr_sk <> ws.ws_ship_addr_sk;",
+    "predicted_sql": "SELECT DISTINCT c.*\nFROM customer c\nJOIN web_sales ws ON ws.ws_bill_customer_sk = c.c_customer_sk\nWHERE ws.ws_ship_addr_sk <> ws.ws_bill_addr_sk",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 9.53121542930603
+  },
+  {
+    "question": "Tìm email của các khách hàng nam sinh ra tại nước Anh và có xếp hạng tín dụng đang ở mức thấp để gửi thông báo hỗ trợ",
+    "ground_truth_sql": "SELECT c_email_address FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_gender = 'M' AND c_birth_country = 'UK' AND cd_credit_rating = 'Low';",
+    "predicted_sql": "SELECT c_email_address\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_gender = 'M'\n  AND cd.cd_credit_rating = 'Low'\n  AND c.c_birth_country = 'UNITED KINGDOM'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.0316162109375
+  },
+  {
+    "question": "Bạn hãy thực hiện phân chia danh sách khách hàng thành bốn nhóm bằng nhau dựa trên giá trị ước tính mức độ mua sắm trong hồ sơ nhân khẩu học của họ",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name, cd_purchase_estimate,\n       NTILE(4) OVER (ORDER BY cd_purchase_estimate DESC) AS customer_segment\nFROM customer\nJOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk;",
+    "predicted_sql": "SELECT\n  c.c_first_name,\n  c.c_last_name,\n  NTILE(4) OVER (ORDER BY cd.cd_purchase_estimate) AS purchase_quartile\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk",
+    "execution_success": false,
+    "result_match": false,
+    "error": "Query interrupted",
+    "time_seconds": 11.761118650436401
+  },
+  {
+    "question": "Lọc ra những địa chỉ email của những khách hàng nữ hiện đang sinh sống tại Hoa Kỳ và có xếp hạng tín dụng ở mức ưu tú",
+    "ground_truth_sql": "SELECT c_email_address FROM customer \nJOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk \nWHERE cd_gender = 'F' AND c_birth_country = 'USA' \nAND cd_credit_rating = 'Elite';",
+    "predicted_sql": "SELECT c.c_email_address\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nJOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk\nWHERE cd.cd_gender = 'F'\n  AND ca.ca_country = 'UNITED STATES'\n  AND cd.cd_credit_rating = 'Elite'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 6.149867057800293
+  },
+  {
+    "question": "Hiển thị tên khách hàng và trình độ học vấn của họ.",
+    "ground_truth_sql": "SELECT c.c_first_name, cd.cd_education_status \nFROM customer c \nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk;",
+    "predicted_sql": "SELECT c.c_first_name,\n       c.c_last_name,\n       cd.cd_education_status\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 3.05370831489563
+  },
+  {
+    "question": "Bạn hãy liệt kê tên các sản phẩm thuộc danh mục Children và số lượng tồn kho hiện tại",
+    "ground_truth_sql": "SELECT i.i_item_desc, inv.inv_quantity_on_hand\nFROM inventory inv\nJOIN item i ON inv.inv_item_sk = i.i_item_sk\nWHERE i.i_category = 'Children'\nLIMIT 10;",
+    "predicted_sql": "SELECT \n    i.i_item_desc,\n    SUM(CAST(inv.inv_quantity_on_hand AS INTEGER)) AS total_quantity_on_hand\nFROM item i\nJOIN inventory inv ON inv.inv_item_sk = i.i_item_sk\nWHERE i.i_category = 'Children'\nGROUP BY i.i_item_desc",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 8.892573118209839
+  },
+  {
+    "question": "Liệt kê mã định danh của những khách hàng đã lập gia đình và có ít nhất hai người con hiện đang theo học  cao đẳng",
+    "ground_truth_sql": "SELECT c_customer_id FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_marital_status = 'M' AND cd_dep_college_count >= 2;",
+    "predicted_sql": "SELECT c.c_customer_id\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nJOIN household_demographics hd ON c.c_current_hdemo_sk = hd.hd_demo_sk\nWHERE cd.cd_marital_status = 'M'\n  AND hd.hd_dep_college_count >= 2",
+    "execution_success": false,
+    "result_match": false,
+    "error": "Binder Error: Table \"hd\" does not have a column named \"hd_dep_college_count\"\n\nCandidate bindings: : \"hd_dep_count\"\n\nLINE 6:   AND hd.hd_dep_college_count >= 2\n              ^",
+    "time_seconds": 11.677699089050293
+  },
+  {
+    "question": "Lấy danh sách các khách hàng có trình độ thạc sĩ quản trị kinh doanh (MBA) và hiện đang là khách hàng ưu tiên của hệ thống",
+    "ground_truth_sql": "SELECT c_first_name, c_last_name FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_education_status = 'MBA' AND c_preferred_cust_flag = 'Y';",
+    "predicted_sql": "SELECT c.c_first_name, c.c_last_name\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_education_status = 'MBA'\n  AND c.c_preferred_cust_flag = 'Y'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 10.174351453781128
+  },
+  {
+    "question": "Liệt kê các khách hàng ưu tiên từ nước Anh đã mua hàng với số lượng sản phẩm trong một đơn lớn hơn năm",
+    "ground_truth_sql": "SELECT DISTINCT c_first_name, c_last_name \nFROM customer \nJOIN store_sales ON c_customer_sk = ss_customer_sk \nWHERE c_birth_country = 'UK' AND c_preferred_cust_flag = 'Y' AND ss_quantity > 5;",
+    "predicted_sql": "SELECT DISTINCT\n  c.c_first_name,\n  c.c_last_name\nFROM store_sales ss\nJOIN (\n  SELECT ss_ticket_number\n  FROM store_sales\n  GROUP BY ss_ticket_number\n  HAVING SUM(ss_quantity) > 5\n) s2 ON ss.ss_ticket_number = s2.ss_ticket_number\nJOIN customer c ON ss.ss_customer_sk = c.c_customer_sk\nWHERE c.c_preferred_cust_flag = 'Y'\n  AND c.c_birth_country = 'UNITED KINGDOM'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 9.952426671981812
+  },
+  {
+    "question": "Truy vấn danh sách những khách hàng có trình độ học vấn phổ thông đang sống tại Canada và có xếp hạng tín dụng ở mức tốt",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_education_status = 'School' AND c_birth_country = 'CA' AND cd_credit_rating = 'Good';",
+    "predicted_sql": "SELECT c.c_first_name,\n       c.c_last_name\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nJOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk\nWHERE cd.cd_education_status = 'Secondary'\n  AND ca.ca_country = 'CA'\n  AND cd.cd_credit_rating = 'Good'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 7.3643763065338135
+  },
+  {
+    "question": "Tìm những khách hàng đã mua hàng và được giảm giá trên 100 đô la.",
+    "ground_truth_sql": "SELECT DISTINCT c.c_first_name, c.c_last_name \nFROM customer c \nJOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk \nWHERE ss.ss_ext_discount_amt > 100;",
+    "predicted_sql": "SELECT *\nFROM customer c\nWHERE c.c_customer_sk IN (\n    SELECT ss.ss_customer_sk\n    FROM store_sales ss\n    GROUP BY ss.ss_customer_sk\n    HAVING SUM(ss.ss_ext_discount_amt) > 100\n)",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 9.345603466033936
+  },
+  {
+    "question": "Lấy tên khách hàng đã thực hiện giao dịch có giá trị lớn nhất trên hệ thống Catalog",
+    "ground_truth_sql": "SELECT c.c_first_name, c.c_last_name, cs.cs_sales_price\nFROM catalog_sales cs\nJOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk\nORDER BY cs.cs_sales_price DESC LIMIT 1;",
+    "predicted_sql": "SELECT c.c_first_name,\n       c.c_last_name\nFROM catalog_sales cs\nJOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk\nGROUP BY cs.cs_order_number, c.c_first_name, c.c_last_name\nORDER BY SUM(cs.cs_net_paid) DESC\nLIMIT 1",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 12.038704872131348
+  },
+  {
+    "question": "Tìm khách hàng nữ có tên bắt đầu bằng chữ 'M' kèm theo trình độ học vấn của họ.",
+    "ground_truth_sql": "SELECT c.c_first_name, cd.cd_education_status \nFROM customer c \nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk \nWHERE c.c_first_name LIKE 'M%' AND cd.cd_gender = 'F';",
+    "predicted_sql": "SELECT c.c_first_name,\n       c.c_last_name,\n       cd.cd_education_status\nFROM customer c\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_gender = 'F'\n  AND c.c_first_name LIKE 'M%'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 3.8095943927764893
+  },
+  {
+    "question": "Liệt kê khách hàng sống tại bang 'California' (CA)",
+    "ground_truth_sql": "SELECT c.c_first_name, c.c_last_name \nFROM customer c \nJOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk \nWHERE ca.ca_state = 'CA';",
+    "predicted_sql": "SELECT *\nFROM customer c\nJOIN customer_address ca ON c.c_current_addr_sk = ca.ca_address_sk\nWHERE ca.ca_state = 'CA'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 3.0613858699798584
+  },
+  {
+    "question": "Cho tôi biết doanh thu web sales quý 1 năm 2001",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001 AND d.d_qoy = 1;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001\n  AND d.d_qoy = 1",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.731623888015747
+  },
+  {
+    "question": "Tìm giúp tôi doanh thu web sales quý 3 năm 2002",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002 AND d.d_qoy = 3;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002\n  AND d.d_qoy = 3",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.3657546043395996
+  },
+  {
+    "question": "Hãy tìm doanh thu web sales quý 4 năm 2002",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002 AND d.d_qoy = 4;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002\n  AND d.d_qoy = 4",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.071417808532715
+  },
+  {
+    "question": "Hỏi về doanh thu web sales quý 2 năm 2002",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002 AND d.d_qoy = 2;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002\n  AND d.d_qoy = 2",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.658660888671875
+  },
+  {
+    "question": "Liệt kê doanh thu web sales quý 3 năm 2001",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001 AND d.d_qoy = 3;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001\n  AND d.d_qoy = 3",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.081456422805786
+  },
+  {
+    "question": "Thống kê doanh thu web sales quý 2 năm 2002",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002 AND d.d_qoy = 2;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002\n  AND d.d_qoy = 2",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 1.9631545543670654
+  },
+  {
+    "question": "Thống kê doanh thu web sales quý 1 năm 2000",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000 AND d.d_qoy = 1;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000\n  AND d.d_qoy = 1",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.596156597137451
+  },
+  {
+    "question": "Tính toán doanh thu web sales quý 3 năm 2001",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001 AND d.d_qoy = 3;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001\n  AND d.d_qoy = 3",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.5883398056030273
+  },
+  {
+    "question": "Liệt kê doanh thu web sales quý 4 năm 2000",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000 AND d.d_qoy = 4;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid) AS revenue\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000\n  AND d.d_qoy = 4",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.386892557144165
+  },
+  {
+    "question": "Thống kê doanh thu web sales quý 2 năm 1999",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 1999 AND d.d_qoy = 2;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 1999\n  AND d.d_qoy = 2",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.431175708770752
+  },
+  {
+    "question": "Doanh thu web sales quý 4 năm 2001",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001 AND d.d_qoy = 4;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001\n  AND d.d_qoy = 4",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.2345972061157227
+  },
+  {
+    "question": "Truy vấn tỷ lệ đơn hàng Electronics có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Electronics';",
+    "predicted_sql": "SELECT \n  CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promo_order_rate\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Electronics'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.3779234886169434
+  },
+  {
+    "question": "Liệt kê tỷ lệ đơn hàng Home có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Home';",
+    "predicted_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promo_rate\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Home'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 16.207860231399536
+  },
+  {
+    "question": "Thống kê tỷ lệ đơn hàng Books có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Books';",
+    "predicted_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promotion_rate\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Books'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.8671562671661377
+  },
+  {
+    "question": "Truy vấn doanh thu web sales quý 3 năm 2001",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001 AND d.d_qoy = 3;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001\n  AND d.d_qoy = 3",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.522944211959839
+  },
+  {
+    "question": "Truy vấn tỷ lệ đơn hàng Men có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Men';",
+    "predicted_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promo_order_rate\nFROM store_sales ss\nJOIN customer c ON ss.ss_customer_sk = c.c_customer_sk\nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk\nWHERE cd.cd_gender = 'M'",
+    "execution_success": true,
+    "result_match": false,
+    "error": "",
+    "time_seconds": 5.40521502494812
+  },
+  {
+    "question": "Tính toán doanh thu web sales quý 3 năm 1999",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 1999 AND d.d_qoy = 3;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 1999\n  AND d.d_qoy = 3",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.330636739730835
+  },
+  {
+    "question": "Hỏi về tỷ lệ đơn hàng Toys có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Toys';",
+    "predicted_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promo_rate\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Toys'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.941274881362915
+  },
+  {
+    "question": "Cho tôi biết doanh thu web sales quý 1 năm 1999",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 1999 AND d.d_qoy = 1;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 1999\n  AND d.d_qoy = 1",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.624035120010376
+  },
+  {
+    "question": "Cho tôi biết doanh thu web sales quý 3 năm 2001",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001 AND d.d_qoy = 3;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2001\n  AND d.d_qoy = 3",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.12483811378479
+  },
+  {
+    "question": "Truy vấn doanh thu web sales quý 2 năm 2000",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000 AND d.d_qoy = 2;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000\n  AND d.d_qoy = 2",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.690431594848633
+  },
+  {
+    "question": "Liệt kê doanh thu web sales quý 2 năm 2002",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002 AND d.d_qoy = 2;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid) AS revenue\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002\n  AND d.d_qoy = 2",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.6483285427093506
+  },
+  {
+    "question": "Liệt kê doanh thu web sales quý 2 năm 2000",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000 AND d.d_qoy = 2;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000\n  AND d.d_qoy = 2",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.925723075866699
+  },
+  {
+    "question": "Hỏi về tỷ lệ đơn hàng Jewelry có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Jewelry';",
+    "predicted_sql": "SELECT\n  CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promo_order_ratio\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Jewelry'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 5.717949151992798
+  },
+  {
+    "question": "Tính toán tỷ lệ đơn hàng Sports có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Sports';",
+    "predicted_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promo_rate\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Sports'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.9671406745910645
+  },
+  {
+    "question": "Hãy tìm doanh thu web sales quý 1 năm 2000",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000 AND d.d_qoy = 1;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000\n  AND d.d_qoy = 1",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.740788698196411
+  },
+  {
+    "question": "Doanh thu web sales quý 4 năm 2000",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000 AND d.d_qoy = 4;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000\n  AND d.d_qoy = 4",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.626133680343628
+  },
+  {
+    "question": "Cho tôi biết doanh thu web sales quý 2 năm 2000",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000 AND d.d_qoy = 2;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000\n  AND d.d_qoy = 2",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 2.4754984378814697
+  },
+  {
+    "question": "Tìm giúp tôi doanh thu web sales quý 1 năm 2000",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000 AND d.d_qoy = 1;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000\n  AND d.d_qoy = 1",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.393771409988403
+  },
+  {
+    "question": "Truy vấn tỷ lệ đơn hàng Clothing có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Clothing';",
+    "predicted_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promo_rate\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Clothing'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.146348476409912
+  },
+  {
+    "question": "Tính toán doanh thu web sales quý 4 năm 2002",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002 AND d.d_qoy = 4;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2002\n  AND d.d_qoy = 4",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.207593202590942
+  },
+  {
+    "question": "Hãy tìm doanh thu web sales quý 4 năm 2000",
+    "ground_truth_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000 AND d.d_qoy = 4;",
+    "predicted_sql": "SELECT SUM(ws.ws_net_paid)\nFROM web_sales ws\nJOIN date_dim d ON ws.ws_sold_date_sk = d.d_date_sk\nWHERE d.d_year = 2000\n  AND d.d_qoy = 4",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.348187208175659
+  },
+  {
+    "question": "Hỏi về tỷ lệ đơn hàng Electronics có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Electronics';",
+    "predicted_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promo_rate\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Electronics'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 5.530310869216919
+  },
+  {
+    "question": "Làm ơn cho biết tỷ lệ đơn hàng Clothing có khuyến mãi",
+    "ground_truth_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Clothing';",
+    "predicted_sql": "SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS promo_rate\nFROM store_sales ss\nJOIN item i ON ss.ss_item_sk = i.i_item_sk\nWHERE i.i_category = 'Clothing'",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 3.103804349899292
+  }
+]

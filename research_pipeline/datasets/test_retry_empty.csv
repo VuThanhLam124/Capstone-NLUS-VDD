@@ -1,0 +1,111 @@
+Transcription,SQL Ground Truth
+"Tôi cần tìm các khách hàng nam có danh xưng là Mr và hiện đang sinh sống hoặc có quốc tịch tại Canada, hãy liệt kê cho tôi đầy đủ thông tin của họ ","SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Mr.' AND c_birth_country = 'CA';"
+Tìm các cửa hàng ở bang California có giờ mở cửa vào lúc 8 giờ sáng và liệt kê tên quản lý của họ.,"SELECT s_store_name, s_manager
+FROM store
+WHERE s_state = 'CA' AND s_hours ILIKE '%8AM%';"
+Website nào có tỷ lệ thuế (web_tax_percentage) cao nhất trong hệ thống?,"SELECT web_name, web_tax_percentage
+FROM web_site
+ORDER BY web_tax_percentage DESC LIMIT 1;"
+Cho tôi xem 10 khách hàng trẻ tuổi nhất ,"SELECT c_customer_id, c_first_name, c_last_name, c_birth_year FROM customer ORDER BY c_birth_year DESC LIMIT 10;"
+Liệt kê tất cả những khách hàng nào đã có trình độ học vấn là tiến sĩ PhD,"SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics 
+WHERE cd_education_status = 'PhD';"
+Lọc ra tất cả những khách hàng là nam giới và hiện tại đang có xếp hạng tín dụng ở mức thấp để bộ phận chăm sóc kiểm tra lại,"SELECT cd_demo_sk, cd_gender, cd_marital_status, cd_education_status, cd_dep_count FROM customer_demographics 
+WHERE cd_gender = 'M' AND cd_credit_rating = 'Low';"
+Những khách hàng nào có danh xưng là Tiến sĩ?,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Dr.';"
+Hãy liệt kê danh sách các mã sản phẩm và số lượng tồn kho tương ứng của chúng tại kho hàng có mã số là một,"SELECT inv_item_sk, inv_quantity_on_hand 
+FROM inventory 
+WHERE inv_warehouse_sk = 1;"
+Tìm các quốc gia khác nhau có trong dữ liệu,"SELECT DISTINCT c_birth_country 
+FROM customer;"
+"Bạn hãy liệt kê các giao dịch tại cửa hàng đang gây ra mức thua lỗ lớn nhất, cụ thể là có lợi nhuận ròng âm hơn bảy trăm đô la","SELECT ss_ticket_number, ss_net_profit
+FROM store_sales
+WHERE ss_net_profit < -700.00
+ORDER BY ss_net_profit ASC;"
+Hãy cho tôi biết mặt hàng có mã số sản phẩm là một trăm bốn mươi sáu đã mang lại bao nhiêu doanh thu trên kênh bán hàng trực tuyến Web,"SELECT SUM(ws_sales_price)
+FROM web_sales
+WHERE ws_item_sk = 146;"
+Hãy tìm giúp tôi tổng mức tổn thất ròng từ việc trả hàng qua Catalog đối với mặt hàng có mã số sản phẩm là một trăm năm mươi tư,"SELECT SUM(cr_net_loss)
+FROM catalog_returns
+WHERE cr_item_sk = 154;"
+Có bao nhiêu khách hàng đang phải nuôi từ ba người phụ thuộc trở lên trong gia đình,SELECT COUNT(*) FROM customer_demographics WHERE cd_dep_count >= 3;
+Bạn hãy liệt kê mười món đồ có giá vốn nhập hàng thấp nhất nhưng lại mang về lợi nhuận dương cao nhất trên hệ thống bán lẻ Web,"SELECT i.i_item_desc, ws.ws_net_profit
+FROM web_sales ws
+JOIN item i ON ws.ws_item_sk = i.i_item_sk
+WHERE ws.ws_net_profit > 0
+ORDER BY i.i_wholesale_cost ASC, ws.ws_net_profit DESC
+LIMIT 10;"
+Cho biết tên của những khách hàng góa vợ hoặc góa chồng sinh năm 1990 và có mức ước tính mua sắm là 6 điểm.,"SELECT c_first_name, c_last_name FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_marital_status = 'W' AND c_birth_year = 1990 AND cd_purchase_estimate = 6"
+Hiển thị thông tin tên đăng nhập của những khách hàng đã ly hôn và đang có từ ba người phụ thuộc trở lên trong gia đình.,SELECT c_login FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_marital_status = 'D' AND cd_dep_count >= 3;
+Tìm những khách hàng mua đồ qua Web mà có địa chỉ nhận hàng khác hoàn toàn với địa chỉ thanh toán.,"SELECT DISTINCT c.c_first_name, c.c_last_name
+FROM web_sales ws
+JOIN customer c ON ws.ws_bill_customer_sk = c.c_customer_sk
+WHERE ws.ws_bill_addr_sk <> ws.ws_ship_addr_sk;"
+Tìm email của các khách hàng nam sinh ra tại nước Anh và có xếp hạng tín dụng đang ở mức thấp để gửi thông báo hỗ trợ,SELECT c_email_address FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_gender = 'M' AND c_birth_country = 'UK' AND cd_credit_rating = 'Low';
+Bạn hãy thực hiện phân chia danh sách khách hàng thành bốn nhóm bằng nhau dựa trên giá trị ước tính mức độ mua sắm trong hồ sơ nhân khẩu học của họ,"SELECT c_first_name, c_last_name, cd_purchase_estimate,
+       NTILE(4) OVER (ORDER BY cd_purchase_estimate DESC) AS customer_segment
+FROM customer
+JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk;"
+Lọc ra những địa chỉ email của những khách hàng nữ hiện đang sinh sống tại Hoa Kỳ và có xếp hạng tín dụng ở mức ưu tú,"SELECT c_email_address FROM customer 
+JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk 
+WHERE cd_gender = 'F' AND c_birth_country = 'USA' 
+AND cd_credit_rating = 'Elite';"
+Bạn hãy liệt kê tên các sản phẩm thuộc danh mục Children và số lượng tồn kho hiện tại,"SELECT i.i_item_desc, inv.inv_quantity_on_hand
+FROM inventory inv
+JOIN item i ON inv.inv_item_sk = i.i_item_sk
+WHERE i.i_category = 'Children'
+LIMIT 10;"
+Liệt kê mã định danh của những khách hàng đã lập gia đình và có ít nhất hai người con hiện đang theo học  cao đẳng,SELECT c_customer_id FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_marital_status = 'M' AND cd_dep_college_count >= 2;
+Lấy danh sách các khách hàng có trình độ thạc sĩ quản trị kinh doanh (MBA) và hiện đang là khách hàng ưu tiên của hệ thống,"SELECT c_first_name, c_last_name FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_education_status = 'MBA' AND c_preferred_cust_flag = 'Y';"
+Liệt kê các khách hàng ưu tiên từ nước Anh đã mua hàng với số lượng sản phẩm trong một đơn lớn hơn năm,"SELECT DISTINCT c_first_name, c_last_name 
+FROM customer 
+JOIN store_sales ON c_customer_sk = ss_customer_sk 
+WHERE c_birth_country = 'UK' AND c_preferred_cust_flag = 'Y' AND ss_quantity > 5;"
+Truy vấn danh sách những khách hàng có trình độ học vấn phổ thông đang sống tại Canada và có xếp hạng tín dụng ở mức tốt,"SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer JOIN customer_demographics ON c_current_cdemo_sk = cd_demo_sk WHERE cd_education_status = 'School' AND c_birth_country = 'CA' AND cd_credit_rating = 'Good';"
+Tìm những khách hàng đã mua hàng và được giảm giá trên 100 đô la.,"SELECT DISTINCT c.c_first_name, c.c_last_name 
+FROM customer c 
+JOIN store_sales ss ON c.c_customer_sk = ss.ss_customer_sk 
+WHERE ss.ss_ext_discount_amt > 100;"
+Lấy tên khách hàng đã thực hiện giao dịch có giá trị lớn nhất trên hệ thống Catalog,"SELECT c.c_first_name, c.c_last_name, cs.cs_sales_price
+FROM catalog_sales cs
+JOIN customer c ON cs.cs_bill_customer_sk = c.c_customer_sk
+ORDER BY cs.cs_sales_price DESC LIMIT 1;"
+Truy vấn tỷ lệ đơn hàng Electronics có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Electronics';"
+Liệt kê tỷ lệ đơn hàng Home có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Home';"
+Thống kê tỷ lệ đơn hàng Books có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Books';"
+Truy vấn tỷ lệ đơn hàng Men có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Men';"
+Hỏi về tỷ lệ đơn hàng Toys có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Toys';"
+Hỏi về tỷ lệ đơn hàng Jewelry có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Jewelry';"
+Tính toán tỷ lệ đơn hàng Sports có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Sports';"
+Truy vấn tỷ lệ đơn hàng Clothing có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Clothing';"
+Hỏi về tỷ lệ đơn hàng Electronics có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Electronics';"
+Làm ơn cho biết tỷ lệ đơn hàng Clothing có khuyến mãi,"SELECT CAST(SUM(CASE WHEN ss.ss_promo_sk IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+FROM store_sales ss
+JOIN item i ON ss.ss_item_sk = i.i_item_sk
+WHERE i.i_category = 'Clothing';"

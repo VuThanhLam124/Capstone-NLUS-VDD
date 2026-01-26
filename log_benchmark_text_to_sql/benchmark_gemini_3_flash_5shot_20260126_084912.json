@@ -1,0 +1,29 @@
+[
+  {
+    "question": "Liệt kê 5 mặt hàng có giá niêm yết (current price) cao nhất thuộc danh mục 'Books' (Sách).",
+    "ground_truth_sql": "SELECT i_item_desc, i_current_price\nFROM item\nWHERE i_category = 'Books'\nORDER BY i_current_price DESC LIMIT 5;",
+    "predicted_sql": "SELECT i_item_desc, i_current_price FROM item i WHERE i.i_category = 'Books' ORDER BY i.i_current_price DESC LIMIT 5",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 5.164740562438965
+  },
+  {
+    "question": "Tôi cần tìm các khách hàng nam có danh xưng là Mr và hiện đang sinh sống hoặc có quốc tịch tại Canada, hãy liệt kê cho tôi đầy đủ thông tin của họ ",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name, c_email_address FROM customer WHERE c_salutation = 'Mr.' AND c_birth_country = 'CA';",
+    "predicted_sql": "SELECT * \nFROM customer c \nJOIN customer_demographics cd ON c.c_current_cdemo_sk = cd.cd_demo_sk \nJOIN customer_",
+    "execution_success": false,
+    "result_match": false,
+    "error": "Parser Error: syntax error at end of input",
+    "time_seconds": 6.91594386100769
+  },
+  {
+    "question": "Lấy thông tin định danh và họ tên khách hàng",
+    "ground_truth_sql": "SELECT c_customer_id, c_first_name, c_last_name \nFROM customer;",
+    "predicted_sql": "SELECT c.c_customer_id, c.c_first_name, c.c_last_name FROM customer c",
+    "execution_success": true,
+    "result_match": true,
+    "error": "",
+    "time_seconds": 4.289378643035889
+  }
+]
