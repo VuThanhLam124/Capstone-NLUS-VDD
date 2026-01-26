@@ -95,7 +95,7 @@ This research uses the TPC-DS benchmark by the Transaction Processing Performanc
 ## 📈 Reproducibility & Logs
 
 To ensure transparency and reproducibility of our results, we provide full execution logs:
-
+- **Dataset benchmark for text to sql**: research_pipeline/datasets/test_easy.csv & research_pipeline/datasets/test.csv
 - **DeepSeek-V2 Case Study Logs**:
     - [logl.json](./logl.json): Finetuned Model (58% accuracy, 1163ms latency).
     - [logl2.json](./logl2.json): Baseline Model (56% accuracy, 1298ms latency).
